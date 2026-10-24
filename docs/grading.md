@@ -366,6 +366,64 @@ The [prepared-export integration example](../tests/PreparedExport.lean) shows
 closed replacements, both export modes, and replay against a separately
 constructed contract, including rejection of a valid proof for another claim.
 
+### Length certificates for quoted bytes
+
+Import `EDSL.Grading.Export.ByteLength` to construct length proofs for balanced
+byte quotations without reducing the complete list in one kernel conversion.
+In namespace `EDSLGrader.Export.ByteLength`:
+
+| Entry point | Input |
+| --- | --- |
+| `fromQuotation maxBytes value` | An existing prepared `byteExpr` expression, retained without rebuilding it |
+| `fromExpr maxBytes value` | Alias of `fromQuotation` |
+| `quoteWithLength maxBytes bytes` | Bytes to quote once with the existing `byteExpr` |
+
+Each returns `Except String Candidate`. A candidate contains the quoted
+`value`, a computed `literalLength`, the corresponding length `claim`, and
+proof syntax. It composes short literal-leaf proofs with the generic
+`appendLength` theorem. That theorem must be supplied as an ordinary checked
+packet dependency when absent from the trusted snapshot.
+
+The recognizer accepts the quotation's current constructor/type syntax, at
+most 16 append edges per path and 16 cons cells per leaf, with at most
+`maxBytes` total cells. Other list expressions fail explicitly.
+`quoteWithLength` also bounds its initial count by 1,048,576 bytes. These are
+producer shape bounds, not packet, kernel, time or memory admission guarantees.
+
+Construction performs no type checking. Check the proof against an
+independently fixed expected length; the candidate's own count or claim must
+not define that contract. Equal lengths do not establish byte equality,
+complete-file identity or provenance. The
+[length-certificate integration checks](../tests/ByteLength.lean) exercise
+independent fixed lengths, checked fresh support and kernel rejection of
+incorrect claims.
+
+### Refining one emitted theorem
+
+`Export.refineTheoremValue trusted client closure name rhs` replaces the proof
+value of one already emitted fresh, safe, monomorphic singleton theorem. It
+returns `Except Runtime.Failure PreparedClosure` and accepts optional `Limits`
+and `PreparedLimits`. The target's supplied prepared type is retained even
+when preparation changed it from the client type. All other old fields, their
+declaration order and the selected root expression remain intact.
+
+The replacement must be independently closed and monomorphic. Refinement uses
+empty substitution tables and discovers fresh safe support declarations,
+inserting them before the target in dependency order; those supports may be
+polymorphic. References to the target or a later old declaration fail,
+including through support declarations. A theorem absent from the emitted
+closure cannot be refined. Discovery and preparation costs accumulate from
+the supplied closure; prior work is not refunded.
+
+For a prepared file-length theorem, construct proof syntax from the actual
+prepared file value with `ByteLength.fromQuotation`, then pass its `proof` to
+`refineTheoremValue`. Encode the returned closure and replay it through the
+unchanged independent checker. Refinement neither checks typing nor proves
+preservation; every retained declaration, new support and final proof still
+requires kernel checking against the controller's independent contract. The
+[refinement integration checks](../tests/PreparedRefinement.lean) also retain
+and reject a corrupted old proof that the replacement no longer uses.
+
 ## Choosing client encoding limits
 
 The Lean producer APIs accept an explicit
