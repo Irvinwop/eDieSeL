@@ -6,6 +6,8 @@ import Lean
 import EDSL.Grading.Runtime.Audit
 import EDSL.Corpus.V1.CountedCertificates.GCCAdmission
 import EDSL.Corpus.V1.CountedCertificates.ClangAdmission
+import EDSL.Corpus.V1.CountedCertificates.GCCPreparation
+import EDSL.Corpus.V1.CountedCertificates.ClangPreparation
 
 set_option warningAsError true
 set_option autoImplicit false
@@ -45,6 +47,9 @@ private def isolated (env : Kernel.Environment) (roots : Array Name)
   return seen.size
 
 private def gccRoots : Array Name := #[
+  `EDSL.Corpus.V1.CountedCertificates.GCCPreparation.started,
+  `EDSL.Corpus.V1.CountedCertificates.GCCPreparation.present,
+  `EDSL.Corpus.V1.CountedCertificates.GCCPreparation.loadedBatch,
   `EDSL.Corpus.V1.CountedCertificates.GCCAdmission.named,
   `EDSL.Corpus.V1.CountedCertificates.GCCAdmission.checked,
   `EDSL.Corpus.V1.CountedCertificates.GCCAdmission.rx,
@@ -55,6 +60,9 @@ private def gccRoots : Array Name := #[
   `EDSL.Corpus.CountedResources.Image.target_fresh]
 
 private def clangRoots : Array Name := #[
+  `EDSL.Corpus.V1.CountedCertificates.ClangPreparation.started,
+  `EDSL.Corpus.V1.CountedCertificates.ClangPreparation.present,
+  `EDSL.Corpus.V1.CountedCertificates.ClangPreparation.loadedBatch,
   `EDSL.Corpus.V1.CountedCertificates.ClangAdmission.named,
   `EDSL.Corpus.V1.CountedCertificates.ClangAdmission.checked,
   `EDSL.Corpus.V1.CountedCertificates.ClangAdmission.rx,
@@ -67,18 +75,20 @@ private def clangRoots : Array Name := #[
 run_cmd do
   let env := (← getEnv).toKernelEnv
   let gcc ← match isolated env gccRoots `EDSL.Corpus.V1.GCC.file
-      #[`EDSL.Corpus.V1.Clang, `EDSL.Corpus.V1.CountedCertificates.ClangAdmission] with
+      #[`EDSL.Corpus.V1.Clang, `EDSL.Corpus.V1.CountedCertificates.ClangAdmission,
+        `EDSL.Corpus.V1.CountedCertificates.ClangPreparation] with
     | .ok count => pure count
     | .error message => throwError "{message}"
-  logInfo m!"CountedImageDependencies: GCC admission and resources are isolated ({gcc} constants)"
+  logInfo m!"CountedImageDependencies: GCC admission, resources and actual loaded batches are isolated ({gcc} constants)"
 
 run_cmd do
   let env := (← getEnv).toKernelEnv
   let clang ← match isolated env clangRoots `EDSL.Corpus.V1.Clang.file
-      #[`EDSL.Corpus.V1.GCC, `EDSL.Corpus.V1.CountedCertificates.GCCAdmission] with
+      #[`EDSL.Corpus.V1.GCC, `EDSL.Corpus.V1.CountedCertificates.GCCAdmission,
+        `EDSL.Corpus.V1.CountedCertificates.GCCPreparation] with
     | .ok count => pure count
     | .error message => throwError "{message}"
-  logInfo m!"CountedImageDependencies: Clang admission and resources are isolated ({clang} constants)"
+  logInfo m!"CountedImageDependencies: Clang admission, resources and actual loaded batches are isolated ({clang} constants)"
 
 run_cmd do
   let seen ← match closure (← getEnv).toKernelEnv

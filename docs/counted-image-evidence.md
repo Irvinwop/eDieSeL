@@ -44,6 +44,40 @@ Build these modules with:
 lake build EDSL.Corpus.CountedResources.Image EDSL.Corpus.CountedCertificate.Assembly
 ```
 
+## Prepare two actual callers
+
+`CountedResources.Workers.start` performs two production attachments in order.
+The second consumes the first operation's actual output. `StartTotal` proves
+that these current preparation gates succeed for every supplied old word, two
+low32 requests, high32 RSI halves and flag words. `initial` is the successful
+output of that composition; each worker is projected from its actual list.
+The generic proofs retain current authority, physical slots, contexts, empty
+queues, resource identifiers, grants and atomic-handle lists.
+
+This constructor uses the standard two-caller layout and logical actors 11/12.
+It initializes the other registers to `0x8877665544332211`. It does not restrict the separate universal behavioral Claim to those
+initial choices.
+
+`CountedResources.Loaded` constructs the unchanged independent Entry and Pre
+for those callers, then a `Counted.LoadedBatch` retaining the complete installed
+image. Its `Present` evidence has five image-specific obligations: nonempty
+code, a canonical base, current code-loan containment, selection of the actual
+registered atomic cell, and code/caller separation. These concern current
+state; they contain no future execution, desired result or behavioral Claim.
+Caller reads and private caller separation follow from the actual operations.
+The scalar Entry additionally requires clear DF, retaining every other supplied
+flag bit and all high RSI bits.
+
+`GCCPreparation.loadedBatch` and `ClangPreparation.loadedBatch` instantiate the
+constructor separately for every supplied input. Their declaration dependency
+guards include actual attachment and loaded-batch proofs as well as admission.
+These are preparation examples; complete useful-overlap certificate roots still
+require their separate migration.
+
+```sh
+lake build EDSL.Corpus.V1.CountedCertificates.GCCPreparation EDSL.Corpus.V1.CountedCertificates.ClangPreparation
+```
+
 ## Assemble admission and a useful execution
 
 `Counted.pre_of_population` assembles the independent `Counted64.Pre` from
@@ -91,8 +125,8 @@ shared-dispatch admission theorem is a control that reaches both files.
 Module imports may still load shared corpus declarations; import closure and
 proof-dependency closure are different properties.
 
-These examples establish named admission and present resources. The complete
-counted certificate constructors still use compiler-indexed loaded-state
+These examples establish named admission, present resources and independently
+admitted two-caller batches. The complete counted certificate constructors still use compiler-indexed loaded-state
 builders. Their migration and installed Counted64 grading remain unfinished;
 this API adds no corpus certification credit.
 

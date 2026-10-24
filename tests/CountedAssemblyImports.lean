@@ -4,6 +4,7 @@ SPDX-License-Identifier: Apache-2.0
 -/
 import EDSL.Corpus.CountedCertificate.Assembly
 import EDSL.Corpus.CountedResources.Image
+import EDSL.Corpus.CountedResources.Loaded
 import Lean
 
 set_option warningAsError true
@@ -20,7 +21,8 @@ run_cmd do
         moduleName == `EDSL.All then
       throwError "Frozen client or broad facade in reusable assembly closure: {moduleName}"
   for required in #[`EDSL.Corpus.CountedCertificate.Assembly,
-      `EDSL.Corpus.CountedResources.Image, `EDSL.OS.TSO64.ScheduleComposition] do
+      `EDSL.Corpus.CountedResources.Image, `EDSL.Corpus.CountedResources.Workers,
+      `EDSL.Corpus.CountedResources.Loaded, `EDSL.OS.TSO64.ScheduleComposition] do
     unless modules.contains required do
       throwError "Missing actual reusable import: {required}"
   Lean.logInfo m!"CountedAssemblyImports: generic assembly/resource closure has no frozen clients"
