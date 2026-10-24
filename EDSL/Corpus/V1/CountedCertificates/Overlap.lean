@@ -66,12 +66,8 @@ private theorem useful_of_output {file name : List Byte} {maxBytes : Nat}
     {ghosts : cohort.Ghosts batch.before} {choices : Nat → Nat → Bool} {old : Word}
     (output : CounterOverlap.Output cohort ghosts choices batch.target batch.cell old) :
     Nonempty (SameOutput batch output) := by
-  obtain ⟨post⟩ := claim.completed batch.before batch.target batch.cell batch.requests
-    batch.pre (output.lead.actions ++ output.suffix.actions)
-    (output.suffix.final, output.lead.observations ++ output.suffix.observations)
-    output.actual output.suffix.returned
   obtain ⟨first, middle, last, _occurrences, _firstTid, _middleTid, _lastTid,
-    firstLess, middleLess, lastBound, firstSeen, middleSeen, lastSeen⟩ :=
+    firstLess, middleLess, _lastBound, firstSeen, middleSeen, lastSeen⟩ :=
     overlap_positions output.lead.observations 0 1 output.lead.pattern
   let own : Fin batch.before.workers.length := Fin.cast population.symm 0
   let peer : Fin batch.before.workers.length := Fin.cast population.symm 1
@@ -93,7 +89,7 @@ private theorem useful_of_output {file name : List Byte} {maxBytes : Nat}
         if slot.val = 0 then 2 else 1 := output.lead.counts (Fin.cast population slot)
     rw [counted, amounts slot]
     split <;> decide
-  let run : Counted.UsefulRun batch := {
+  let witness : Counted.OverlapWitness batch := {
     population := population
     own := own
     peer := peer
@@ -108,31 +104,28 @@ private theorem useful_of_output {file name : List Byte} {maxBytes : Nat}
     suffixObservations := output.suffix.observations
     final := output.suffix.final
     suffixRun := output.suffix.actual
-    post := post
-    first := first.index
-    middle := middle.index
-    last := last.index
-    firstBeforeMiddle := firstLess
-    middleBeforeLast := middleLess
-    beforeCut := lastBound
-    firstEvent := first.event
-    peerEvent := middle.event
-    lastEvent := last.event
-    firstObserved := firstSeen
-    peerObserved := middleSeen
-    lastObserved := lastSeen }
+    returned := output.suffix.returned
+    pattern := ⟨first.index, middle.index, last.index, firstLess, middleLess,
+      first.event, middle.event, last.event, firstSeen, middleSeen, lastSeen⟩ }
+  obtain ⟨run, ownEq, peerEq, prefixActionsEq, prefixObservationsEq, cutEq,
+    suffixActionsEq, suffixObservationsEq, finalEq⟩ :=
+    Counted.useful_of_witness batch claim witness
   exact ⟨{
     run := run
-    own := rfl
-    peer := rfl
-    prefixActions := rfl
-    prefixObservations := rfl
-    cut := rfl
-    suffixActions := rfl
-    suffixObservations := rfl
-    final := rfl
-    actions := rfl
-    actual := rfl }⟩
+    own := congrArg (fun slot : Fin batch.before.workers.length => slot.val) ownEq
+    peer := congrArg (fun slot : Fin batch.before.workers.length => slot.val) peerEq
+    prefixActions := prefixActionsEq
+    prefixObservations := prefixObservationsEq
+    cut := cutEq
+    suffixActions := suffixActionsEq
+    suffixObservations := suffixObservationsEq
+    final := finalEq
+    actions := by
+      change run.prefixActions ++ run.suffixActions = _
+      rw [prefixActionsEq, suffixActionsEq]
+    actual := by
+      change (run.final, run.prefixObservations ++ run.suffixObservations) = _
+      rw [finalEq, prefixObservationsEq, suffixObservationsEq] }⟩
 
 namespace SameOutput
 variable {file name : List Byte} {maxBytes : Nat}

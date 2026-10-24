@@ -2,7 +2,7 @@
 Copyright 2026 Irvinwop
 SPDX-License-Identifier: Apache-2.0
 -/
-import EDSL.Corpus.CountedCertificate
+import EDSL.Corpus.CountedCertificate.Assembly
 import EDSL.Corpus.V1.CounterResources
 import EDSL.Corpus.V1.CounterCounted.Claim
 
@@ -201,35 +201,8 @@ private theorem pre_of_two_workers (image : ScalarCall64.Image)
       Ownership.Disjoint ⟨image.base, image.bytes.length⟩
         (workers slot).resources.caller.loan.region) :
     Spec.Pre image target cell before (fun slot => amounts (Fin.cast population slot)) := by
-  constructor
-  · exact valid
-  · exact empty
-  · exact liveTarget
-  · exact validCell
-  · intro slot
-    let selected : Fin 2 := Fin.cast population slot
-    exact ⟨workers selected, live selected, entries selected⟩
-  · intro i j first second different firstLive secondLive
-    let left : Fin 2 := Fin.cast population i
-    let right : Fin 2 := Fin.cast population j
-    have leftLive : before.workers[left.val]? = some (workers left) := live left
-    have rightLive : before.workers[right.val]? = some (workers right) := live right
-    have firstEq : first = workers left :=
-      Option.some.inj (firstLive.symm.trans leftLive)
-    have secondEq : second = workers right :=
-      Option.some.inj (secondLive.symm.trans rightLive)
-    have slotDifferent : left ≠ right := by
-      intro same
-      apply different
-      exact Fin.ext (congrArg (fun slot : Fin 2 => slot.val) same)
-    rw [firstEq, secondEq]
-    exact privateCallers left right slotDifferent
-  · intro slot worker found
-    let selected : Fin 2 := Fin.cast population slot
-    have known : before.workers[selected.val]? = some (workers selected) := live selected
-    have same : worker = workers selected := Option.some.inj (found.symm.trans known)
-    rw [same]
-    exact codeCallerSeparation selected
+  exact Counted.pre_of_population image target cell before population amounts workers
+    valid empty liveTarget validCell live entries privateCallers codeCallerSeparation
 
 /-- Independent full counted-call Pre for the actual manager/setup/attach
 state, arbitrary original inputs and every actual original finite slot. -/

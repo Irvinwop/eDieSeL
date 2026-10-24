@@ -63,6 +63,12 @@ The implementation is split by responsibility:
 | `EDSL.Corpus.V1.CountedCertificates.Overlap` | Completed same-run overlaps, cleanup retention and example certificates |
 | `EDSL.Corpus.V1.CountedCertificates` | Public example facade |
 
+The [per-image resource and execution builders](counted-image-evidence.md)
+provide generic setup, full-image retention and same-run assembly helpers.
+Compiler-local admission leaves avoid the other file in their declaration
+dependencies. The complete constructors below still use compiler-indexed loaded
+batches; per-image migration of that path remains separate work.
+
 ## Frozen examples
 
 | Constructor | Complete file | Entire symbol | Cap |

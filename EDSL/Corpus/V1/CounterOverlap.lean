@@ -3,6 +3,7 @@ Copyright 2026 Irvinwop
 SPDX-License-Identifier: Apache-2.0
 -/
 import EDSL.Corpus.V1.CounterLoadedInputs
+import EDSL.OS.TSO64.ScheduleComposition
 import EDSL.OS.TSO64.EffectSimulation.Mixed.RankedPrefix
 
 set_option autoImplicit false
@@ -274,23 +275,13 @@ theorem running_live {n : Nat} {profile : Profile} {family : RMWFamily}
     rw [(current i).1.1, ← cohort.tid_eq i]
     exact binding.live
 
-/-- Compose actual schedules at their common actual state. The ranked prefix
-library's corresponding helper is private, so this small derived law is local. -/
+/-- Compatibility name for composition at the same actual intermediate state. -/
 theorem schedule_append {before middle final : S} {left right : List Action}
     {leftSeen rightSeen : List O} {profile : Profile} {family : RMWFamily}
     (first : TSO64.schedule before left profile family = .ok (middle, leftSeen))
     (second : TSO64.schedule middle right profile family = .ok (final, rightSeen)) :
     TSO64.schedule before (left ++ right) profile family = .ok (final, leftSeen ++ rightSeen) := by
-  induction left generalizing before leftSeen with
-  | nil =>
-    have same : (before, []) = (middle, leftSeen) := Except.ok.inj first
-    cases same
-    exact second
-  | cons action rest ih =>
-    obtain ⟨head, tail, stepped, following, same⟩ := schedule_cons_ok first
-    cases same
-    have appended := ih following
-    simp only [List.cons_append, TSO64.schedule, stepped, ok_bind, appended, pure_ok]
+  exact TSO64.schedule_append_of_success first second
 
 /-- The requests deliberately leave both workers unfinished at the overlap cut. -/
 def requests (i : Fin 2) : BitVec 32 := if i.val = 0 then 3 else 9
