@@ -15,7 +15,7 @@ namespace GradingDAGTests
 kernel checks. Shared open syntax must never cache a context-dependent typing
 judgment. No candidate expression is compiled or evaluated. -/
 
-def unwrap (result : Except Failure α) : IO α :=
+def unwrap {α : Type} (result : Except Failure α) : IO α :=
   match result with
   | .ok value => pure value
   | .error failure => throw (IO.userError s!"{failure}")
@@ -23,7 +23,7 @@ def unwrap (result : Except Failure α) : IO α :=
 def require (condition : Bool) (message : String) : IO Unit :=
   unless condition do throw (IO.userError message)
 
-def reject (label : String) (kind : FailureKind) (message : String)
+def reject {α : Type} (label : String) (kind : FailureKind) (message : String)
     (result : Except Failure α) : IO Unit := do
   match result with
   | .error err =>
@@ -60,6 +60,60 @@ def contextCandidate (bad : Bool) : Expr × Expr := Id.run do
   let br := if bad then nr else mkApp2 (mkConst ``Eq.refl [1]) bt bv
   return (mkApp2 (mkConst ``And) np bp,
     mkApp4 (mkConst ``And.intro) np bp (.lam `n nt nr .default) (.lam `b bt br .default))
+
+private def depthCases (env : Kernel.Environment) (lim : Limits)
+    (parsed : Json) (remaining : Nat) : IO Unit := do
+  let decode (json : Json) := (DAG.decodeDag env lim [] [] json).run lim.maxNodes
+  let dag (rows : Array Json) (root : String) := Json.arr #[.str "dag", .arr rows, .str root]
+  let shallow : Limits := { lim with maxExprDepth := 20 }
+  reject "shallow-json-cannot-hide-expanded-depth" .resource "expanded DAG expression depth"
+    ((DAG.decodeDag env shallow [] [] parsed).run lim.maxNodes)
+  -- Encode the shared subtree first on a shorter path, then reuse it under
+  -- more successors. A cache hit must retain its full expanded syntax height.
+  let successors (count : Nat) (base : Expr) :=
+    (List.range count).foldl (fun value _ => mkApp (mkConst ``Nat.succ) value) base
+  -- A raw literal avoids the frontend's additional OfNat application layers.
+  let shared := successors 118 (mkRawNatLit 0)
+  let atBoundary := mkApp2 (mkConst ``Nat.add) shared (successors 8 shared)
+  let (boundary, _) ← unwrap (decode (← unwrap (DAG.encodeDag atBoundary)))
+  let boundaryEquation := mkApp3 (mkConst ``Eq [1]) (mkConst ``Nat) boundary (mkNatLit 244)
+  let _ ← unwrap (checkExpr env lim boundaryEquation
+    (mkApp2 (mkConst ``Eq.refl [1]) (mkConst ``Nat) (mkNatLit 244))
+    `EDSLGrader.Internal.dagDepthBoundary)
+  IO.println "PASS shared-depth-boundary-kernel-arithmetic"
+  reject "encoder-cache-cannot-hide-expanded-depth" .resource "client expanded DAG expression depth"
+    (DAG.encodeDag (mkApp2 (mkConst ``Nat.add) shared (successors 9 shared)))
+  reject "aggregate-work-counts-reference-and-reachability" .resource "decoder steps"
+    ((DAG.decodeDag env lim [] [] parsed).run 100)
+  let (_, left) ← unwrap ((DAG.decodeDag env lim [] [] parsed).run (2 * (lim.maxNodes-remaining) - 1))
+  reject "caller-budget-spans-expression-fields" .resource "decoder steps"
+    ((DAG.decodeDag env lim [] [] parsed).run left)
+  reject "expression-pools-are-isolated" .malformed "DAG forward, cyclic, or missing reference"
+    (decode (dag #[] "0"))
+  -- A valid let and projection ensure the four-field row variants remain distinct.
+  let nt := mkConst ``Nat
+  let pair := mkApp4 (mkConst ``Prod.mk [0, 0]) nt nt (mkNatLit 7) (mkNatLit 9)
+  let seven := mkNatLit 7
+  let eqSeven := mkApp3 (mkConst ``Eq [1]) nt seven seven
+  let proof := Expr.letE `p (mkApp2 (mkConst ``Prod [0, 0]) nt nt) pair
+    (mkApp2 (mkConst ``Eq.refl [1]) nt (.proj ``Prod 0 (.bvar 0))) false
+  let (proof, _) ← unwrap (decode (← unwrap (DAG.encodeDag proof)))
+  let _ ← unwrap (checkExpr env lim eqSeven proof `EDSLGrader.Internal.dagLetProj)
+  IO.println "PASS let-and-projection-kernel-reduction"
+  -- Ordinary Expr equality ignores binder annotations. Interning must preserve
+  -- both annotations when they occur in the same expression graph.
+  let functionType := Expr.forallE `n nt nt .default
+  let explicitId := Expr.lam `n nt (.bvar 0) .default
+  let implicitId := Expr.lam `n nt (.bvar 0) .implicit
+  let mixed := Expr.letE `f functionType explicitId
+    (.letE `g functionType implicitId (mkConst ``True.intro) false) false
+  let (mixedDecoded, _) ← unwrap (decode (← unwrap (DAG.encodeDag mixed)))
+  require ((← unwrap (encodeExpr mixed)) == (← unwrap (encodeExpr mixedDecoded)))
+    "interning discarded binder annotations"
+  let _ ← unwrap (checkExpr env lim (mkConst ``True) mixedDecoded
+    `EDSLGrader.Internal.dagBinderAnnotations)
+  IO.println "PASS mixed-binder-annotations-preserved"
+  IO.println "DAG probes complete; candidate expressions remain data."
 
 def main : IO Unit := do
   initSearchPath (← findSysroot)
@@ -118,55 +172,7 @@ def main : IO Unit := do
     (decode (dag #[.arr #[.str "sort", .arr #[.str "param", nameJson `u]]] "0"))
   reject "unused-forbidden-node" .malformed "unreachable DAG node"
     (decode (dag #[.arr #[.str "const", nameJson ``sorryAx, .arr #[.str "zero"]], natZero] "1"))
-  let shallow : Limits := { lim with maxExprDepth := 20 }
-  reject "shallow-json-cannot-hide-expanded-depth" .resource "expanded DAG expression depth"
-    ((DAG.decodeDag env shallow [] [] parsed).run lim.maxNodes)
-  -- Encode the shared subtree first on a shorter path, then reuse it under
-  -- more successors. A cache hit must retain its full expanded syntax height.
-  let successors (count : Nat) (base : Expr) :=
-    (List.range count).foldl (fun value _ => mkApp (mkConst ``Nat.succ) value) base
-  -- A raw literal avoids the frontend's additional OfNat application layers.
-  let shared := successors 118 (mkRawNatLit 0)
-  let atBoundary := mkApp2 (mkConst ``Nat.add) shared (successors 8 shared)
-  let (boundary, _) ← unwrap (decode (← unwrap (DAG.encodeDag atBoundary)))
-  let boundaryEquation := mkApp3 (mkConst ``Eq [1]) (mkConst ``Nat) boundary (mkNatLit 244)
-  let _ ← unwrap (checkExpr env lim boundaryEquation
-    (mkApp2 (mkConst ``Eq.refl [1]) (mkConst ``Nat) (mkNatLit 244))
-    `EDSLGrader.Internal.dagDepthBoundary)
-  IO.println "PASS shared-depth-boundary-kernel-arithmetic"
-  reject "encoder-cache-cannot-hide-expanded-depth" .resource "client expanded DAG expression depth"
-    (DAG.encodeDag (mkApp2 (mkConst ``Nat.add) shared (successors 9 shared)))
-  reject "aggregate-work-counts-reference-and-reachability" .resource "decoder steps"
-    ((DAG.decodeDag env lim [] [] parsed).run 100)
-  let (_, left) ← unwrap ((DAG.decodeDag env lim [] [] parsed).run (2 * (lim.maxNodes-remaining) - 1))
-  reject "caller-budget-spans-expression-fields" .resource "decoder steps"
-    ((DAG.decodeDag env lim [] [] parsed).run left)
-  reject "expression-pools-are-isolated" .malformed "DAG forward, cyclic, or missing reference"
-    (decode (dag #[] "0"))
-  -- A valid let and projection ensure the four-field row variants remain distinct.
-  let nt := mkConst ``Nat
-  let pair := mkApp4 (mkConst ``Prod.mk [0, 0]) nt nt (mkNatLit 7) (mkNatLit 9)
-  let seven := mkNatLit 7
-  let eqSeven := mkApp3 (mkConst ``Eq [1]) nt seven seven
-  let proof := Expr.letE `p (mkApp2 (mkConst ``Prod [0, 0]) nt nt) pair
-    (mkApp2 (mkConst ``Eq.refl [1]) nt (.proj ``Prod 0 (.bvar 0))) false
-  let (proof, _) ← unwrap (decode (← unwrap (DAG.encodeDag proof)))
-  let _ ← unwrap (checkExpr env lim eqSeven proof `EDSLGrader.Internal.dagLetProj)
-  IO.println "PASS let-and-projection-kernel-reduction"
-  -- Ordinary Expr equality ignores binder annotations. Interning must preserve
-  -- both annotations when they occur in the same expression graph.
-  let functionType := Expr.forallE `n nt nt .default
-  let explicitId := Expr.lam `n nt (.bvar 0) .default
-  let implicitId := Expr.lam `n nt (.bvar 0) .implicit
-  let mixed := Expr.letE `f functionType explicitId
-    (.letE `g functionType implicitId (mkConst ``True.intro) false) false
-  let (mixedDecoded, _) ← unwrap (decode (← unwrap (DAG.encodeDag mixed)))
-  require ((← unwrap (encodeExpr mixed)) == (← unwrap (encodeExpr mixedDecoded)))
-    "interning discarded binder annotations"
-  let _ ← unwrap (checkExpr env lim (mkConst ``True) mixedDecoded
-    `EDSLGrader.Internal.dagBinderAnnotations)
-  IO.println "PASS mixed-binder-annotations-preserved"
-  IO.println "DAG probes complete; candidate expressions remain data."
+  depthCases env lim parsed remaining
 
 #eval main
 end GradingDAGTests

@@ -434,6 +434,12 @@ partial metadata and every axiom except `propext`, `Quot.sound` and
 ones. Source `partial def` can lower to a safe logical default body; metadata
 does not establish correspondence with the client's compiled runtime code.
 
+The dependency auditor shares its visited names and remaining queue budget across
+one packet. When a newly checked constant references an already audited name,
+that dependency is not queued again. Self references, incoming roots and entries
+already pending still consume queue pops. This cache relies on the immutable
+bindings of the checked environment; it is never shared across submissions.
+
 `Runtime.checkPacketDetailed` uses the same admission and checking loop as
 `Runtime.checkPacket`, and returns a `PacketCheckFailure` on failure. Its `failure`
 field contains the existing category and message; its `site` identifies the

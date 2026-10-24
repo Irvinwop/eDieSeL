@@ -59,33 +59,33 @@ def fixtureEnvironment (base : Kernel.Environment) : IO Kernel.Environment := do
     | .error e => throw <| IO.userError s!"owned fixture setup: {kernelFailure e}"
   return env
 
-def main (shared : Bool) : IO Unit := do
-  initSearchPath (← findSysroot)
-  let imported ← importModules #[{ module := `EDSL.Pair32.Correctness },
-    { module := `EDSL.Stride32.Correctness }] {}
-    (trustLevel := 0) (plugins := #[]) (loadExts := false)
-  let env ← fixtureEnvironment imported.toKernelEnv
-  let lim : Limits := {}
-  let packet (decls : List Declaration) (value : Expr) :=
-    if shared then encodePacket decls value else encodeTreePacket decls value
-  IO.println (if shared then "Checking v2 shared packets" else "Checking v1 tree packets")
-  let assertOutcome (label : String) (wanted : Option (FailureKind × String))
-      (result : Except Failure Checked) := do
-    match wanted, result with
-    | none, .ok got =>
-      IO.println s!"PASS {label}: ACCEPT (constants={got.constants}, decoder={got.decoderSteps}, audit={got.auditSteps}, checks={got.kernelChecks})"
-    | some (kind, message), .error got =>
-      unless got.kind == kind && got.message == message do
-        throw <| IO.userError s!"{label}: wanted {repr kind}/{message}, got {got}"
-      IO.println s!"PASS {label}: REJECT {got}"
-    | none, .error got => throw <| IO.userError s!"{label}: wanted ACCEPT, got {got}"
-    | some _, .ok _ => throw <| IO.userError s!"{label}: wanted rejection, accepted"
+private def assertOutcome (label : String) (wanted : Option (FailureKind × String))
+    (result : Except Failure Checked) := do
+  match wanted, result with
+  | none, .ok got =>
+    IO.println s!"PASS {label}: ACCEPT (constants={got.constants}, decoder={got.decoderSteps}, audit={got.auditSteps}, checks={got.kernelChecks})"
+  | some (kind, message), .error got =>
+    unless got.kind == kind && got.message == message do
+      throw <| IO.userError s!"{label}: wanted {repr kind}/{message}, got {got}"
+    IO.println s!"PASS {label}: REJECT {got}"
+  | none, .error got => throw <| IO.userError s!"{label}: wanted ACCEPT, got {got}"
+  | some _, .ok _ => throw <| IO.userError s!"{label}: wanted rejection, accepted"
+
+private def encodeFixture (shared : Bool) (decls : List Declaration) (value : Expr) :=
+  if shared then encodePacket decls value else encodeTreePacket decls value
+
+private def runCase (env : Kernel.Environment) (shared : Bool)
+    (label : String) (wanted : Option (FailureKind × String))
+    (type value : Expr) (decls : List Declaration) : IO Unit := do
+  let encoded ← match encodeFixture shared decls value with
+    | .ok text => pure text
+    | .error failure => throw (IO.userError s!"export {label}: {failure}")
+  assertOutcome label wanted (checkPacket env {} type encoded)
+
+private def basicCases (env : Kernel.Environment) (shared : Bool) : IO Unit := do
   let run (label : String) (wanted : Option (FailureKind × String))
-      (ty value : Expr) (ds : List Declaration := []) := do
-    let encoded ← match packet ds value with
-      | .ok s => pure s
-      | .error e => throw <| IO.userError s!"export {label}: {e}"
-    assertOutcome label wanted (checkPacket env lim ty encoded)
+      (type value : Expr) (decls : List Declaration := []) : IO Unit :=
+    runCase env shared label wanted type value decls
   run "truth-reference" none truth intro
   run "lambda-and-bound-variable" none
     (.forallE `n nat (eqNat (.bvar 0) (.bvar 0)) .default)
@@ -137,6 +137,12 @@ def main (shared : Bool) : IO Unit := do
     let some body := info.value? (allowOpaque := true) | throw <| IO.userError s!"body missing {thmName}"
     run s!"body-{thmName}" none info.type body
 
+
+private def declarationCases (env : Kernel.Environment) (shared : Bool) :
+    IO (Declaration × Declaration × Declaration) := do
+  let run (label : String) (wanted : Option (FailureKind × String))
+      (type value : Expr) (decls : List Declaration := []) : IO Unit :=
+    runCase env shared label wanted type value decls
   let u := Level.param `u
   let idTy := Expr.forallE `α (.sort u) (.forallE `x (.bvar 0) (.bvar 1) .default) .implicit
   let idVal := Expr.lam `α (.sort u) (.lam `x (.bvar 0) (.bvar 0) .default) .implicit
@@ -201,6 +207,16 @@ def main (shared : Bool) : IO Unit := do
   let stringDecl := Declaration.thmDecl { name := stringName, levelParams := [], type := truth, value := intro }
   run "name-num-string-distinction" none truth (mkConst numericName) [numericDecl, stringDecl]
 
+  return (idDecl, opaqueDecl, helper)
+
+private def inductiveCases (env : Kernel.Environment) (shared : Bool) :
+    IO (Declaration × String) := do
+  let lim : Limits := {}
+  let packet := encodeFixture shared
+  let run (label : String) (wanted : Option (FailureKind × String))
+      (type value : Expr) (decls : List Declaration := []) : IO Unit :=
+    runCase env shared label wanted type value decls
+  let u := Level.param `u
   let flagName := `OwnedPacket.Flag
   let flag := mkConst flagName
   let flagCtor := flagName ++ `on
@@ -297,6 +313,12 @@ def main (shared : Bool) : IO Unit := do
       type := .forallE `xs (mkApp (mkConst ``List [0]) nested) nested .default }] }] false
   run "nested-group-unsupported" (some (.unsupported, "nested inductive group")) truth intro [nestedDecl]
 
+  return (flagDecl, flagBody)
+
+private def budgetCases (env : Kernel.Environment) (shared : Bool)
+    (idDecl opaqueDecl helper flagDecl : Declaration) (flagBody : String) : IO Unit := do
+  let lim : Limits := {}
+  let packet := encodeFixture shared
   let small ← match packet [] intro with | .ok x => pure x | .error e => throw <| IO.userError s!"{e}"
   let checkRaw (label : String) (want : FailureKind × String) (s : String) :=
     assertOutcome label (some want) (checkPacket env lim truth s)
@@ -342,8 +364,23 @@ def main (shared : Bool) : IO Unit := do
     | .error e => throw <| IO.userError s!"{e}"
   assertOutcome "aggregate-decoder-budget" (some (.resource, "decoder steps"))
     (checkPacket env { lim with maxNodes := 40 } truth chain)
+  -- Thirteen different unused auxiliaries each require their own root pop.
+  -- Each fits the allowance alone, while the combined packet cannot fit twelve.
+  let budgetDeclarations := (List.range 13).map fun index => Declaration.defnDecl {
+    name := Name.str `OwnedPacket s!"auditBudget{index}"
+    levelParams := [], type := .sort 1, value := .sort 0,
+    hints := .regular 0, safety := .safe }
+  for declaration in budgetDeclarations do
+    assertOutcome "individual-audit-budget" none
+      (checkPacket env { lim with maxAuditSteps := 12 } truth
+        (← match packet [declaration] intro with
+          | .ok text => pure text
+          | .error failure => throw (IO.userError s!"{failure}")))
   assertOutcome "aggregate-audit-budget" (some (.resource, "audit steps"))
-    (checkPacket env { lim with maxAuditSteps := 12 } truth chain)
+    (checkPacket env { lim with maxAuditSteps := 12 } truth
+      (← match packet budgetDeclarations intro with
+        | .ok text => pure text
+        | .error failure => throw (IO.userError s!"{failure}")))
   assertOutcome "aggregate-kernel-budget" (some (.resource, "kernel budget per check"))
     (checkPacket env { lim with kernelHeartbeats := 3 } truth chain)
   assertOutcome "aggregate-name-budget" (some (.resource, "declared constant names"))
@@ -381,6 +418,18 @@ def main (shared : Bool) : IO Unit := do
     (checkExpr partialEnv lim truth (.letE `x nat (mkConst `GradingRuntimeTests.partialMetadata) intro false)
       `EDSLGrader.Internal.ownedTest)
   IO.println "Runtime probes complete; no candidate Expr compiled or evaluated."
+
+def main (shared : Bool) : IO Unit := do
+  initSearchPath (← findSysroot)
+  let imported ← importModules #[{ module := `EDSL.Pair32.Correctness },
+    { module := `EDSL.Stride32.Correctness }] {}
+    (trustLevel := 0) (plugins := #[]) (loadExts := false)
+  let env ← fixtureEnvironment imported.toKernelEnv
+  IO.println (if shared then "Checking v2 shared packets" else "Checking v1 tree packets")
+  basicCases env shared
+  let (idDecl, opaqueDecl, helper) ← declarationCases env shared
+  let (flagDecl, flagBody) ← inductiveCases env shared
+  budgetCases env shared idDecl opaqueDecl helper flagDecl flagBody
 
 #eval main false
 #eval main true

@@ -224,6 +224,7 @@ jobs:
           lake env lean -DwarningAsError=true tests/PreparationSites.lean
           lake env lean -DwarningAsError=true tests/GradingDriver.lean
           lake env lean -DwarningAsError=true tests/GradingRuntime.lean
+          lake env lean -j1 -DwarningAsError=true -DautoImplicit=false -DmaxHeartbeats=300000 -DmaxRecDepth=128 tests/GradingAuditPruning.lean
           lake env lean -DwarningAsError=true tests/GradingDAG.lean
           lake env lean -DwarningAsError=true tests/ClientEncoding.lean
           lake env lean -DwarningAsError=true tests/PacketCheckDiagnostics.lean

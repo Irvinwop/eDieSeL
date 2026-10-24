@@ -8,11 +8,16 @@ import Lean.Util.FoldConsts
 /-! Audit the actual checked constant map, including theorem/opaque bodies and
 kernel-generated inductive/recursor structure. Imported collectAxioms summaries
 are not the acceptance policy. The audit budget counts every queue pop, including
-duplicates, and the visited set and remaining budget span the whole packet. -/
+duplicates already pending, and the visited set and remaining budget span the
+whole packet. Newly discovered edges to previously audited names are not queued.
+This is a scheduling budget, not a primitive operation or allocation bound. -/
 namespace EDSLGrader.Runtime
 
 open Lean
 
+/-- Lower-level callers must use an empty cache or one returned by a successful
+same-policy audit in this environment or a binding-preserving checked extension.
+A caller-supplied set of names alone is not evidence of a completed audit. -/
 structure AuditState where
   remaining : Nat
   seen : NameSet := {}
@@ -49,7 +54,12 @@ def auditLoop (env : Kernel.Environment) : Nat → List Name → NameSet → Exc
     if info.isPartial then return ← fail .audit "partial dependency metadata"
     if info.isAxiom && !([``propext, ``Quot.sound, ``Classical.choice].contains name) then
       return ← fail .audit "unapproved axiom"
-    auditLoop env fuel ((directDependencies info).toList ++ rest) (seen.insert name)
+    -- Prior bindings are immutable across checked environment extensions. Only
+    -- dependencies already audited in this packet are omitted; unseen names,
+    -- self edges and existing pending entries still receive the original checks.
+    let dependencies := (directDependencies info).toList.filter
+      (fun dependency => !seen.contains dependency)
+    auditLoop env fuel (dependencies ++ rest) (seen.insert name)
 
 def auditNames (env : Kernel.Environment) (state : AuditState) (names : List Name) :
     Except Failure AuditState :=
