@@ -296,6 +296,24 @@ override; inline expressions may refer to definitions with overridden values.
 Normal, unchanged auxiliary declarations may retain their declared universe
 parameters.
 
+For complete-file byte data, import `EDSL.Grading.Export.BytePreparation`.
+Its `BytePreparation.prepare limits config observedBytes` helper builds one
+complete-file value override and ordered literal chunk replacements. The config
+contains `fileName`, `chunkNames` in byte order and a positive `chunkSize`.
+The helper checks byte/key/name caps, exact chunk count and distinct nonanonymous
+keys. An empty file has no chunks; the final chunk may be shorter. The exporter
+still validates key eligibility independently.
+
+Both the full-file value and chunk values use balanced literal quotations.
+Chunks contain their own bytes, avoiding repeated prefix traversals during
+kernel reduction of expressions such as `(file.drop offset).take length`.
+This can increase packet size; output and checker limits still apply. The
+helper does not read files, authenticate bytes, or prove that substitutions
+preserve a client's theorem. The independent expected proposition must retain
+the exact complete file, and every emitted declaration and final proof must
+pass kernel checking. Producer setup limits are separate from exporter and
+runtime limits; allocation and native operations still need process bounds.
+
 Preparation finishes each expression before discovering its dependencies.
 Removed references therefore do not pull their old helper bodies into the
 closure. Inductive ownership and reconstruction checks still apply. The
