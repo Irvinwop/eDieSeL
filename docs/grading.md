@@ -348,6 +348,41 @@ The [prepared-export integration example](../tests/PreparedExport.lean) shows
 closed replacements, both export modes, and replay against a separately
 constructed contract, including rejection of a valid proof for another claim.
 
+## Choosing client encoding limits
+
+The Lean producer APIs accept an explicit
+`EDSLGrader.Runtime.ClientEncodingLimits`. Its defaults remain an expanded
+expression depth of 128 and 300,000 expression dispatches per field. Set
+`Export.Limits.encoding` when calling either ordinary or prepared export.
+The command-line exporter retains its existing default profile.
+
+| API | Result |
+| --- | --- |
+| `Runtime.DAG.encodeDagWith encoding expression` | One encoded expression field |
+| `Runtime.DAG.encodeDagWithStats encoding expression` | The same encoding with its expanded height, emitted row count and dispatch count |
+| `Runtime.encodePacketWith encoding declarations proof` | A version-2 packet using fresh state for every type, value, constructor header and root field |
+
+The original `encodeDag` and `encodePacket` functions use the default profile.
+Profiles are producer configuration and do not appear in the packet. A grader
+selects its own `Runtime.Limits` independently; successful encoding does not
+establish typing or override input, declaration, decoder, audit or kernel limits.
+Zero depth or work allowances reject when their corresponding check is reached.
+
+Dispatch accounting includes cache hits and erased metadata. Cached expanded
+heights remain part of depth checking; universe constructors contribute to the
+reported height. Rows count shared syntax and differ from dispatches. Statistics
+are returned only on success, from the encoding run itself. They are diagnostic
+measurements, not CPU-time, allocation or memory bounds. Name/universe
+serialization, level-height traversal, hashing/equality, allocation/GC and JSON
+compression still require external process bounds. A larger profile does not
+establish support for arbitrary deeper universe serialization.
+
+These per-field limits do not bound the whole declaration list or packet size.
+The export APIs retain their discovery/name allowances and post-compression
+output-byte cap; callers using `encodePacketWith` directly must bound their
+whole input and output too. No grading policy is inferred from producer
+statistics or a submitted packet.
+
 ## Packet and checking boundary
 
 New clients emit version 2. Each expression field has its own topologically

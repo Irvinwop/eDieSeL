@@ -134,6 +134,23 @@ def decodeDag (env : Kernel.Environment) (lim : Limits) (params : List Name := [
     (pending : List (Name × Nat) := []) (j : Json) : DecodeM Expr := do
   return (← decodeDagSummary env lim params pending j).expr
 
+section
+set_option warningAsError true
+set_option autoImplicit false
+set_option maxHeartbeats 300000
+set_option maxRecDepth 128
+
+/-- Successful field counters from the encoder itself, not a native cost bound. -/
+structure EncodingStats where
+  expandedHeight : Nat
+  rows : Nat
+  steps : Nat
+  deriving Repr, Inhabited
+
+structure EncodedField where
+  json : Json
+  stats : EncodingStats
+
 private structure EncodeState where
   -- Expr's ordinary equality ignores BinderInfo. Structural keys retain those
   -- annotations so interning preserves the tree codec's canonical syntax.
@@ -141,20 +158,23 @@ private structure EncodeState where
   -- deeper path must not hide depth from the client admission check.
   ids : Std.HashMap ExprStructEq (Nat × Nat) := {}
   rows : Array Json := #[]
-  remaining : Nat := ({} : Limits).maxNodes
+  remaining : Nat
 
 private abbrev EncodeM := StateT EncodeState (Except Failure)
 
-private def encodeNode : Nat → Expr → EncodeM (Nat × Nat)
+private def encodeNode (encoding : ClientEncodingLimits) : Nat → Expr → EncodeM (Nat × Nat)
   | 0, _ => throw { kind := .resource, message := "client DAG depth" }
   | fuel+1, e => do
     let budget ← get
     if budget.remaining == 0 then
       throw { kind := .resource, message := "client DAG encoding steps" }
     set { budget with remaining := budget.remaining - 1 }
-    if let some i := (← get).ids[ExprStructEq.mk e]? then return i
+    if let some (i, height) := (← get).ids[ExprStructEq.mk e]? then
+      if height > encoding.maxExprDepth then
+        throw { kind := .resource, message := "client expanded DAG expression depth" }
+      return (i, height)
     let s (n : Nat) := Json.str (toString n)
-    if let .mdata _ v := e then return ← encodeNode fuel v
+    if let .mdata _ v := e then return ← encodeNode encoding fuel v
     let (row, height) : Json × Nat ← match e with
       | .bvar n => pure (Json.arr #[.str "bvar", s n], 1)
       | .sort u => do
@@ -164,38 +184,56 @@ private def encodeNode : Nat → Expr → EncodeM (Nat × Nat)
           .arr (← us.toArray.mapM (fun u => liftM (levelJson u)))],
           1 + us.foldl (fun height u => max height (levelHeight u)) 0)
       | .app f a => do
-        let (fi, fh) ← encodeNode fuel f
-        let (ai, ah) ← encodeNode fuel a
+        let (fi, fh) ← encodeNode encoding fuel f
+        let (ai, ah) ← encodeNode encoding fuel a
         pure (Json.arr #[.str "app", s fi, s ai], 1 + max fh ah)
       | .lam _ t b bi => do
-        let (ti, th) ← encodeNode fuel t
-        let (bi', bh) ← encodeNode fuel b
+        let (ti, th) ← encodeNode encoding fuel t
+        let (bi', bh) ← encodeNode encoding fuel b
         pure (Json.arr #[.str "lam", binderJson bi, s ti, s bi'], 1 + max th bh)
       | .forallE _ t b bi => do
-        let (ti, th) ← encodeNode fuel t
-        let (bi', bh) ← encodeNode fuel b
+        let (ti, th) ← encodeNode encoding fuel t
+        let (bi', bh) ← encodeNode encoding fuel b
         pure (Json.arr #[.str "forall", binderJson bi, s ti, s bi'], 1 + max th bh)
       | .letE _ t v b _ => do
-        let (ti, th) ← encodeNode fuel t
-        let (vi, vh) ← encodeNode fuel v
-        let (bi, bh) ← encodeNode fuel b
+        let (ti, th) ← encodeNode encoding fuel t
+        let (vi, vh) ← encodeNode encoding fuel v
+        let (bi, bh) ← encodeNode encoding fuel b
         pure (Json.arr #[.str "let", s ti, s vi, s bi], 1 + max (max th vh) bh)
       | .lit (.natVal n) => pure (.arr #[.str "nat", s n], 1)
       | .lit (.strVal v) => pure (.arr #[.str "str", .str v], 1)
       | .proj n i v => do
-        let (vi, vh) ← encodeNode fuel v
+        let (vi, vh) ← encodeNode encoding fuel v
         pure (Json.arr #[.str "proj", nameJson n, s i, s vi], 1 + vh)
       | _ => throw { kind := .malformed, message := "cannot encode free variable or metavariable" }
-    if height > ({} : Limits).maxExprDepth then
+    if height > encoding.maxExprDepth then
       throw { kind := .resource, message := "client expanded DAG expression depth" }
     let state ← get
     let i := state.rows.size
     set { state with ids := state.ids.insert (ExprStructEq.mk e) (i, height), rows := state.rows.push row }
     return (i, height)
 
-/-- Bounded client encoder. Runtime packet limits are still checked independently. -/
-def encodeDag (e : Expr) : Except Failure Json := do
-  let ((root, _), state) ← (encodeNode ({} : Limits).maxExprDepth e).run {}
-  return .arr #[.str "dag", .arr state.rows, .str (toString root)]
+/-- A fresh per-field encoder run; failure returns no partial data or statistics.
+Steps count expression dispatches, including cache hits and erased metadata.
+Universe/name serialization, levelHeight, structural equality/hashing and native
+allocation require external process bounds; these counters do not bound them. -/
+def encodeDagWithStats (encoding : ClientEncodingLimits) (e : Expr) : Except Failure EncodedField := do
+  let ((root, height), state) ←
+    (encodeNode encoding encoding.maxExprDepth e).run { remaining := encoding.maxFieldSteps }
+  return {
+    json := .arr #[.str "dag", .arr state.rows, .str (toString root)]
+    stats := {
+      expandedHeight := height
+      rows := state.rows.size
+      steps := encoding.maxFieldSteps - state.remaining } }
+
+/-- Bounded client encoder. Runtime packet limits are checked independently. -/
+def encodeDagWith (encoding : ClientEncodingLimits) (e : Expr) : Except Failure Json := do
+  return (← encodeDagWithStats encoding e).json
+
+/-- Default producer profile, retained for existing clients. -/
+def encodeDag (e : Expr) : Except Failure Json := encodeDagWith {} e
+
+end
 
 end EDSLGrader.Runtime.DAG

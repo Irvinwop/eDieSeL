@@ -38,6 +38,7 @@ structure Limits where
   maxSteps : Nat := 100000
   maxDeclarations : Nat := 256
   maxOutputBytes : Nat := 4194304
+  encoding : ClientEncodingLimits := {}
 
 structure Packet where
   declarations : List Declaration
@@ -202,7 +203,7 @@ def exportTheorem (trusted client : Kernel.Environment) (theoremName : Name)
   let roots := target.type.getUsedConstants.toList ++ value.getUsedConstants.toList
   let state ← discover trusted client lim lim.maxSteps (roots.map Work.visit) {}
   let declarations := state.declarations.toList
-  let text ← encodePacket declarations value
+  let text ← encodePacketWith lim.encoding declarations value
   if text.utf8ByteSize > lim.maxOutputBytes then return ← fail .resource "client packet output bytes"
   return {
     declarations
@@ -470,14 +471,14 @@ def discoverTheoremPrepared (trusted client : Kernel.Environment) (theoremName :
     discoverySteps := state.steps
     preparation := stats }
 
-/-- Prepare the whole closure first, then apply the unchanged packet encoder and
+/-- Prepare the whole closure first, then apply the producer encoding profile and
 output-byte limit. The grader must still check every emitted declaration and its
 independently chosen root contract against its own immutable trusted snapshot. -/
 def exportTheoremPrepared (trusted client : Kernel.Environment) (theoremName : Name)
     (preparation : Prepare.Preparation := {}) (mode : Mode := .reference) (lim : Limits := {})
     (preparedLim : PreparedLimits := {}) : Except Failure PreparedPacket := do
   let closure ← discoverTheoremPrepared trusted client theoremName preparation mode lim preparedLim
-  let text ← encodePacket closure.declarations closure.value
+  let text ← encodePacketWith lim.encoding closure.declarations closure.value
   if text.utf8ByteSize > lim.maxOutputBytes then return ← fail .resource "client packet output bytes"
   return {
     declarations := closure.declarations

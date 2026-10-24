@@ -24,6 +24,19 @@ structure Limits where
   kernelHeartbeats : USize := 10000000
   kernelRecDepth : USize := 512
 
+section
+set_option warningAsError true
+set_option autoImplicit false
+set_option maxHeartbeats 300000
+set_option maxRecDepth 128
+
+/-- Opt-in producer caps for each expression field; never grading policy. -/
+structure ClientEncodingLimits where
+  maxExprDepth : Nat := 128
+  maxFieldSteps : Nat := 300000
+
+end
+
 inductive FailureKind where
   | malformed | unsupported | rejected | audit | resource | internal
   deriving BEq, Repr, Inhabited

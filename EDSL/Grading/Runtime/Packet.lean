@@ -45,11 +45,26 @@ def declaration (dialect : Syntax) (env : Kernel.Environment) (lim : Limits)
 
 end Packet
 
+section
+set_option warningAsError true
+set_option autoImplicit false
+set_option maxHeartbeats 300000
+set_option maxRecDepth 128
+
 /-- New clients preserve shared subexpressions in each independent type/value
-field. Legacy v1 tree packets remain accepted by the same checked boundary. -/
-def encodePacket (decls : List Declaration) (value : Expr) : Except Failure String := do
+field, with fresh interning and fuel for every field. The producer profile is
+not serialized; runtime admission policy remains independent. Native JSON
+compression still requires external process bounds. -/
+def encodePacketWith (encoding : ClientEncodingLimits) (decls : List Declaration)
+    (value : Expr) : Except Failure String := do
   return (Json.arr #[.str "edsl-proof-v2",
-    .arr (← decls.toArray.mapM (encodeDeclarationWith DAG.encodeDag)),
-    ← DAG.encodeDag value]).compress
+    .arr (← decls.toArray.mapM (encodeDeclarationWith (DAG.encodeDagWith encoding))),
+    ← DAG.encodeDagWith encoding value]).compress
+
+/-- Default v2 producer profile; legacy v1 packets remain accepted separately. -/
+def encodePacket (decls : List Declaration) (value : Expr) : Except Failure String :=
+  encodePacketWith {} decls value
+
+end
 
 end EDSLGrader.Runtime
