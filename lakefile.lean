@@ -234,6 +234,8 @@ lean_lib CounterContractSupport where
     `EDSL.Corpus.V1.CounterClangRank,
     `EDSL.OS.TSO64.EffectSimulation.Mixed.CountedRank,
     `EDSL.Corpus.V1.CounterRanks,
+    `EDSL.OS.TSO64.EffectSimulation.Mixed.RankedEntry,
+    `EDSL.Corpus.V1.CounterProofBundle,
     `EDSL.Corpus.V1.CounterFrame,
     `EDSL.Corpus.V1.CounterCompletion,
     `EDSL.Corpus.V1.CounterResources.Image,

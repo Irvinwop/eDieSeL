@@ -137,6 +137,41 @@ long-mode/CET-off, represented CPU feature state and protected-resource
 assumptions remain explicit. Physical CPU/Linux, whole-kernel, source/compiler
 and native join correspondence remain outside the result.
 
+## Select proof data explicitly
+
+Import `EDSL.OS.TSO64.EffectSimulation.Mixed.RankedEntry` to package a
+program's existing proof data without choosing a compiler inside a shared
+constructor. A `Mixed.RankedEntry descriptor post initial` retains local
+rules, rank laws for those exact rules, an entry node and an entry proof for
+the annotations generated from those same rules. Its `ghost` and `current`
+use that entry and the original state. `RankedEntry.cohort` combines a finite
+collection under explicit profile, RMW-family, scheduler-slot and caller-policy
+laws. The existing ranked engine supplies execution and progress machinery.
+
+For the frozen counter workers, import
+`EDSL.Corpus.V1.CounterProofBundle`. Choose
+`CounterGCC.proofBundle pre` or `CounterClang.proofBundle pre` directly.
+Both implement `CounterCommon.ProofProvider` for their respective compiler.
+Each bundle also projects the saved ABI frame from its running invariant.
+Its `completed_count`, `completed_events` and `completed_resources` methods
+use its own annotations and entry. `ProvedSubject`, `provedRankedCohort`
+and `provedInitialGhosts` retain those explicit choices across a cohort.
+
+This interface lets another client reuse cohort reasoning while supplying its
+own checked local rules and rank laws. It does not automatically discover
+invariants or prove a new instruction implementation. Independent admission,
+complete worker coverage, well-formedness and initially empty queues remain
+requirements wherever the execution theorem requires them.
+
+`tests/SelectedProofDependencies.lean` traverses actual declaration dependencies
+to check that the direct counter bundles retain their own behavior proofs and
+exclude the other compiler's behavior proofs. The existing dispatcher is a
+positive control that reaches both. This checks proof selection at the bundle
+boundary. The complete counted-call certificates still use the earlier
+compiler dispatchers; migrating their prefix, progress, overlap and cleanup
+adapters is separate work. No new packet acceptance or corpus credit follows
+from this interface.
+
 ## Compiler annotations and earlier adapters
 
 The complete frozen GCC and Clang `c_counter_worker` windows have per-worker
@@ -224,9 +259,9 @@ and low-byte AND1 modulo two. Arithmetic parity is separate from the CPU parity
 flag; ADD and SUB retain their different flag semantics.
 
 Build the support directly with `lake build CounterContractSupport`. The target
-has 51 roots for the independent contract, compiler adapters, complete-file
-certificates and generic helper modules. Their imports also
-belong to `EDSL.All` and the full-project fresh certificate aggregate.
+groups the independent contract, compiler adapters, complete-file certificates
+and generic helper modules. Their imports also belong to `EDSL.All` and the
+full-project fresh certificate aggregate.
 Universal Lean proofs check the stated laws; no additional fixed-value tests
 are needed for these adapters.
 

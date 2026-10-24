@@ -232,6 +232,7 @@ jobs:
           lake env lean -DwarningAsError=true tests/CountedAssemblyImports.lean
           lake env lean -DwarningAsError=true tests/CountedImageDependencies.lean
           lake env lean -DwarningAsError=true tests/CountedCertificateDependencies.lean
+          lake env lean -j1 -DwarningAsError=true -DautoImplicit=false -DmaxHeartbeats=300000 -DmaxRecDepth=128 tests/SelectedProofDependencies.lean
           lake env lean -DwarningAsError=true tests/StrideMov.lean
           lake env lean -DwarningAsError=true tests/WriteIntermediate.lean
           lake env lean -DwarningAsError=true tests/WriteMoves.lean

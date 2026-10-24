@@ -95,6 +95,7 @@ import EDSL.OS.TSO64.EffectSimulation.Mixed.RankedLocal
 import EDSL.OS.TSO64.EffectSimulation.Mixed.RankedPotential
 import EDSL.OS.TSO64.EffectSimulation.Mixed.ChoiceTrace
 import EDSL.OS.TSO64.EffectSimulation.Mixed.RankedCohort
+import EDSL.OS.TSO64.EffectSimulation.Mixed.RankedEntry
 import EDSL.OS.TSO64.EffectSimulation.Mixed.RankedPrefix
 import EDSL.OS.TSO64.EffectSimulation.Mixed.CohortFrame
 import EDSL.OS.TSO64.EffectSimulation.Resumable.CallerOnly
@@ -184,6 +185,7 @@ import EDSL.Corpus.V1.CounterGCCRank
 import EDSL.Corpus.V1.CounterClangRank
 import EDSL.OS.TSO64.EffectSimulation.Mixed.CountedRank
 import EDSL.Corpus.V1.CounterRanks
+import EDSL.Corpus.V1.CounterProofBundle
 import EDSL.Corpus.V1.CounterFrame
 import EDSL.Corpus.V1.CounterCompletion
 import EDSL.Corpus.V1.CounterResources.Image
