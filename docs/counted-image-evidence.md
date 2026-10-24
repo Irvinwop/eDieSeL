@@ -71,8 +71,7 @@ flag bit and all high RSI bits.
 `GCCPreparation.loadedBatch` and `ClangPreparation.loadedBatch` instantiate the
 constructor separately for every supplied input. Their declaration dependency
 guards include actual attachment and loaded-batch proofs as well as admission.
-These are preparation examples; complete useful-overlap certificate roots still
-require their separate migration.
+The complete certificate leaves use these same preparation instances.
 
 ```sh
 lake build EDSL.Corpus.V1.CountedCertificates.GCCPreparation EDSL.Corpus.V1.CountedCertificates.ClangPreparation
@@ -102,6 +101,48 @@ The unrestricted Claim remains a separate obligation. One useful execution
 does not prove universal safety, enabledness or progress. The complete
 [certificate interface](counted-certificates.md) combines these obligations.
 
+## Construct a complete per-image certificate
+
+The public `CountedCertificates.gcc` and `.clang` constructors use separate
+admission, preparation and complete-certificate leaves. Each retains the
+original complete file, exact symbol extent and explicit cap. Their compiled
+declaration dependencies exclude the other complete file, its validation
+proofs and the old shared loaded-state constructors. Shared instruction,
+section and graph hints can remain. The admission/preparation roots have the
+stronger namespace isolation described below.
+
+`CountedCertificates.Prepared` connects the actual attached workers to the
+existing counter instruction and rank proofs through explicit image equality.
+Its cleanup evidence contains only current code/caller identifier inequality
+and pairwise separation of actual resource manifests. Successful retirement
+is derived from the actual returned execution.
+
+`CounterOverlap.construct_prefix_of_subjects`, `cleanup_of_subjects` and
+`complete_of_subjects` reuse the same three RMW segments, actual cut and current
+ghosts. The suffix continues with the AF issue offsets accumulated by that
+prefix. `CountedCertificates.PerImage` then reuses `SameOutput` to retain the
+whole execution, original RMW and RET positions, complete loaded cells and
+permissions, and cleanup of precisely the same endpoint. The independent
+Claim keeps all original population, request, prefix and progress quantifiers.
+
+For either frozen example, `GCCCertificate.loaded_useful_with_cleanup` or its
+Clang counterpart supplies that correlated result for every initial word,
+upper RSI pair, DF-clear flag pair and AF stream. `wrapping_useful` retains both
+actual reads of eleven after the original maximum word wraps under requests
+three and nine. No instruction or rank proof is copied into these leaves.
+
+Import the public facade for canonical `gcc`/`clang`; importing the internal
+`Overlap` module alone supplies shared proofs and compatibility adapters.
+
+```sh
+lake build EDSL.Corpus.V1.CountedCertificates.GCCCertificate EDSL.Corpus.V1.CountedCertificates.ClangCertificate
+```
+
+The dependency guard checks both the canonical certificate roots and the
+public all-input useful families. The older family constructor is a positive
+control that reaches both original complete files. Declaration dependency
+isolation does not imply import isolation or a kernel resource bound.
+
 ## Compiler-local admission examples
 
 `GCCAdmission` and `ClangAdmission` under
@@ -125,10 +166,9 @@ shared-dispatch admission theorem is a control that reaches both files.
 Module imports may still load shared corpus declarations; import closure and
 proof-dependency closure are different properties.
 
-These examples establish named admission, present resources and independently
-admitted two-caller batches. The complete counted certificate constructors still use compiler-indexed loaded-state
-builders. Their migration and installed Counted64 grading remain unfinished;
-this API adds no corpus certification credit.
+These examples establish admission, actual loaded batches and complete modeled
+certificates with per-image file evidence. Installed Counted64 grading remains
+unfinished; these construction APIs add no corpus certification credit.
 
 The existing coherent scalar RAM, protected resources, stable translations
 without hidden aliases, represented CPU features and long-mode/CET-off

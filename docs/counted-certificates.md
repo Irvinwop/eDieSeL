@@ -58,16 +58,20 @@ The implementation is split by responsibility:
 | Module | Responsibility |
 | --- | --- |
 | `EDSL.Corpus.CountedCertificate` | Generic exact-file contract and extraction theorems |
-| `EDSL.Corpus.V1.CountedCertificates.Inputs` | Frozen named images, independent loaded admission and supplied-input totals |
+| `EDSL.Corpus.CountedResources.Image`, `.Workers`, `.Loaded` | Reusable complete-image resources, actual attachments and independent loaded admission |
+| `EDSL.Corpus.V1.CountedCertificates.Prepared`, `.PerImage` | Explicit preparation bridge and complete same-run certificate assembly |
+| `EDSL.Corpus.V1.CountedCertificates.GCCCertificate`, `.ClangCertificate` | Separate complete-file evidence with reused instruction/rank proofs |
+| `EDSL.Corpus.V1.CountedCertificates.Inputs` | Compatibility loaded-family admission and supplied-input totals |
 | `EDSL.Corpus.V1.CountedCertificates.OverlapPositions` | Ordered issuer lists to original observation indices |
-| `EDSL.Corpus.V1.CountedCertificates.Overlap` | Completed same-run overlaps, cleanup retention and example certificates |
+| `EDSL.Corpus.V1.CountedCertificates.Overlap` | Shared SameOutput proofs, cleanup retention and compatibility constructors |
 | `EDSL.Corpus.V1.CountedCertificates` | Public example facade |
 
 The [per-image resource and execution builders](counted-image-evidence.md)
 provide generic setup, full-image retention and same-run assembly helpers.
-Compiler-local admission leaves avoid the other file in their declaration
-dependencies. The complete constructors below still use compiler-indexed loaded
-batches; per-image migration of that path remains separate work.
+The complete public constructors below use explicit per-image preparation;
+their declaration type/value dependencies exclude the opposite complete file
+and old shared loaded-state dispatch. Small shared instruction/graph hints
+remain. The independent behavior and environmental assumptions are unchanged.
 
 ## Frozen examples
 
@@ -76,8 +80,8 @@ batches; per-image migration of that path remains separate work.
 | `CountedCertificates.gcc` | 41,016 bytes | `c_counter_worker`, 49 bytes at 4,207,440 | 64 |
 | `CountedCertificates.clang` | 44,240 bytes | `c_counter_worker`, 86 bytes at 4,201,344 | 128 |
 
-`loaded_useful_with_cleanup` constructs the same loaded overlap, completion and
-logical cleanup for each compiler, every initial word, every upper RSI pair,
+`GCCCertificate.loaded_useful_with_cleanup` and its Clang counterpart construct
+the same loaded overlap, completion and logical cleanup for every initial word, every upper RSI pair,
 every DF-clear modeled flag pair and every per-thread AF stream. Requests are
 3 and 9. `SameOutput` retains the exact output, including its complete memory
 frame and cleanup. `wrapping_useful` specializes the initial word to UINT64_MAX

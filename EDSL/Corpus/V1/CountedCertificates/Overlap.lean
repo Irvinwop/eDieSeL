@@ -56,7 +56,7 @@ structure SameOutput {file name : List Byte} {maxBytes : Nat}
 /-- Assemble over abstract current state and output projections. No manager
 computation, instruction arithmetic or ranking argument is unfolded here.
 The concrete wrapper below discharges population and supplied-request facts. -/
-private theorem useful_of_output {file name : List Byte} {maxBytes : Nat}
+theorem useful_of_output {file name : List Byte} {maxBytes : Nat}
     {image : Counted.NamedImage file name maxBytes} (batch : Counted.LoadedBatch image)
     (claim : Grading.ConcurrentTask.Counted64.Claim image.image)
     (population : batch.before.workers.length = 2)
@@ -392,16 +392,6 @@ def certificate (compiler : Compiler) :
         (ghosts := CounterOverlap.loadedGhosts compiler wrappingOld wrappingUpper wrappingFlags)
         (choices := fun _ _ => false) (old := wrappingOld) (output := _output) same }⟩
 
-/-- Entire original 41016-byte GCC ELF; full 49-byte symbol at base 4207440,
-including both RETs. The externally indexed cap remains exactly 64. -/
-def gcc : Counted.CountedCertificate GCC.file CounterMixedGraphs.name 64 :=
-  certificate .defaultGCC
-
-/-- Entire original 44240-byte Clang ELF; full 86-byte symbol at base 4201344,
-including NOP13 and RET. The externally indexed cap remains exactly 128. -/
-def clang : Counted.CountedCertificate Clang.file CounterMixedGraphs.name 128 :=
-  certificate .defaultClang
-
 #print axioms SameOutput
 #print axioms useful_of_output
 #print axioms SameOutput.chosen
@@ -424,8 +414,6 @@ def clang : Counted.CountedCertificate Clang.file CounterMixedGraphs.name 128 :=
 #print axioms useful_with_current_of_total
 #print axioms wrapping_useful
 #print axioms certificate
-#print axioms gcc
-#print axioms clang
 
 end EDSL.Corpus.V1.CountedCertificates
 

@@ -343,32 +343,37 @@ abbrev LoadedPrefix (compiler : Compiler) (old : Word) (upper : Fin 2 → BitVec
   Prefix (before := CounterResources.initial compiler old requests upper flags)
     (loadedCohort compiler old upper flags) (loadedGhosts compiler old upper flags) choices
 
-/-- Construct three first-own-RMW segments in order 0,1,0. Every recursive
-choice offset counts that thread's issues across the entire actual prefix. -/
-theorem construct_prefix (compiler : Compiler) (old : Word) (upper : Fin 2 → BitVec 32)
-    (flags : Fin 2 → Word) (choices : Nat → Nat → Bool) :
-    Nonempty (LoadedPrefix compiler old upper flags choices) := by
-  let subjects := loadedSubjects compiler old upper flags
-  let slots := loadedSlots compiler old upper flags
-  let cohort := loadedCohort compiler old upper flags
-  let ghosts := loadedGhosts compiler old upper flags
+/-- Construct the actual own/peer/own prefix from any two presently admitted
+subjects. Every recursive AF offset counts the same thread's actual issues. -/
+theorem construct_prefix_of_subjects {initial : S}
+    (subjects : Fin 2 → CohortSubject initial)
+    (slots : ∀ i, (subjects i).site.tid = i.val)
+    (valid : WellFormed initial .ownedOnly)
+    (population : initial.workers.length = 2) (empty : Quiescent initial)
+    (requested : ∀ i, (subjects i).call.iterations.toNat = if i.val = 0 then 3 else 9)
+    (choices : Nat → Nat → Bool) :
+    Nonempty (Prefix (before := initial) (counterRankedCohort subjects slots)
+      (counterInitialGhosts subjects slots) choices) := by
+  let cohort := counterRankedCohort subjects slots
+  let ghosts := counterInitialGhosts subjects slots
   have startCurrent := counterInitialGhosts_current subjects slots
   have startCompleted : Completed subjects slots ghosts := by intro i; trivial
   have historyEmpty : ∀ i, (ghosts i).history = [] := fun _ => rfl
-  have requested : ∀ i, (subjects i).call.iterations.toNat = if i.val = 0 then 3 else 9 :=
-    fun i => requests_nat i
   obtain ⟨first⟩ := run_to_own_RMW subjects slots ghosts
-    (CounterResources.wellFormed compiler old requests upper flags)
-    (CounterResources.workerUniverse2 compiler old requests upper flags)
-    startCurrent (CounterResources.quiescent compiler old requests upper flags)
-    startCompleted choices (fun _ => 0) 0 (by change 0 < 3; decide)
+    valid population startCurrent empty
+    startCompleted choices (fun _ => 0) 0 (by
+      change 0 < (subjects 0).call.iterations.toNat
+      rw [requested 0]
+      decide)
   have firstRight : Mixed.Counts.logRMW 1 (first.finalGhosts 1).history = 0 := by
     simpa [historyEmpty] using first.counts 1
   obtain ⟨second⟩ := run_to_own_RMW subjects slots first.finalGhosts first.valid first.workers
     first.current first.empty first.completed choices
     (fun tid => 0 + Mixed.ChoiceTrace.issues tid first.actions) 1 (by
-      change Mixed.Counts.logRMW 1 (first.finalGhosts 1).history < 9
-      rw [firstRight]; decide)
+      have remaining : 0 < (subjects 1).call.iterations.toNat := by
+        rw [requested 1]
+        decide
+      exact firstRight.symm ▸ remaining)
   have firstLeft : Mixed.Counts.logRMW 0 (first.finalGhosts 0).history = 1 := by
     simpa [historyEmpty] using first.counts 0
   have secondLeft : Mixed.Counts.logRMW 0 (second.finalGhosts 0).history = 1 := by
@@ -379,8 +384,10 @@ theorem construct_prefix (compiler : Compiler) (old : Word) (upper : Fin 2 → B
   obtain ⟨third⟩ := run_to_own_RMW subjects slots second.finalGhosts second.valid second.workers
     second.current second.empty second.completed choices
     (fun tid => 0 + Mixed.ChoiceTrace.issues tid (first.actions ++ second.actions)) 0 (by
-      change Mixed.Counts.logRMW 0 (second.finalGhosts 0).history < 3
-      rw [secondLeft]; decide)
+      have remaining : 1 < (subjects 0).call.iterations.toNat := by
+        rw [requested 0]
+        decide
+      exact secondLeft.symm ▸ remaining)
   have actual := schedule_append actual01 third.actual
   have lifted := lifted01.append third.lifted
   have chosen := Mixed.ChoiceTrace.chosen_append chosen01 third.chosen
@@ -421,9 +428,9 @@ theorem construct_prefix (compiler : Compiler) (old : Word) (upper : Fin 2 → B
     ghostCounts := ghostCounts
     running := ?_ }⟩
   · exact (cohort.toCohort.schedule_from_current
-      (cohort.covers (CounterResources.workerUniverse2 compiler old requests upper flags))
+      (cohort.covers population)
       (cohort.current_toCohort startCurrent)
-      (CounterResources.quiescent compiler old requests upper flags) actual).2.2.2
+      empty actual).2.2.2
   · intro i
     have short : Mixed.Counts.logRMW i.val (third.finalGhosts i).history <
         (subjects i).call.iterations.toNat := by
@@ -431,6 +438,17 @@ theorem construct_prefix (compiler : Compiler) (old : Word) (upper : Fin 2 → B
       split <;> decide
     obtain ⟨node, fuel, control⟩ := running_of_short_count third.completed i short
     exact running_live cohort third.current i control
+
+/-- Compatibility adapter for the original compiler-indexed loaded inputs. -/
+theorem construct_prefix (compiler : Compiler) (old : Word) (upper : Fin 2 → BitVec 32)
+    (flags : Fin 2 → Word) (choices : Nat → Nat → Bool) :
+    Nonempty (LoadedPrefix compiler old upper flags choices) :=
+  construct_prefix_of_subjects (loadedSubjects compiler old upper flags)
+    (loadedSlots compiler old upper flags)
+    (CounterResources.wellFormed compiler old requests upper flags)
+    (CounterResources.workerUniverse2 compiler old requests upper flags)
+    (CounterResources.quiescent compiler old requests upper flags)
+    (fun i => requests_nat i) choices
 
 /-- Production logical cleanup of the same returned endpoint, with the sum
 read from that cleanup world's current RAM. Full loaded-cell preservation is
@@ -454,57 +472,50 @@ structure Cleanup (before final : S) (target : Atomics64.CellId64)
   frame : ∀ query : Word, 8 ≤ (query - cell.address).toNat →
     (published result.1.world).read query = (published before.world).read query
 
-/-- This helper is conditional only on an actual run and its actual returned
-workers. The construction below supplies that very run after the overlap cut. -/
-theorem cleanup_of_returned (compiler : Compiler) (old : Word) (upper : Fin 2 → BitVec 32)
-    (flags : Fin 2 → Word) {final : S} {actions : List Action} {observations : List O}
-    (actual : TSO64.schedule (CounterResources.initial compiler old requests upper flags)
-      actions .ownedOnly .arithmetic = .ok (final, observations))
+/-- Retire the same actual returned endpoint for any two independently admitted
+subjects. The supplied successful run and returned workers establish cleanup
+success; target and address bindings refer to the supplied current cell. -/
+theorem cleanup_of_subjects {initial : S}
+    (subjects : Fin 2 → CohortSubject initial)
+    (slots : ∀ i, (subjects i).site.tid = i.val)
+    (population : initial.workers.length = 2) (empty : Quiescent initial)
+    (shapes : ∀ i, CleanupShape (subjects i).site)
+    (separate : initial.workers.reverse.Pairwise
+      (fun retiring peer => Lifecycle.Separate retiring.resources peer.resources))
+    (target : Atomics64.CellId64) (cell : Atomics64.Cell) (old : Word)
+    (registered : initial.world.cells target = some cell)
+    (targets : ∀ i, (subjects i).call.target = target)
+    (_addresses : ∀ i, (subjects i).call.address = cell.address)
+    (readBefore : loadQWord (published initial.world) cell.address = .ok old)
+    (requested : ∀ i, (subjects i).call.iterations.toNat = if i.val = 0 then 3 else 9)
+    {final : S} {actions : List Action} {observations : List O}
+    (actual : TSO64.schedule initial actions .ownedOnly .arithmetic = .ok (final, observations))
     (returned : ∀ worker ∈ final.workers, worker.phase = .returned) :
-    Nonempty (Cleanup (CounterResources.initial compiler old requests upper flags) final
-      (CounterResources.Image.resources compiler old).target
-      (CounterResources.Image.resources compiler old).cell old) := by
+    Nonempty (Cleanup initial final target cell old) := by
   have finalLength : final.workers.length = 2 :=
-    (ScheduleTrace.workers_length actual).trans
-      (CounterResources.workerUniverse2 compiler old requests upper flags)
+    (ScheduleTrace.workers_length actual).trans population
   have leftBound : 0 < final.workers.length := by rw [finalLength]; decide
   have rightBound : 1 < final.workers.length := by rw [finalLength]; decide
-  have leftLive : final.workers[0]? = some (final.workers[0]'leftBound) :=
-    List.getElem?_eq_getElem leftBound
-  have rightLive : final.workers[1]? = some (final.workers[1]'rightBound) :=
-    List.getElem?_eq_getElem rightBound
+  have leftLive : final.workers[(subjects 0).site.tid]? =
+      some (final.workers[0]'leftBound) := by
+    rw [slots 0]
+    exact List.getElem?_eq_getElem leftBound
+  have rightLive : final.workers[(subjects 1).site.tid]? =
+      some (final.workers[1]'rightBound) := by
+    rw [slots 1]
+    exact List.getElem?_eq_getElem rightBound
   obtain ⟨_value, _read, _total, frame⟩ := two_completed_total_frame
-    (CounterResources.pre compiler old requests upper flags 0)
-    (CounterResources.pre compiler old requests upper flags 1)
-    (CounterResources.site_profile compiler old requests upper flags 0)
-    (CounterResources.site_profile compiler old requests upper flags 1)
-    (CounterResources.site_slot compiler old requests upper flags 0)
-    (CounterResources.site_slot compiler old requests upper flags 1)
-    (CounterResources.workerUniverse2 compiler old requests upper flags)
-    (CounterResources.quiescent compiler old requests upper flags)
-    actual leftLive rightLive
+    (subjects 0).pre (subjects 1).pre (subjects 0).ownedOnly (subjects 1).ownedOnly
+    (slots 0) (slots 1) population empty actual leftLive rightLive
     (returned _ (List.mem_of_getElem? leftLive)) (returned _ (List.mem_of_getElem? rightLive))
-    (CounterResources.Image.resources compiler old).target (CounterResources.Image.resources compiler old).cell
-    (CounterResources.registered compiler old requests upper flags) rfl rfl old
-    (CounterResources.initial_read compiler old requests upper flags)
+    target cell registered (targets 0) (targets 1) old readBefore
   obtain ⟨result, value, retired, valid, workers, contexts, resources, cells, ram,
       history, revoked, counter, total⟩ := two_completed_retired_total
-    (CounterResources.pre compiler old requests upper flags 0)
-    (CounterResources.pre compiler old requests upper flags 1)
-    (CounterResources.site_profile compiler old requests upper flags 0)
-    (CounterResources.site_profile compiler old requests upper flags 1)
-    (CounterResources.site_slot compiler old requests upper flags 0)
-    (CounterResources.site_slot compiler old requests upper flags 1)
-    (CounterResources.workerUniverse2 compiler old requests upper flags)
-    (CounterResources.quiescent compiler old requests upper flags)
-    (CounterResources.cleanupShape compiler old requests upper flags 0)
-    (CounterResources.cleanupShape compiler old requests upper flags 1)
-    (CounterResources.separate compiler old requests upper flags)
+    (subjects 0).pre (subjects 1).pre (subjects 0).ownedOnly (subjects 1).ownedOnly
+    (slots 0) (slots 1) population empty (shapes 0) (shapes 1) separate
     actual leftLive rightLive
     (returned _ (List.mem_of_getElem? leftLive)) (returned _ (List.mem_of_getElem? rightLive))
-    (CounterResources.Image.resources compiler old).target (CounterResources.Image.resources compiler old).cell
-    (CounterResources.registered compiler old requests upper flags) rfl rfl old
-    (CounterResources.initial_read compiler old requests upper flags)
+    target cell registered (targets 0) (targets 1) old readBefore
   have stable := TSO64.schedule_stable actual
   refine ⟨{
     result := result
@@ -523,12 +534,38 @@ theorem cleanup_of_returned (compiler : Compiler) (old : Word) (upper : Fin 2 �
     total := ?_
     frame := ?_ }⟩
   · rw [cells, stable.cells]
-    exact CounterResources.registered compiler old requests upper flags
-  · change value.toNat = (old.toNat + 3 + 9) % 2^64 at total
+    exact registered
+  · have leftCount : (subjects 0).call.iterations.toNat = 3 := by
+      simpa using requested (0 : Fin 2)
+    have rightCount : (subjects 1).call.iterations.toNat = 9 := by
+      simpa using requested (1 : Fin 2)
+    rw [leftCount, rightCount] at total
     simpa only [Nat.add_assoc] using total
   · intro query outside
     rw [ram]
     exact frame query outside
+
+/-- Compatibility adapter for the original loaded compiler inputs. -/
+theorem cleanup_of_returned (compiler : Compiler) (old : Word) (upper : Fin 2 → BitVec 32)
+    (flags : Fin 2 → Word) {final : S} {actions : List Action} {observations : List O}
+    (actual : TSO64.schedule (CounterResources.initial compiler old requests upper flags)
+      actions .ownedOnly .arithmetic = .ok (final, observations))
+    (returned : ∀ worker ∈ final.workers, worker.phase = .returned) :
+    Nonempty (Cleanup (CounterResources.initial compiler old requests upper flags) final
+      (CounterResources.Image.resources compiler old).target
+      (CounterResources.Image.resources compiler old).cell old) :=
+  cleanup_of_subjects (loadedSubjects compiler old upper flags)
+    (loadedSlots compiler old upper flags)
+    (CounterResources.workerUniverse2 compiler old requests upper flags)
+    (CounterResources.quiescent compiler old requests upper flags)
+    (CounterResources.cleanupShape compiler old requests upper flags)
+    (CounterResources.separate compiler old requests upper flags)
+    (CounterResources.Image.resources compiler old).target
+    (CounterResources.Image.resources compiler old).cell old
+    (CounterResources.registered compiler old requests upper flags)
+    (fun _ => rfl) (fun _ => rfl)
+    (CounterResources.initial_read compiler old requests upper flags)
+    (fun i => requests_nat i) actual returned
 
 /-- The suffix starts from precisely lead.finalGhosts; the actual whole run,
 collective trace, AF offsets and cleanup all refer to that same execution. -/
@@ -551,20 +588,33 @@ abbrev LoadedOutput (compiler : Compiler) (old : Word) (upper : Fin 2 → BitVec
     choices (CounterResources.Image.resources compiler old).target
     (CounterResources.Image.resources compiler old).cell old
 
-/-- For either homogeneous frozen ELF, arbitrary old64, upper RSI halves,
-modeled initial flags and per-thread AF choices, construct the actual 0,1,0
-overlap, its returning suffix and production logical cleanup. No successful
-future prefix/run, desired intermediate memory, return or result is a premise.
-The cleaned current word is independently proved to be old + (3+9) modulo 2^64. -/
-theorem complete (compiler : Compiler) (old : Word) (upper : Fin 2 → BitVec 32)
-    (flags : Fin 2 → Word) (choices : Nat → Nat → Bool) :
-    Nonempty (LoadedOutput compiler old upper flags choices) := by
-  obtain ⟨lead⟩ := construct_prefix compiler old upper flags choices
-  let cohort := loadedCohort compiler old upper flags
+/-- Complete the subject-indexed prefix from its precise current ghosts and
+continuous AF offsets, then retire that same suffix endpoint. Every execution,
+trace, cleanup and result projection belongs to this one actual initial state. -/
+theorem complete_of_subjects {initial : S}
+    (subjects : Fin 2 → CohortSubject initial)
+    (slots : ∀ i, (subjects i).site.tid = i.val)
+    (valid : WellFormed initial .ownedOnly)
+    (population : initial.workers.length = 2) (empty : Quiescent initial)
+    (shapes : ∀ i, CleanupShape (subjects i).site)
+    (separate : initial.workers.reverse.Pairwise
+      (fun retiring peer => Lifecycle.Separate retiring.resources peer.resources))
+    (target : Atomics64.CellId64) (cell : Atomics64.Cell) (old : Word)
+    (registered : initial.world.cells target = some cell)
+    (targets : ∀ i, (subjects i).call.target = target)
+    (addresses : ∀ i, (subjects i).call.address = cell.address)
+    (readBefore : loadQWord (published initial.world) cell.address = .ok old)
+    (requested : ∀ i, (subjects i).call.iterations.toNat = if i.val = 0 then 3 else 9)
+    (choices : Nat → Nat → Bool) :
+    Nonempty (Output (counterRankedCohort subjects slots)
+      (counterInitialGhosts subjects slots) choices target cell old) := by
+  obtain ⟨lead⟩ := construct_prefix_of_subjects subjects slots valid population empty requested choices
+  let cohort := counterRankedCohort subjects slots
   obtain ⟨suffix⟩ := cohort.complete_from_current lead.valid lead.workers lead.current lead.empty
     choices (fun tid => 0 + Mixed.ChoiceTrace.issues tid lead.actions)
   have actual := schedule_append lead.actual suffix.actual
-  obtain ⟨cleanup⟩ := cleanup_of_returned compiler old upper flags actual suffix.returned
+  obtain ⟨cleanup⟩ := cleanup_of_subjects subjects slots population empty shapes separate
+    target cell old registered targets addresses readBefore requested actual suffix.returned
   exact ⟨{
     lead := lead
     suffix := suffix
@@ -572,6 +622,28 @@ theorem complete (compiler : Compiler) (old : Word) (upper : Fin 2 → BitVec 32
     lifted := lead.lifted.append suffix.lifted
     chosen := Mixed.ChoiceTrace.chosen_append lead.chosen suffix.chosen
     cleanup := cleanup }⟩
+
+/-- For either homogeneous frozen ELF, arbitrary old64, upper RSI halves,
+modeled initial flags and per-thread AF choices, construct the actual 0,1,0
+overlap, its returning suffix and production logical cleanup. No successful
+future prefix/run, desired intermediate memory, return or result is a premise.
+The cleaned current word is independently proved to be old + (3+9) modulo 2^64. -/
+theorem complete (compiler : Compiler) (old : Word) (upper : Fin 2 → BitVec 32)
+    (flags : Fin 2 → Word) (choices : Nat → Nat → Bool) :
+    Nonempty (LoadedOutput compiler old upper flags choices) :=
+  complete_of_subjects (loadedSubjects compiler old upper flags)
+    (loadedSlots compiler old upper flags)
+    (CounterResources.wellFormed compiler old requests upper flags)
+    (CounterResources.workerUniverse2 compiler old requests upper flags)
+    (CounterResources.quiescent compiler old requests upper flags)
+    (CounterResources.cleanupShape compiler old requests upper flags)
+    (CounterResources.separate compiler old requests upper flags)
+    (CounterResources.Image.resources compiler old).target
+    (CounterResources.Image.resources compiler old).cell old
+    (CounterResources.registered compiler old requests upper flags)
+    (fun _ => rfl) (fun _ => rfl)
+    (CounterResources.initial_read compiler old requests upper flags)
+    (fun i => requests_nat i) choices
 
 #print axioms issuers
 #print axioms issuers_append
@@ -596,11 +668,14 @@ theorem complete (compiler : Compiler) (old : Word) (upper : Fin 2 → BitVec 32
 #print axioms loadedGhosts
 #print axioms Prefix
 #print axioms LoadedPrefix
+#print axioms construct_prefix_of_subjects
 #print axioms construct_prefix
 #print axioms Cleanup
+#print axioms cleanup_of_subjects
 #print axioms cleanup_of_returned
 #print axioms Output
 #print axioms LoadedOutput
+#print axioms complete_of_subjects
 #print axioms complete
 
 end EDSL.Corpus.V1.CounterOverlap
