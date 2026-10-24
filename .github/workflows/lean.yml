@@ -227,6 +227,7 @@ jobs:
           lake env lean -DwarningAsError=true tests/GradingDAG.lean
           lake env lean -DwarningAsError=true tests/ClientEncoding.lean
           lake env lean -DwarningAsError=true tests/PacketCheckDiagnostics.lean
+          lake env lean -DwarningAsError=true tests/KernelBudgetPolicy.lean
           lake env lean -DwarningAsError=true tests/StrideMov.lean
           lake env lean -DwarningAsError=true tests/WriteIntermediate.lean
           lake env lean -DwarningAsError=true tests/WriteMoves.lean

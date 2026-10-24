@@ -484,21 +484,37 @@ and visit caps per field and can conservatively reject source metadata nesting.
 Kernel heartbeats still bound checking work; syntax sharing does not establish
 a wall-clock or allocation bound for arbitrary proofs.
 
-The packet's 10000000 kernel heartbeat cap is apportioned as ascending absolute
-prefix ceilings across auxiliary insertions and the final proof. The pinned
-kernel's checked declaration API changes the maximum without resetting its
+The default packet policy apportions the 10000000 native-kernel heartbeat cap
+as ascending absolute prefix ceilings across auxiliary insertions and the final
+proof. `Runtime.checkPacket` and `Runtime.checkPacketDetailed` retain this
+`KernelBudgetPolicy.uniformPrefix` policy, including its rounding and
+zero-quota rejection.
+
+Trusted controllers can explicitly select `KernelBudgetPolicy.totalPool` through
+`checkPacketWithPolicy` or `checkPacketDetailedWithPolicy`. Every auxiliary
+insertion and the final proof then receive the same positive absolute ceiling:
+the configured total budget. The native counter continues across calls, so an
+early declaration may use headroom that uniform shares reserve for later checks.
+This policy does not replenish the counter, retry failed checks or change the
+independent expected proposition. Packets cannot select policy or limits; the
+installed CLI continues to use the default policy.
+
+The pinned checked API changes the native maximum without resetting its
 thread-local counter ([kernel entry point](https://github.com/leanprover/lean4/blob/v4.35.0/src/kernel/environment.cpp#L269),
 [counter implementation](https://github.com/leanprover/lean4/blob/v4.35.0/src/runtime/interrupt.cpp#L40)).
-Reusing the first prefix ceiling for every helper would reject valid larger
-packets after their cumulative work exhausted that first slice. The controller's
-`packetKernelCeiling_le` theorem bounds every ceiling by the configured cap,
-including excess prefix indices. No helper resets the counter. Earlier kernel
-work on the same thread can conservatively cause resource rejection; logical
-candidate environments remain isolated. The CLI handles one packet per process.
-The artifact wrapper uses the same absolute ceiling and recursion limit 32768;
-it does not reset the counter or add a heartbeat allowance. Packet checks
-use recursion limit 512. Limits are admission policy, not a proved runtime or
-memory bound. A service still needs external process time/memory isolation.
+This C++ kernel counter is separate from the allocation counter exposed by
+`IO.getNumHeartbeats` ([allocation counter](https://github.com/leanprover/lean4/blob/v4.35.0/src/runtime/alloc.cpp#L30),
+[IO bridge](https://github.com/leanprover/lean4/blob/v4.35.0/src/runtime/io.cpp#L965)).
+An allocation-counter observation does not measure consumption of the native
+kernel budget.
+
+`packetKernelCeiling_le` and `packetKernelCeilingFor_le` bound each planned
+ceiling by the configured cap; they do not prove elapsed time, allocation or
+memory bounds. Earlier native-kernel work on the same thread can conservatively
+cause resource rejection under either policy. Logical candidate environments
+remain isolated. The CLI handles one packet per process. Its artifact wrapper
+keeps the default absolute ceiling and recursion limit 32768; packet checks use
+recursion limit 512. External process time and memory isolation remain necessary.
 
 | Exit | Meaning |
 | --- | --- |

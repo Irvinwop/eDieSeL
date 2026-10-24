@@ -99,6 +99,29 @@ set_option autoImplicit false
 set_option maxHeartbeats 300000
 set_option maxRecDepth 128
 
+/-- Trusted caller policy for planned absolute native-kernel heartbeat ceilings.
+`totalPool` exposes the complete declared budget to every check without
+replenishing the cumulative counter. External process caps remain necessary;
+neither policy establishes an allocation, latency or primitive-cost bound. -/
+inductive KernelBudgetPolicy where
+  | uniformPrefix | totalPool
+  deriving BEq, Repr, Inhabited
+
+/-- Planned absolute ceiling, not measured consumption. The default delegates to
+the original prefix policy; the total pool is independent of prefix position. -/
+def packetKernelCeilingFor (policy : KernelBudgetPolicy)
+    (budget checks completed : Nat) : Nat :=
+  match policy with
+  | .uniformPrefix => packetKernelCeiling budget checks completed
+  | .totalPool => budget
+
+theorem packetKernelCeilingFor_le (policy : KernelBudgetPolicy)
+    (budget checks completed : Nat) :
+    packetKernelCeilingFor policy budget checks completed ≤ budget := by
+  cases policy with
+  | uniformPrefix => exact packetKernelCeiling_le budget checks completed
+  | totalPool => exact Nat.le_refl budget
+
 /-- The operation about to be attempted when a packet check fails. `finalProof`
 groups all of `checkFinal`, including its closedness, name, audit and kernel checks. -/
 inductive PacketCheckPhase where
@@ -126,11 +149,12 @@ structure PacketCheckFailure where
   site : PacketCheckSite
   deriving Repr
 
-/-- One packet-wide budget: decoding state, audit state, name count, and kernel
-heartbeat quota are carried through every auxiliary declaration and the proof.
+/-- One packet-wide budget: decoding state, audit state, name count, and selected
+kernel ceiling policy cover every auxiliary declaration and the proof.
 Detailed payloads are constructed only on failure; checked prefixes never escape
 on error. A failed decoder discards its state, so its steps are not reported. -/
-def checkPacketDetailed (env : Kernel.Environment) (lim : Limits) (expected : Expr)
+def checkPacketDetailedWithPolicy (policy : KernelBudgetPolicy)
+    (env : Kernel.Environment) (lim : Limits) (expected : Expr)
     (input : String) : Except PacketCheckFailure Checked := do
   (closed expected).mapError fun failure =>
     { failure, site := { phase := .expected } }
@@ -138,7 +162,9 @@ def checkPacketDetailed (env : Kernel.Environment) (lim : Limits) (expected : Ex
     { failure, site := { phase := .envelope } }
   let entries := packet.declarations
   let checks := entries.size + 1
-  let quota := lim.kernelHeartbeats.toNat / checks
+  let quota := match policy with
+    | .uniformPrefix => lim.kernelHeartbeats.toNat / checks
+    | .totalPool => lim.kernelHeartbeats.toNat
   if quota == 0 || lim.kernelRecDepth == 0 then
     return ← (fail .resource "kernel budget per check").mapError fun failure =>
       { failure, site := { phase := .kernelBudget } }
@@ -168,10 +194,10 @@ def checkPacketDetailed (env : Kernel.Environment) (lim : Limits) (expected : Ex
           decoderSteps := lim.maxNodes - remaining
           auditSteps := lim.maxAuditSteps - audit.remaining } }
     kernelChecks := kernelChecks + 1
-    -- The pinned kernel compares against a thread-local cumulative counter;
-    -- addDeclCore changes its ceiling without resetting that counter. Prefix
-    -- ceilings apportion one total cap rather than reusing its first slice.
-    let ceiling := packetKernelCeiling lim.kernelHeartbeats.toNat checks kernelChecks
+    -- addDeclCore changes the ceiling of the pinned kernel's cumulative C++
+    -- interrupt counter without resetting it. This is distinct from the allocator
+    -- counter read by IO.getNumHeartbeats; ceilings are not consumption or credits.
+    let ceiling := packetKernelCeilingFor policy lim.kernelHeartbeats.toNat checks kernelChecks
     let next ← (forceDeclaration checkedEnv (USize.ofNat ceiling)
       lim.kernelRecDepth decl).mapError fun failure =>
         { failure, site := {
@@ -204,7 +230,7 @@ def checkPacketDetailed (env : Kernel.Environment) (lim : Limits) (expected : Ex
         completedDeclarations
         decoderSteps := lim.maxNodes - remaining
         auditSteps := lim.maxAuditSteps - audit.remaining } }
-  let ceiling := packetKernelCeiling lim.kernelHeartbeats.toNat checks checks
+  let ceiling := packetKernelCeilingFor policy lim.kernelHeartbeats.toNat checks checks
   let finalAudit ← (checkFinal checkedEnv lim (USize.ofNat ceiling) audit expected value
     (certificationPrefix.appendCore `proof)).mapError fun failure =>
       { failure, site := {
@@ -221,6 +247,17 @@ def checkPacketDetailed (env : Kernel.Environment) (lim : Limits) (expected : Ex
     decoderSteps := lim.maxNodes - left
     auditSteps := lim.maxAuditSteps - finalAudit.remaining
     kernelChecks := checks }
+
+/-- Compatibility API: detailed checking defaults to uniform prefix ceilings. -/
+def checkPacketDetailed (env : Kernel.Environment) (lim : Limits) (expected : Expr)
+    (input : String) : Except PacketCheckFailure Checked :=
+  checkPacketDetailedWithPolicy .uniformPrefix env lim expected input
+
+/-- Trusted caller policy with the shared detailed checker's original failure. -/
+def checkPacketWithPolicy (policy : KernelBudgetPolicy)
+    (env : Kernel.Environment) (lim : Limits) (expected : Expr)
+    (input : String) : Except Failure Checked :=
+  (checkPacketDetailedWithPolicy policy env lim expected input).mapError (fun f => f.failure)
 
 /-- Compatibility API: the shared detailed checker preserves the original failure. -/
 def checkPacket (env : Kernel.Environment) (lim : Limits) (expected : Expr)
