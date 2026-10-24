@@ -434,6 +434,23 @@ partial metadata and every axiom except `propext`, `Quot.sound` and
 ones. Source `partial def` can lower to a safe logical default body; metadata
 does not establish correspondence with the client's compiled runtime code.
 
+`Runtime.checkPacketDetailed` uses the same admission and checking loop as
+`Runtime.checkPacket`, and returns a `PacketCheckFailure` on failure. Its `failure`
+field contains the existing category and message; its `site` identifies the
+operation and optional zero-based declaration entry. The site also reports how
+many declarations completed decoding, kernel insertion, shape checking and
+dependency audit. It contains scalar diagnostics only.
+
+The `decoderSteps` and `auditSteps` snapshots include confirmed work before the
+failing operation. Work inside a failed decoder or audit is excluded, so these
+counts are lower bounds rather than exact failure costs. `kernelCeiling` is
+present for a declaration kernel attempt or the combined `finalProof` stage.
+The latter includes final closedness, scratch-name, dependency-audit and kernel
+checks; the existing failure category and message distinguish their outcomes.
+Failure returns no partially checked environment. Neither API changes the
+packet format or allows a packet to select grading limits. Resource rejection
+does not establish a program defect.
+
 Every declaration and final expected-type check calls the options-independent
 `Lean.Kernel.Environment.addDeclCore`, with no unchecked insertion, compilation
 or evaluation of candidate expressions. `debug.skipKernelTC` cannot disable

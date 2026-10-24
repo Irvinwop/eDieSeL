@@ -93,41 +93,126 @@ def checkInductiveShape (env : Kernel.Environment) (decl : Declaration) : Except
         | return ← fail .internal "checked inductive information missing"
       if info.numNested != 0 then return ← fail .unsupported "nested inductive group"
 
+section
+set_option warningAsError true
+set_option autoImplicit false
+set_option maxHeartbeats 300000
+set_option maxRecDepth 128
+
+/-- The operation about to be attempted when a packet check fails. `finalProof`
+groups all of `checkFinal`, including its closedness, name, audit and kernel checks. -/
+inductive PacketCheckPhase where
+  | expected | envelope | kernelBudget | declarationDecode | declarationNames
+  | declarationKernel | inductiveShape | declarationAudit | proofDecode | finalProof
+  deriving BEq, Repr, Inhabited
+
+/-- Scalar snapshots before the named operation. Decoder and audit steps count
+only confirmed successful prefixes, excluding work inside a failed operation;
+they are lower bounds, not exact native costs. No candidate state is retained. -/
+structure PacketCheckSite where
+  phase : PacketCheckPhase
+  /-- Zero-based attempted declaration entry; absent at outer and proof stages. -/
+  entry : Option Nat := none
+  /-- Entries whose decode, kernel insertion, shape check and audit all succeeded. -/
+  completedDeclarations : Nat := 0
+  decoderSteps : Nat := 0
+  auditSteps : Nat := 0
+  /-- Planned cumulative ceiling, only for `declarationKernel` and `finalProof`. -/
+  kernelCeiling : Option Nat := none
+  deriving Repr, Inhabited
+
+structure PacketCheckFailure where
+  failure : Failure
+  site : PacketCheckSite
+  deriving Repr
+
 /-- One packet-wide budget: decoding state, audit state, name count, and kernel
-heartbeat quota are carried through every auxiliary declaration and the proof. -/
-def checkPacket (env : Kernel.Environment) (lim : Limits) (expected : Expr)
-    (input : String) : Except Failure Checked := do
-  closed expected
-  let packet ← Packet.fields lim input
+heartbeat quota are carried through every auxiliary declaration and the proof.
+Detailed payloads are constructed only on failure; checked prefixes never escape
+on error. A failed decoder discards its state, so its steps are not reported. -/
+def checkPacketDetailed (env : Kernel.Environment) (lim : Limits) (expected : Expr)
+    (input : String) : Except PacketCheckFailure Checked := do
+  (closed expected).mapError fun failure =>
+    { failure, site := { phase := .expected } }
+  let packet ← (Packet.fields lim input).mapError fun failure =>
+    { failure, site := { phase := .envelope } }
   let entries := packet.declarations
   let checks := entries.size + 1
   let quota := lim.kernelHeartbeats.toNat / checks
-  if quota == 0 || lim.kernelRecDepth == 0 then return ← fail .resource "kernel budget per check"
+  if quota == 0 || lim.kernelRecDepth == 0 then
+    return ← (fail .resource "kernel budget per check").mapError fun failure =>
+      { failure, site := { phase := .kernelBudget } }
   let mut checkedEnv := env
   let mut remaining := lim.maxNodes
   let mut names := 0
   let mut audit : AuditState := { remaining := lim.maxAuditSteps }
   let mut kernelChecks := 0
+  let mut completedDeclarations := 0
   for entry in entries do
-    let (decl, left) ← (Packet.declaration packet.dialect checkedEnv lim entry).run remaining
+    let (decl, left) ← ((Packet.declaration packet.dialect checkedEnv lim entry).run remaining).mapError
+      fun failure => { failure, site := {
+        phase := .declarationDecode
+        entry := some completedDeclarations
+        completedDeclarations
+        decoderSteps := lim.maxNodes - remaining
+        auditSteps := lim.maxAuditSteps - audit.remaining } }
     remaining := left
     let declared := decl.getNames
     names := names + declared.length
-    if names > lim.maxDeclarations then return ← fail .resource "declared constant names"
+    if names > lim.maxDeclarations then
+      return ← (fail .resource "declared constant names").mapError fun failure =>
+        { failure, site := {
+          phase := .declarationNames
+          entry := some completedDeclarations
+          completedDeclarations
+          decoderSteps := lim.maxNodes - remaining
+          auditSteps := lim.maxAuditSteps - audit.remaining } }
     kernelChecks := kernelChecks + 1
     -- The pinned kernel compares against a thread-local cumulative counter;
     -- addDeclCore changes its ceiling without resetting that counter. Prefix
     -- ceilings apportion one total cap rather than reusing its first slice.
-    let next ← forceDeclaration checkedEnv
-      (USize.ofNat (packetKernelCeiling lim.kernelHeartbeats.toNat checks kernelChecks))
-      lim.kernelRecDepth decl
-    checkInductiveShape next decl
-    audit ← auditNames next audit declared
+    let ceiling := packetKernelCeiling lim.kernelHeartbeats.toNat checks kernelChecks
+    let next ← (forceDeclaration checkedEnv (USize.ofNat ceiling)
+      lim.kernelRecDepth decl).mapError fun failure =>
+        { failure, site := {
+          phase := .declarationKernel
+          entry := some completedDeclarations
+          completedDeclarations
+          decoderSteps := lim.maxNodes - remaining
+          auditSteps := lim.maxAuditSteps - audit.remaining
+          kernelCeiling := some ceiling } }
+    (checkInductiveShape next decl).mapError fun failure =>
+      { failure, site := {
+        phase := .inductiveShape
+        entry := some completedDeclarations
+        completedDeclarations
+        decoderSteps := lim.maxNodes - remaining
+        auditSteps := lim.maxAuditSteps - audit.remaining } }
+    audit ← (auditNames next audit declared).mapError fun failure =>
+      { failure, site := {
+        phase := .declarationAudit
+        entry := some completedDeclarations
+        completedDeclarations
+        decoderSteps := lim.maxNodes - remaining
+        auditSteps := lim.maxAuditSteps - audit.remaining } }
     checkedEnv := next
-  let (value, left) ← (Packet.expression packet.dialect checkedEnv lim [] [] packet.proof).run remaining
-  let finalAudit ← checkFinal checkedEnv lim
-    (USize.ofNat (packetKernelCeiling lim.kernelHeartbeats.toNat checks checks)) audit expected value
-    (certificationPrefix.appendCore `proof)
+    completedDeclarations := completedDeclarations + 1
+  let (value, left) ←
+    ((Packet.expression packet.dialect checkedEnv lim [] [] packet.proof).run remaining).mapError
+      fun failure => { failure, site := {
+        phase := .proofDecode
+        completedDeclarations
+        decoderSteps := lim.maxNodes - remaining
+        auditSteps := lim.maxAuditSteps - audit.remaining } }
+  let ceiling := packetKernelCeiling lim.kernelHeartbeats.toNat checks checks
+  let finalAudit ← (checkFinal checkedEnv lim (USize.ofNat ceiling) audit expected value
+    (certificationPrefix.appendCore `proof)).mapError fun failure =>
+      { failure, site := {
+        phase := .finalProof
+        completedDeclarations
+        decoderSteps := lim.maxNodes - left
+        auditSteps := lim.maxAuditSteps - audit.remaining
+        kernelCeiling := some ceiling } }
   return {
     env := checkedEnv
     value
@@ -136,5 +221,12 @@ def checkPacket (env : Kernel.Environment) (lim : Limits) (expected : Expr)
     decoderSteps := lim.maxNodes - left
     auditSteps := lim.maxAuditSteps - finalAudit.remaining
     kernelChecks := checks }
+
+/-- Compatibility API: the shared detailed checker preserves the original failure. -/
+def checkPacket (env : Kernel.Environment) (lim : Limits) (expected : Expr)
+    (input : String) : Except Failure Checked :=
+  (checkPacketDetailed env lim expected input).mapError (fun f => f.failure)
+
+end
 
 end EDSLGrader.Runtime
