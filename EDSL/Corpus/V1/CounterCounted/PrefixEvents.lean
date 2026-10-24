@@ -16,7 +16,7 @@ set_option maxRecDepth 128
 Event authentication and request-count bounds for every actual successful
 prefix of an independently admitted counted-call cohort. The proof extends
 that same prefix with a ranked completion from its exact lifted cut ghosts.
-The existing completed annotations then authenticate all earlier own events;
+Each selected bundle's completed proofs authenticate all earlier own events;
 nonnegative suffix counts give the independent prefix request bounds.
 
 The finite continuation is constructed, never assumed in admission. Past AF
@@ -59,29 +59,30 @@ all issues of that thread in the original prefix, including peer interleaving.
 The witness retains both actual schedules, the exact shared cut ghosts and
 both complete collective traces. No desired endpoint is an input. -/
 theorem completion_after_prefix
+    (proofs : CounterCommon.ProofProvider compiler)
     (pre : Spec.Pre (image compiler) target cell before requests)
     (actual : TSO64.schedule before actions .ownedOnly .arithmetic =
       .ok (cut, observations))
     (choices : Nat → Nat → Bool) (offset : Nat → Nat) :
-    ∃ atCut : (cohort pre).Ghosts before,
-      (cohort pre).Current cut atCut ∧
-      LiftTrace (cohort pre).Step (ghosts pre) actions observations atCut ∧
-      ∃ suffix : (cohort pre).Suffix (before := cut) atCut choices
+    ∃ atCut : (cohort proofs pre).Ghosts before,
+      (cohort proofs pre).Current cut atCut ∧
+      LiftTrace (cohort proofs pre).Step (ghosts proofs pre) actions observations atCut ∧
+      ∃ suffix : (cohort proofs pre).Suffix (before := cut) atCut choices
           (fun tid => offset tid + Mixed.ChoiceTrace.issues tid actions),
         TSO64.schedule before (actions ++ suffix.actions) .ownedOnly .arithmetic =
           .ok (suffix.final, observations ++ suffix.observations) ∧
-        LiftTrace (cohort pre).Step (ghosts pre) (actions ++ suffix.actions)
+        LiftTrace (cohort proofs pre).Step (ghosts proofs pre) (actions ++ suffix.actions)
           (observations ++ suffix.observations) suffix.finalGhosts := by
   obtain ⟨atCut, cutCurrent, prefixLifted⟩ :=
-    (cohort pre).prefix_from_current pre.valid (current pre) actual
-  have covered : (cohort pre).toCohort.Covers before := (cohort pre).covers rfl
+    (cohort proofs pre).prefix_from_current pre.valid (current proofs pre) actual
+  have covered : (cohort proofs pre).toCohort.Covers before := (cohort proofs pre).covers rfl
   obtain ⟨cutEmpty, _cutCovered, _otherCurrent, _prefixRetiring⟩ :=
-    (cohort pre).toCohort.schedule_from_current covered
-      ((cohort pre).current_toCohort (current pre)) pre.empty actual
+    (cohort proofs pre).toCohort.schedule_from_current covered
+      ((cohort proofs pre).current_toCohort (current proofs pre)) pre.empty actual
   have cutValid : WellFormed cut .ownedOnly := schedule_wellFormed pre.valid actual
   have cutCount : cut.workers.length = before.workers.length :=
     ScheduleTrace.workers_length actual
-  obtain ⟨suffix⟩ := (cohort pre).complete_from_current cutValid cutCount cutCurrent
+  obtain ⟨suffix⟩ := (cohort proofs pre).complete_from_current cutValid cutCount cutCurrent
     cutEmpty choices (fun tid => offset tid + Mixed.ChoiceTrace.issues tid actions)
   exact ⟨atCut, cutCurrent, prefixLifted, suffix, append_actual actual suffix.actual,
     prefixLifted.append suffix.lifted⟩
@@ -91,17 +92,19 @@ actor, target, address and unit delta, and its Nat count cannot exceed its
 independent low32 request. One constructed extension proves both facts for
 all slots; it neither filters observations nor substitutes another prefix. -/
 theorem prefix_events_counts
+    (proofs : CounterCommon.ProofProvider compiler)
     (pre : Spec.Pre (image compiler) target cell before requests)
     (actual : TSO64.schedule before actions .ownedOnly .arithmetic =
       .ok (cut, observations)) :
     ∀ slot : Fin before.workers.length,
       (∀ event, Observation.rmw slot.val event ∈ observations →
-        CounterCommon.EventOK (subjects pre slot).site (subjects pre slot).call event) ∧
+        CounterCommon.EventOK (subjects proofs pre slot).site
+          (subjects proofs pre slot).call event) ∧
       Mixed.Counts.countRMW slot.val observations ≤ (requests slot).toNat := by
   obtain ⟨_atCut, _cutCurrent, _prefixLifted, suffix, whole, _wholeLifted⟩ :=
-    completion_after_prefix pre actual (fun _ _ => false) (fun _ => 0)
+    completion_after_prefix proofs pre actual (fun _ _ => false) (fun _ => 0)
   intro slot
-  let subject := subjects pre slot
+  let subject := subjects proofs pre slot
   have bound : slot.val < suffix.final.workers.length := by
     rw [suffix.finalWorkers]
     exact slot.isLt
@@ -118,8 +121,8 @@ theorem prefix_events_counts
         .ok (suffix.final, observations ++ suffix.observations) := by
     rw [subject.ownedOnly]
     exact whole
-  have authenticated := subject.pre.completed_events ownRun ownLive returned
-  have total := subject.pre.completed_count ownRun ownLive returned
+  have authenticated := subject.proof.completed_events ownRun ownLive returned
+  have total := subject.proof.completed_count ownRun ownLive returned
   change Mixed.Counts.countRMW slot.val (observations ++ suffix.observations) =
     (requests slot).toNat at total
   rw [Mixed.Counts.countRMW_append] at total
@@ -134,46 +137,49 @@ theorem prefix_events_counts
 /-- Exhaustive authentication uses the actual original Fin slot for every RMW
 in the original log, independently of its actor and event payload. -/
 theorem prefix_event
+    (proofs : CounterCommon.ProofProvider compiler)
     (pre : Spec.Pre (image compiler) target cell before requests)
     (actual : TSO64.schedule before actions .ownedOnly .arithmetic =
       .ok (cut, observations))
     {tid : Nat} {event : Atomics64.FetchAddEvent}
     (member : Observation.rmw tid event ∈ observations) :
     ∃ slot : Fin before.workers.length, slot.val = tid ∧
-      CounterCommon.EventOK (subjects pre slot).site (subjects pre slot).call event := by
+      CounterCommon.EventOK (subjects proofs pre slot).site (subjects proofs pre slot).call event := by
   let slot : Fin before.workers.length := ⟨tid, ScheduleTrace.rmw_tid_lt actual member⟩
-  exact ⟨slot, rfl, (prefix_events_counts pre actual slot).1 event member⟩
+  exact ⟨slot, rfl, (prefix_events_counts proofs pre actual slot).1 event member⟩
 
 /-- Indexed observations retain their original scheduler position; no expected
 value or target filter is used to obtain the actual subject. -/
 theorem prefix_event_at
+    (proofs : CounterCommon.ProofProvider compiler)
     (pre : Spec.Pre (image compiler) target cell before requests)
     (actual : TSO64.schedule before actions .ownedOnly .arithmetic =
       .ok (cut, observations))
     {index tid : Nat} {event : Atomics64.FetchAddEvent}
     (observed : observations[index]? = some (Observation.rmw tid event)) :
     ∃ slot : Fin before.workers.length, slot.val = tid ∧
-      CounterCommon.EventOK (subjects pre slot).site (subjects pre slot).call event :=
-  prefix_event pre actual (List.mem_of_getElem? observed)
+      CounterCommon.EventOK (subjects proofs pre slot).site (subjects proofs pre slot).call event :=
+  prefix_event proofs pre actual (List.mem_of_getElem? observed)
 
 /-- A slot that has actually returned already has its exact requested count
 in this same original run. No future completion or final memory premise is
 needed for this equality. -/
 theorem completed_count
+    (proofs : CounterCommon.ProofProvider compiler)
     (pre : Spec.Pre (image compiler) target cell before requests)
     (actual : TSO64.schedule before actions .ownedOnly .arithmetic =
       .ok (cut, observations))
     (slot : Fin before.workers.length) {worker : Worker}
     (live : cut.workers[slot.val]? = some worker) (returned : worker.phase = .returned) :
     Mixed.Counts.countRMW slot.val observations = (requests slot).toNat := by
-  have ownRun : TSO64.schedule before actions (subjects pre slot).site.profile .arithmetic =
+  have ownRun : TSO64.schedule before actions (subjects proofs pre slot).site.profile .arithmetic =
       .ok (cut, observations) := by
-    rw [(subjects pre slot).ownedOnly]
+    rw [(subjects proofs pre slot).ownedOnly]
     exact actual
-  have ownLive : cut.workers[(subjects pre slot).site.tid]? = some worker := by
+  have ownLive : cut.workers[(subjects proofs pre slot).site.tid]? = some worker := by
     change cut.workers[slot.val]? = some worker
     exact live
-  exact (subjects pre slot).pre.completed_count ownRun ownLive returned
+  exact (subjects proofs pre slot).proof.completed_count ownRun ownLive returned
 
 #print axioms append_actual
 #print axioms completion_after_prefix

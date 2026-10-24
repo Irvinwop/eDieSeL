@@ -13,7 +13,9 @@ set_option maxRecDepth 128
 
 /-! Full certificate roots and their public all-input useful families must
 retain the own complete file and exclude opposite complete-file evidence and
-shared loaded-state dispatch. Small compiler graph/section hints may remain.
+shared loaded-state dispatch and peer instruction/rank proofs. Compiler-local
+providers must bypass the compatibility proof dispatcher. Small compiler
+graph/section hints may remain.
 The old family constructor is a positive control for both-file reachability. -/
 namespace CountedCertificateDependenciesTests
 open Lean
@@ -63,23 +65,32 @@ private def fileDispatchers : Array Name := #[
   `EDSL.Corpus.V1.FrozenFunction.file]
 
 private def isolated (env : Kernel.Environment) (roots : Array Name)
-    (ownFile peer : Name) (peerLeaves : Array Name) : Except String Nat := do
-  let seen ← closure env roots
-  unless seen.contains ownFile do throw s!"Own complete file absent: {ownFile}"
-  for rawName in seen.toList do
-    let name := privateToUserName rawName
-    if fileDispatchers.contains name ||
-        sharedLoaded.any (fun ancestor => ancestor.isPrefixOf name) ||
-        peerLeaves.any (fun ancestor => ancestor.isPrefixOf name) then
-      throw s!"Shared/peer loaded evidence in complete certificate: {rawName}"
-    if peer.isPrefixOf name then
-      let short := name.toString
-      if short.startsWith (peer.toString ++ ".file") ||
-          name == Name.str peer "chunks" ||
-          (Name.str peer "metadataAccepted").isPrefixOf name ||
-          (Name.str peer "layoutAccepted").isPrefixOf name then
-        throw s!"Opposite complete file or validation in certificate: {rawName}"
-  return seen.size
+    (ownFile peer : Name) (peerLeaves peerBehavior requiredOwn : Array Name) : Except String Nat := do
+  let mut combined : NameSet := {}
+  for root in roots do
+    let seen ← closure env #[root]
+    unless seen.contains ownFile do throw s!"{root}: own complete file absent: {ownFile}"
+    let userNames := seen.toList.map privateToUserName
+    for required in requiredOwn do
+      unless userNames.contains required do
+        throw s!"{root}: own instruction/rank proof absent: {required}"
+    for rawName in seen.toList do
+      let name := privateToUserName rawName
+      if fileDispatchers.contains name ||
+          sharedLoaded.any (fun ancestor => ancestor.isPrefixOf name) ||
+          peerLeaves.any (fun ancestor => ancestor.isPrefixOf name) ||
+          peerBehavior.any (fun ancestor => ancestor.isPrefixOf name) ||
+          (`EDSL.Corpus.V1.CounterCommon.checkedProofProvider).isPrefixOf name then
+        throw s!"{root}: shared/peer proof evidence in complete certificate: {rawName}"
+      if peer.isPrefixOf name then
+        let short := name.toString
+        if short.startsWith (peer.toString ++ ".file") ||
+            name == Name.str peer "chunks" ||
+            (Name.str peer "metadataAccepted").isPrefixOf name ||
+            (Name.str peer "layoutAccepted").isPrefixOf name then
+          throw s!"{root}: opposite complete file or validation: {rawName}"
+    combined := combined ++ seen
+  return combined.size
 
 run_cmd do
   let env := (← getEnv).toKernelEnv
@@ -91,10 +102,14 @@ run_cmd do
   let count ← match isolated env roots `EDSL.Corpus.V1.GCC.file `EDSL.Corpus.V1.Clang
       #[`EDSL.Corpus.V1.CountedCertificates.ClangAdmission,
         `EDSL.Corpus.V1.CountedCertificates.ClangPreparation,
-        `EDSL.Corpus.V1.CountedCertificates.ClangCertificate] with
+        `EDSL.Corpus.V1.CountedCertificates.ClangCertificate]
+      #[`EDSL.Corpus.V1.CounterClang, `EDSL.Corpus.V1.CounterClangRank]
+      #[`EDSL.Corpus.V1.CounterGCC.one,
+        `EDSL.Corpus.V1.CounterGCC.TerminationRank.ordinary_stage_decreases,
+        `EDSL.Corpus.V1.CounterGCC.TerminationRank.locked_count_lt_requested] with
     | .ok count => pure count
     | .error message => throwError "{message}"
-  logInfo m!"CountedCertificateDependencies: GCC complete/all-input roots are file-isolated ({count} constants)"
+  logInfo m!"CountedCertificateDependencies: GCC complete/all-input roots exclude peer files and behavior proofs ({count} constants)"
 
 run_cmd do
   let env := (← getEnv).toKernelEnv
@@ -106,10 +121,14 @@ run_cmd do
   let count ← match isolated env roots `EDSL.Corpus.V1.Clang.file `EDSL.Corpus.V1.GCC
       #[`EDSL.Corpus.V1.CountedCertificates.GCCAdmission,
         `EDSL.Corpus.V1.CountedCertificates.GCCPreparation,
-        `EDSL.Corpus.V1.CountedCertificates.GCCCertificate] with
+        `EDSL.Corpus.V1.CountedCertificates.GCCCertificate]
+      #[`EDSL.Corpus.V1.CounterGCC]
+      #[`EDSL.Corpus.V1.CounterClang.one,
+        `EDSL.Corpus.V1.CounterClangRank.ordinary_stage_decreases,
+        `EDSL.Corpus.V1.CounterClangRank.locked_count_lt_requested] with
     | .ok count => pure count
     | .error message => throwError "{message}"
-  logInfo m!"CountedCertificateDependencies: Clang complete/all-input roots are file-isolated ({count} constants)"
+  logInfo m!"CountedCertificateDependencies: Clang complete/all-input roots exclude peer files and behavior proofs ({count} constants)"
 
 run_cmd do
   let seen ← match closure (← getEnv).toKernelEnv
@@ -118,6 +137,10 @@ run_cmd do
     | .error message => throwError "{message}"
   unless seen.contains `EDSL.Corpus.V1.GCC.file && seen.contains `EDSL.Corpus.V1.Clang.file do
     throwError "Old full-family control must reach both original complete files"
-  logInfo "CountedCertificateDependencies: old full-family control reaches both files"
+  let userNames := seen.toList.map privateToUserName
+  unless userNames.contains `EDSL.Corpus.V1.CounterGCC.one &&
+      userNames.contains `EDSL.Corpus.V1.CounterClang.one do
+    throwError "Old full-family control must retain both instruction proof families"
+  logInfo "CountedCertificateDependencies: old full-family control reaches both files and proof families"
 
 end CountedCertificateDependenciesTests

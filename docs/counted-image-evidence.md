@@ -106,13 +106,16 @@ does not prove universal safety, enabledness or progress. The complete
 The public `CountedCertificates.gcc` and `.clang` constructors use separate
 admission, preparation and complete-certificate leaves. Each retains the
 original complete file, exact symbol extent and explicit cap. Their compiled
-declaration dependencies exclude the other complete file, its validation
-proofs and the old shared loaded-state constructors. Shared instruction,
-section and graph hints can remain. The admission/preparation roots have the
+declaration dependencies exclude the other complete file, its validation,
+instruction and rank proofs, and the old shared loaded-state/proof selectors.
+Small section and graph hints can remain. The admission/preparation roots have the
 stronger namespace isolation described below.
 
 `CountedCertificates.Prepared` connects the actual attached workers to the
-existing counter instruction and rank proofs through explicit image equality.
+existing counter instruction and rank proofs through explicit image equality
+and a selected `CounterCommon.ProofProvider`. Each derived subject retains its
+own bundle; its cohort, initial ghosts and subsequent proofs use those same
+rules and rank laws.
 Its cleanup evidence contains only current code/caller identifier inequality
 and pairwise separation of actual resource manifests. Successful retirement
 is derived from the actual returned execution.

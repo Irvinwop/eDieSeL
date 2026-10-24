@@ -57,6 +57,7 @@ variable {compiler : CounterCommon.Compiler} {target : Atomics64.CellId64}
 origin and full-list ordering laws. The generic return theorem derives the
 position from initial running and final returned phase; no position is input. -/
 theorem outcome_of_frame
+    (proofs : CounterCommon.ProofProvider compiler)
     (pre : Spec.Pre (image compiler) target cell before requests)
     (actual : schedule before actions .ownedOnly .arithmetic = .ok (cut, observations))
     (slot : Fin before.workers.length) {initial final : Worker}
@@ -83,7 +84,7 @@ theorem outcome_of_frame
   exact ⟨{
     initial := initial
     final := final
-    countExact := completed_count pre actual slot frame.live frame.phase
+    countExact := completed_count proofs pre actual slot frame.live frame.phase
     returned := index
     responseBoundary := {
       prior := prior

@@ -44,12 +44,13 @@ abbrev Output (named : Counted.NamedImage file name cap)
     (present : CountedResources.Loaded.Present named total started)
     (compiler : CounterCommon.Compiler)
     (imageEq : named.image = CounterCounted.image compiler)
+    (proofs : CounterCommon.ProofProvider compiler)
     (old : Word) (upper : Fin 2 → BitVec 32) (flags : Fin 2 → Word)
     (choices : Nat → Nat → Bool) :=
   CounterOverlap.Output
-    (Prepared.cohort named rx total started present compiler imageEq old
+    (Prepared.cohort named rx total started present compiler imageEq proofs old
       CounterOverlap.requests upper flags)
-    (Prepared.ghosts named rx total started present compiler imageEq old
+    (Prepared.ghosts named rx total started present compiler imageEq proofs old
       CounterOverlap.requests upper flags)
     choices (CountedResources.Image.resources named total old).target
     (CountedResources.Image.resources named total old).cell old
@@ -58,10 +59,11 @@ abbrev Output (named : Counted.NamedImage file name cap)
 transported; no file dispatcher or loaded-resource restriction is introduced. -/
 theorem claim (named : Counted.NamedImage file name cap)
     (compiler : CounterCommon.Compiler)
-    (imageEq : named.image = CounterCounted.image compiler) :
+    (imageEq : named.image = CounterCounted.image compiler)
+    (proofs : CounterCommon.ProofProvider compiler) :
     Grading.ConcurrentTask.Counted64.Claim named.image := by
   rw [imageEq]
-  exact CounterCounted.claim compiler
+  exact CounterCounted.claimOf compiler proofs
 
 /-- Construct the production overlap and cleanup for exactly the supplied
 actual loaded batch. Cleanup premises concern only current resource identities
@@ -73,11 +75,12 @@ theorem loaded_useful_with_cleanup (named : Counted.NamedImage file name cap)
     (present : CountedResources.Loaded.Present named total started)
     (compiler : CounterCommon.Compiler)
     (imageEq : named.image = CounterCounted.image compiler)
+    (proofs : CounterCommon.ProofProvider compiler)
     (cleanup : Prepared.CleanupPresent named total started)
     (old : Word) (upper : Fin 2 → BitVec 32) (flags : Fin 2 → Word)
     (clear : ∀ slot, (flags slot).getLsbD 10 = false)
     (choices : Nat → Nat → Bool) :
-    ∃ output : Output named rx total started present compiler imageEq old upper flags choices,
+    ∃ output : Output named rx total started present compiler imageEq proofs old upper flags choices,
       Nonempty (SameOutput
         (CountedResources.Loaded.loadedBatch named rx total started present old
           CounterOverlap.requests upper flags clear) output) := by
@@ -85,9 +88,9 @@ theorem loaded_useful_with_cleanup (named : Counted.NamedImage file name cap)
     CountedResources.Loaded.loadedBatch named rx total started present old
       CounterOverlap.requests upper flags clear
   obtain ⟨output⟩ := CounterOverlap.complete_of_subjects
-    (Prepared.subjects named rx total started present compiler imageEq old
+    (Prepared.subjects named rx total started present compiler imageEq proofs old
       CounterOverlap.requests upper flags)
-    (Prepared.slots named rx total started present compiler imageEq old
+    (Prepared.slots named rx total started present compiler imageEq proofs old
       CounterOverlap.requests upper flags)
     (CountedResources.Workers.wellFormed named total started old
       CounterOverlap.requests upper flags)
@@ -113,7 +116,7 @@ theorem loaded_useful_with_cleanup (named : Counted.NamedImage file name cap)
     exact CounterOverlap.requests_nat
       (CountedResources.Loaded.slot2 named total started old
         CounterOverlap.requests upper flags slot)
-  exact ⟨output, useful_of_output batch (claim named compiler imageEq)
+  exact ⟨output, useful_of_output batch (claim named compiler imageEq proofs)
     population amounts output⟩
 
 /-- Each input family member has a useful run indexed by its exact new loaded
@@ -125,6 +128,7 @@ theorem loaded_useful (named : Counted.NamedImage file name cap)
     (present : CountedResources.Loaded.Present named total started)
     (compiler : CounterCommon.Compiler)
     (imageEq : named.image = CounterCounted.image compiler)
+    (proofs : CounterCommon.ProofProvider compiler)
     (cleanup : Prepared.CleanupPresent named total started)
     (old : Word) (upper : Fin 2 → BitVec 32) (flags : Fin 2 → Word)
     (clear : ∀ slot, (flags slot).getLsbD 10 = false)
@@ -133,7 +137,7 @@ theorem loaded_useful (named : Counted.NamedImage file name cap)
       (CountedResources.Loaded.loadedBatch named rx total started present old
         CounterOverlap.requests upper flags clear)) := by
   obtain ⟨_output, ⟨same⟩⟩ := loaded_useful_with_cleanup named rx total started
-    present compiler imageEq cleanup old upper flags clear choices
+    present compiler imageEq proofs cleanup old upper flags clear choices
   exact ⟨same.run⟩
 
 /-- The same output's own and peer slots are the actual physical slots zero
@@ -145,10 +149,11 @@ theorem loaded_useful_slots (named : Counted.NamedImage file name cap)
     (present : CountedResources.Loaded.Present named total started)
     (compiler : CounterCommon.Compiler)
     (imageEq : named.image = CounterCounted.image compiler)
+    (proofs : CounterCommon.ProofProvider compiler)
     (old : Word) (upper : Fin 2 → BitVec 32) (flags : Fin 2 → Word)
     (clear : ∀ slot, (flags slot).getLsbD 10 = false)
     (choices : Nat → Nat → Bool)
-    (output : Output named rx total started present compiler imageEq old upper flags choices)
+    (output : Output named rx total started present compiler imageEq proofs old upper flags choices)
     (same : SameOutput
       (CountedResources.Loaded.loadedBatch named rx total started present old
         CounterOverlap.requests upper flags clear) output) :
@@ -172,16 +177,17 @@ theorem wrapping_useful (named : Counted.NamedImage file name cap)
     (present : CountedResources.Loaded.Present named total started)
     (compiler : CounterCommon.Compiler)
     (imageEq : named.image = CounterCounted.image compiler)
+    (proofs : CounterCommon.ProofProvider compiler)
     (cleanup : Prepared.CleanupPresent named total started)
     (choices : Nat → Nat → Bool) :
-    ∃ output : Output named rx total started present compiler imageEq
+    ∃ output : Output named rx total started present compiler imageEq proofs
         wrappingOld wrappingUpper wrappingFlags choices,
       ∃ same : SameOutput
           (CountedResources.Loaded.loadedBatch named rx total started present wrappingOld
             CounterOverlap.requests wrappingUpper wrappingFlags wrappingFlags_clear) output,
         same.run.post.current.toNat = 11 ∧ output.cleanup.value.toNat = 11 := by
   obtain ⟨output, ⟨same⟩⟩ := loaded_useful_with_cleanup named rx total started
-    present compiler imageEq cleanup wrappingOld wrappingUpper wrappingFlags
+    present compiler imageEq proofs cleanup wrappingOld wrappingUpper wrappingFlags
     wrappingFlags_clear choices
   have wrapped : (wrappingOld.toNat + 12) % 2^64 = 11 := by
     change ((0xffffffffffffffff : BitVec 64).toNat + 12) % 2^64 = 11
@@ -203,13 +209,14 @@ def certificate (file name : List Byte) (cap : Nat)
     (present : CountedResources.Loaded.Present named total started)
     (compiler : CounterCommon.Compiler)
     (imageEq : named.image = CounterCounted.image compiler)
+    (proofs : CounterCommon.ProofProvider compiler)
     (cleanup : Prepared.CleanupPresent named total started) :
     Counted.CountedCertificate file name cap where
   named := named
-  claim := claim named compiler imageEq
+  claim := claim named compiler imageEq proofs
   inhabited := by
     obtain ⟨_output, same, _current, _cleaned⟩ := wrapping_useful named rx total started
-      present compiler imageEq cleanup (fun _ _ => false)
+      present compiler imageEq proofs cleanup (fun _ _ => false)
     exact ⟨{
       batch := CountedResources.Loaded.loadedBatch named rx total started present wrappingOld
         CounterOverlap.requests wrappingUpper wrappingFlags wrappingFlags_clear

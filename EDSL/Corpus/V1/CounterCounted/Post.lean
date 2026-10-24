@@ -28,6 +28,7 @@ variable {compiler : CounterCommon.Compiler} {target : Atomics64.CellId64}
 /-- Full same-run output, with one independently requested outcome per actual
 original slot and exhaustive coverage of all actual RET labels. -/
 theorem post_of_safe
+    (proofs : CounterCommon.ProofProvider compiler)
     (pre : Spec.Pre (image compiler) target cell before requests)
     (actual : schedule before actions .ownedOnly .arithmetic = .ok (cut, observations))
     (safe : SafePrefix (image compiler) target cell before requests (cut, observations))
@@ -42,7 +43,7 @@ theorem post_of_safe
       _selected, _selectedNow, _target, _code, _flags, _caller, complete⟩ :=
       safe.frames slot data.worker data.live
     have phase := returned final (List.mem_of_getElem? live)
-    exact outcome_of_frame pre actual slot data.entry (complete phase).1
+    exact outcome_of_frame proofs pre actual slot data.entry (complete phase).1
   let selectedOutcomes : (slot : Fin before.workers.length) →
       Outcome (requests slot) before actions (cut, observations) slot.val :=
     fun slot => Classical.choice (outcomes slot)
@@ -60,7 +61,7 @@ theorem post_of_safe
     let slot : Fin before.workers.length := ⟨tid, bound⟩
     exact ⟨slot, rfl, ((selectedOutcomes slot).uniqueResponse index observed).symm⟩
   obtain ⟨old, current, oldWord, currentWord, sequential, total⟩ :=
-    completed_history pre actual returned
+    completed_history proofs pre actual returned
   exact ⟨{
     scheduled := actual
     safe := safe

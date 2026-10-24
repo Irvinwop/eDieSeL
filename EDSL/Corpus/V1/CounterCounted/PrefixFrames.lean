@@ -94,23 +94,17 @@ private theorem trace_nextStore
     obtain ⟨current, currentLive, second⟩ := ih middleLive
     exact ⟨current, currentLive, second.trans first⟩
 
-/-- Both compiler-selected current invariants expose Binding and LiveData.
+/-- The retained bundle projects saved facts from its exact running invariant.
 No property of a generated residual is assumed to be a local invariant. -/
 private theorem checked_inv_saved
     {compiler : CounterCommon.Compiler} {site : CounterCommon.Site compiler}
     {call : CounterCommon.Call} {initial state : TSO64.State} {history : Log}
-    (pre : CounterCommon.Pre site call initial)
+    (bundle : CounterCommon.ProofBundle site call initial)
     {node : (CounterCommon.descriptor site call).graph.Index}
-    (invariant : (CounterCommon.checkedRules pre).Inv node state history) :
+    (invariant : bundle.ranked.rules.Inv node state history) :
     ∃ worker, state.workers[site.tid]? = some worker ∧
-      CounterCommon.Saved site worker.context := by
-  cases compiler with
-  | defaultGCC =>
-    obtain ⟨worker, binding, data, _increments, _arithmetic⟩ := invariant
-    exact ⟨worker, binding.live, data.saved⟩
-  | defaultClang =>
-    obtain ⟨worker, binding, data, _increments, _arithmetic⟩ := invariant
-    exact ⟨worker, binding.live, data.saved⟩
+      CounterCommon.Saved site worker.context :=
+  bundle.saved invariant
 
 /-- Once done, saved facts come from current Post, after stable transport of
 the real response through the same trace. A historical response alone would
@@ -118,10 +112,10 @@ not justify an assertion about this endpoint. -/
 private theorem checked_saved
     {compiler : CounterCommon.Compiler} {site : CounterCommon.Site compiler}
     {call : CounterCommon.Call} {initial state : TSO64.State}
-    (pre : CounterCommon.Pre site call initial)
+    (bundle : CounterCommon.ProofBundle site call initial)
     {ghost : Mixed.Ghost (CounterCommon.descriptor site call) initial
       (CounterCommon.Post site call)}
-    (present : (CounterCommon.checkedRules pre).LocalRelated state ghost)
+    (present : bundle.ranked.rules.LocalRelated state ghost)
     (completion : Mixed.CompletionInvariant ghost)
     {worker : Worker} (live : state.workers[site.tid]? = some worker) :
     CounterCommon.Saved site worker.context := by
@@ -130,9 +124,9 @@ private theorem checked_saved
     exact live
   cases control : ghost.control with
   | running node _fuel =>
-    have invariant : (CounterCommon.checkedRules pre).Inv node ghost.current ghost.history := by
+    have invariant : bundle.ranked.rules.Inv node ghost.current ghost.history := by
       simpa only [Mixed.LocalRules.LocalAt, control] using present.2
-    obtain ⟨saved, savedLive, savedFrame⟩ := checked_inv_saved pre invariant
+    obtain ⟨saved, savedLive, savedFrame⟩ := checked_inv_saved bundle invariant
     have same : worker = saved := Option.some.inj (liveAtGhost.symm.trans savedLive)
     simpa only [same] using savedFrame
   | done _response =>
@@ -161,6 +155,7 @@ variable {compiler : CounterCommon.Compiler} {target : Atomics64.CellId64}
 Every current witness is aligned by its original scheduler-slot lookup;
 resource actors are never identified with those slot numbers. -/
 theorem prefix_frames
+    (proofs : CounterCommon.ProofProvider compiler)
     (pre : Spec.Pre (image compiler) target cell before requests)
     (actual : schedule before actions .ownedOnly .arithmetic = .ok (cut, observations)) :
     ∀ (slot : Fin before.workers.length) (initial : Worker),
@@ -184,23 +179,24 @@ theorem prefix_frames
           Grading.ConcurrentTask.Counted64.ReturnFrame before cut slot.val initial current ∧
           Mixed.Counts.countRMW slot.val observations = (requests slot).toNat) := by
   obtain ⟨atCut, cutCurrent, lifted⟩ :=
-    (cohort pre).prefix_from_current pre.valid (current pre) actual
+    (cohort proofs pre).prefix_from_current pre.valid (current proofs pre) actual
   obtain ⟨cutEmpty, _cutCovered, _otherCurrent, _retiring⟩ :=
-    (cohort pre).toCohort.schedule_from_current ((cohort pre).covers rfl)
-      ((cohort pre).current_toCohort (current pre)) pre.empty actual
+    (cohort proofs pre).toCohort.schedule_from_current ((cohort proofs pre).covers rfl)
+      ((cohort proofs pre).current_toCohort (current proofs pre)) pre.empty actual
   intro slot initial initialLive
   let data := slotData pre slot
+  let bundle := (subjects proofs pre slot).proof
   have sameInitial : initial = data.worker := Option.some.inj (initialLive.symm.trans data.live)
   subst initial
-  have related : Mixed.Related (CounterCommon.checkedRules (data.pre pre.valid)).annotations
+  have related : Mixed.Related bundle.annotations
       cut (atCut slot) := (cutCurrent slot).1
   have trace : LiftTrace
       (Mixed.Advance (CounterCommon.descriptor data.site data.call) before
         (CounterCommon.Post data.site data.call))
-      (ghosts pre slot) actions observations (atCut slot) :=
-    ((cohort pre).rules slot).localTrace_forget ((cohort pre).localTrace lifted slot)
+      (ghosts proofs pre slot) actions observations (atCut slot) :=
+    ((cohort proofs pre).rules slot).localTrace_forget ((cohort proofs pre).localTrace lifted slot)
   obtain ⟨worker, currentLive, counter⟩ :=
-    trace_nextStore ((cohort pre).callerPolicy slot) trace data.live
+    trace_nextStore ((cohort proofs pre).callerPolicy slot) trace data.live
   have live : cut.workers[slot.val]? = some worker := by
     rw [related.1]
     exact currentLive
@@ -212,9 +208,9 @@ theorem prefix_frames
     (related.frame.wellFormed.2 worker (List.mem_of_getElem? live)).1
   have completion : Mixed.CompletionInvariant (atCut slot) :=
     Mixed.liftTrace_completionInvariant trace (CounterCommon.stablePost data.site data.call)
-      (show Mixed.CompletionInvariant (ghosts pre slot) from True.intro)
+      (show Mixed.CompletionInvariant (ghosts proofs pre slot) from True.intro)
   have saved : CounterCommon.Saved data.site worker.context :=
-    checked_saved (data.pre pre.valid) (cutCurrent slot) completion live
+    checked_saved bundle (cutCurrent slot) completion live
   obtain ⟨identifier, handle, originalSelection, linked⟩ := data.entry.selected
   have currentSelection : atomicFor cut.world worker.resources cell.address =
       some (identifier, handle, cell) := by
@@ -234,7 +230,7 @@ theorem prefix_frames
   refine ⟨worker, identifier, handle, live, resources, valid, counter,
     originalSelection, currentSelection, linked, related.frame.code, saved.2, caller, ?_⟩
   intro returned
-  refine ⟨?_, completed_count pre actual slot live returned⟩
+  refine ⟨?_, completed_count proofs pre actual slot live returned⟩
   have post : CounterCommon.Post data.site data.call cut (atCut slot).history :=
     related.post_of_returned completion live returned
   obtain ⟨final, finalLive, _finalResources, _finalPhase, pc, stack, _finalSaved⟩ := post.returned
@@ -260,27 +256,29 @@ theorem prefix_frames
 
 /-- Assemble every independent prefix obligation from the same actual run. -/
 theorem safePrefix
+    (proofs : CounterCommon.ProofProvider compiler)
     (pre : Spec.Pre (image compiler) target cell before requests)
     (actual : schedule before actions .ownedOnly .arithmetic = .ok (cut, observations)) :
     Grading.ConcurrentTask.Counted64.SafePrefix (image compiler) target cell before requests
       (cut, observations) := by
   obtain ⟨empty, _covered, _current, _retiring⟩ :=
-    (cohort pre).toCohort.schedule_from_current ((cohort pre).covers rfl)
-      ((cohort pre).current_toCohort (current pre)) pre.empty actual
+    (cohort proofs pre).toCohort.schedule_from_current ((cohort proofs pre).covers rfl)
+      ((cohort proofs pre).current_toCohort (current proofs pre)) pre.empty actual
   exact {
     valid := schedule_wellFormed pre.valid actual
     stable := schedule_stable actual
     population := ScheduleTrace.workers_length actual
     empty := empty
-    memory := prefix_memory pre actual
-    frames := prefix_frames pre actual
-    increments := fun _index _tid _event observed => prefix_increment pre actual observed
-    counts := fun slot => (prefix_events_counts pre actual slot).2
-    retiring := prefix_retired pre actual }
+    memory := prefix_memory proofs pre actual
+    frames := prefix_frames proofs pre actual
+    increments := fun _index _tid _event observed => prefix_increment proofs pre actual observed
+    counts := fun slot => (prefix_events_counts proofs pre actual slot).2
+    retiring := prefix_retired proofs pre actual }
 
 /-- The full forall type of the independent Claim.prefixes field, without
 asserting an inhabitant of Claim or any other field. -/
-theorem prefixes (compiler : CounterCommon.Compiler) :
+theorem prefixes (compiler : CounterCommon.Compiler)
+    (proofs : CounterCommon.ProofProvider compiler) :
     ∀ (before : TSO64.State) (target : Atomics64.CellId64)
       (cell : Atomics64.Cell) (requests : Spec.Requests before),
       Spec.Pre (image compiler) target cell before requests → ∀ actions actual,
@@ -289,7 +287,7 @@ theorem prefixes (compiler : CounterCommon.Compiler) :
         actual := by
   intro before target cell requests pre actions actual run
   rcases actual with ⟨cut, observations⟩
-  exact safePrefix pre run
+  exact safePrefix proofs pre run
 
 #print axioms atomic_nextStore
 #print axioms advance_nextStore

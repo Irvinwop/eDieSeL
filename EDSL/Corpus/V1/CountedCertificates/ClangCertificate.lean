@@ -78,22 +78,22 @@ retain one actual loaded overlap and its correlated cleanup. -/
 abbrev loaded_useful_with_cleanup (old : Word) (upper : Fin 2 → BitVec 32)
     (flags : Fin 2 → Word) (clear : ∀ slot, (flags slot).getLsbD 10 = false)
     (choices : Nat → Nat → Bool) :=
-  PerImage.loaded_useful_with_cleanup named rx total started present .defaultClang image_eq cleanup
+  PerImage.loaded_useful_with_cleanup named rx total started present .defaultClang image_eq CounterClang.proofBundle cleanup
     old upper flags clear choices
 
 abbrev loaded_useful (old : Word) (upper : Fin 2 → BitVec 32)
     (flags : Fin 2 → Word) (clear : ∀ slot, (flags slot).getLsbD 10 = false)
     (choices : Nat → Nat → Bool) :=
-  PerImage.loaded_useful named rx total started present .defaultClang image_eq cleanup
+  PerImage.loaded_useful named rx total started present .defaultClang image_eq CounterClang.proofBundle cleanup
     old upper flags clear choices
 
 abbrev wrapping_useful (choices : Nat → Nat → Bool) :=
-  PerImage.wrapping_useful named rx total started present .defaultClang image_eq cleanup choices
+  PerImage.wrapping_useful named rx total started present .defaultClang image_eq CounterClang.proofBundle cleanup choices
 
 /-- Exact original complete file, requested symbol and explicit byte cap. -/
 def certificate : Counted.CountedCertificate Clang.file CounterMixedGraphs.name 128 :=
   PerImage.certificate Clang.file CounterMixedGraphs.name 128
-    named rx total started present .defaultClang image_eq cleanup
+    named rx total started present .defaultClang image_eq CounterClang.proofBundle cleanup
 
 #print axioms image_eq
 #print axioms codeId_eq

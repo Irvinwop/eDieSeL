@@ -3,7 +3,7 @@ Copyright 2026 Irvinwop
 SPDX-License-Identifier: Apache-2.0
 -/
 import EDSL.Grading.ConcurrentTask.Counted64.Contract
-import EDSL.Corpus.V1.CounterCompletion
+import EDSL.Corpus.V1.CounterProofSelection
 
 set_option warningAsError true
 set_option autoImplicit false
@@ -11,12 +11,13 @@ set_option maxHeartbeats 300000
 set_option maxRecDepth 128
 
 /-!
-Translate independent counted-call entry facts to the existing checked counter
-annotations. Every actual scheduler slot is retained, with its original
+Translate independent counted-call entry facts through an explicit compiler
+proof provider. Every actual scheduler slot is retained, with its original
 worker, resource principal, low32 count and protected continuation. No manager
 constructor, desired result, future schedule or proof annotation is required
-from the caller. The finite ranked cohort is a proof-side consequence of the
-fixed candidate bytes and present admission, not an extra behavioral premise.
+from the admitted program inputs. The provider constructs present proof data;
+the finite ranked cohort retains its exact rules and entry ghosts without an
+extra behavioral premise.
 
 This module establishes admission and initial invariants only. The independent
 Counted64.Claim still requires its prefix, history, ABI and progress proofs.
@@ -96,35 +97,46 @@ theorem SlotData.pre {compiler : CounterCommon.Compiler} {target : Atomics64.Cel
 /-- One independently admitted subject for each actual Fin slot. -/
 noncomputable def subjects {compiler : CounterCommon.Compiler} {target : Atomics64.CellId64}
     {cell : Atomics64.Cell} {before : TSO64.State} {requests : Spec.Requests before}
+    (proofs : CounterCommon.ProofProvider compiler)
     (pre : Spec.Pre (image compiler) target cell before requests) :
-    Fin before.workers.length → CounterCommon.CohortSubject before := fun slot =>
+    Fin before.workers.length → CounterCommon.ProvedSubject before := fun slot =>
   let data := slotData pre slot
-  ⟨compiler, data.site, data.call, data.pre pre.valid, rfl⟩
+  { compiler := compiler
+    site := data.site
+    call := data.call
+    pre := data.pre pre.valid
+    ownedOnly := rfl
+    proof := proofs (data.pre pre.valid) }
 
 /-- No supplied tid enumeration can omit or duplicate a physical worker slot. -/
 theorem subjects_slots {compiler : CounterCommon.Compiler} {target : Atomics64.CellId64}
     {cell : Atomics64.Cell} {before : TSO64.State} {requests : Spec.Requests before}
+    (proofs : CounterCommon.ProofProvider compiler)
     (pre : Spec.Pre (image compiler) target cell before requests) :
-    ∀ slot, (subjects pre slot).site.tid = slot.val := fun _ => rfl
+    ∀ slot, (subjects proofs pre slot).site.tid = slot.val := fun _ => rfl
 
 /-- All local rules and rank laws follow from the actual candidate admission. -/
 noncomputable def cohort {compiler : CounterCommon.Compiler} {target : Atomics64.CellId64}
     {cell : Atomics64.Cell} {before : TSO64.State} {requests : Spec.Requests before}
+    (proofs : CounterCommon.ProofProvider compiler)
     (pre : Spec.Pre (image compiler) target cell before requests) :
     Mixed.RankedCohort before.workers.length .ownedOnly .arithmetic :=
-  CounterCommon.counterRankedCohort (subjects pre) (subjects_slots pre)
+  CounterCommon.provedRankedCohort (subjects proofs pre) (subjects_slots proofs pre)
 
 /-- Exact entry ghosts, initialized independently of any future trace. -/
 noncomputable def ghosts {compiler : CounterCommon.Compiler} {target : Atomics64.CellId64}
     {cell : Atomics64.Cell} {before : TSO64.State} {requests : Spec.Requests before}
-    (pre : Spec.Pre (image compiler) target cell before requests) : (cohort pre).Ghosts before :=
-  CounterCommon.counterInitialGhosts (subjects pre) (subjects_slots pre)
+    (proofs : CounterCommon.ProofProvider compiler)
+    (pre : Spec.Pre (image compiler) target cell before requests) :
+    (cohort proofs pre).Ghosts before :=
+  CounterCommon.provedInitialGhosts (subjects proofs pre) (subjects_slots proofs pre)
 
 theorem current {compiler : CounterCommon.Compiler} {target : Atomics64.CellId64}
     {cell : Atomics64.Cell} {before : TSO64.State} {requests : Spec.Requests before}
+    (proofs : CounterCommon.ProofProvider compiler)
     (pre : Spec.Pre (image compiler) target cell before requests) :
-    (cohort pre).Current before (ghosts pre) :=
-  CounterCommon.counterInitialGhosts_current (subjects pre) (subjects_slots pre)
+    (cohort proofs pre).Current before (ghosts proofs pre) :=
+  CounterCommon.provedInitialGhosts_current (subjects proofs pre) (subjects_slots proofs pre)
 
 #print axioms image
 #print axioms slotData

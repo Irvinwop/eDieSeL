@@ -46,6 +46,7 @@ variable {compiler : CounterCommon.Compiler} {target : Atomics64.CellId64}
 
 /-- Count every RMW exactly once through the exhaustive distinct original slots. -/
 theorem completed_total_count
+    (proofs : CounterCommon.ProofProvider compiler)
     (pre : Spec.Pre (image compiler) target cell before requests)
     (actual : schedule before actions .ownedOnly .arithmetic = .ok (cut, observations))
     (returned : Returned cut) :
@@ -79,13 +80,14 @@ theorem completed_total_count
       exact slot.isLt
     have live : cut.workers[slot.val]? = some (cut.workers[slot.val]'bound) :=
       List.getElem?_eq_getElem bound
-    exact completed_count pre actual slot live (returned _ (List.mem_of_getElem? live))
+    exact completed_count proofs pre actual slot live (returned _ (List.mem_of_getElem? live))
   rw [counts] at partition
   exact partition
 
 /-- Every original RMW remains in the chronological indexed call history.
 Their unit inputs sum to the actual RMW count before slot partitioning. -/
 theorem increment_input_sum
+    (proofs : CounterCommon.ProofProvider compiler)
     (pre : Spec.Pre (image compiler) target cell before requests)
     (actual : schedule before actions .ownedOnly .arithmetic = .ok (cut, observations)) :
     ModuloCounter.inputSum (Grading.ConcurrentTask.Counted64.incrementCalls observations) =
@@ -93,7 +95,7 @@ theorem increment_input_sum
   have increments : ∀ tid event, Observation.rmw tid event ∈ observations →
       event.cell = target ∧ event.arithmetic.delta = 1 := by
     intro tid event member
-    obtain ⟨_slot, _tid, eventOK⟩ := prefix_event pre actual member
+    obtain ⟨_slot, _tid, eventOK⟩ := prefix_event proofs pre actual member
     exact ⟨eventOK.2.1, eventOK.2.2.2.1⟩
   have covered : ∀ tid event, Observation.rmw tid event ∈ observations → event.cell = target :=
     fun tid event member => (increments tid event member).1
@@ -107,6 +109,7 @@ theorem increment_input_sum
 /-- Same-run actual initial/current reads and indexed chronological legality,
 with the final modular sum expressed using the independent original requests. -/
 theorem completed_history
+    (proofs : CounterCommon.ProofProvider compiler)
     (pre : Spec.Pre (image compiler) target cell before requests)
     (actual : schedule before actions .ownedOnly .arithmetic = .ok (cut, observations))
     (returned : Returned cut) :
@@ -120,7 +123,7 @@ theorem completed_history
   obtain ⟨old, initialRead⟩ := pre.validCell.1.load_exists
   have covered : ∀ tid event, Observation.rmw tid event ∈ observations → event.cell = target := by
     intro tid event member
-    obtain ⟨_slot, _tid, eventOK⟩ := prefix_event pre actual member
+    obtain ⟨_slot, _tid, eventOK⟩ := prefix_event proofs pre actual member
     exact eventOK.2.1
   obtain ⟨current, currentRead, legal⟩ := PositionHistory.schedule_sequential pre.valid actual
     target cell pre.liveTarget covered old initialRead
@@ -129,7 +132,8 @@ theorem completed_history
   change current.toNat =
     (old.toNat + ModuloCounter.inputSum
       (Grading.ConcurrentTask.Counted64.incrementCalls observations)) % 2^64 at total
-  rw [increment_input_sum pre actual, completed_total_count pre actual returned] at total
+  rw [increment_input_sum proofs pre actual,
+    completed_total_count proofs pre actual returned] at total
   exact total
 
 #print axioms inputSum_relabel

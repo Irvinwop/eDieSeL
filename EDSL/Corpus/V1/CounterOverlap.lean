@@ -3,6 +3,8 @@ Copyright 2026 Irvinwop
 SPDX-License-Identifier: Apache-2.0
 -/
 import EDSL.Corpus.V1.CounterLoadedInputs
+import EDSL.Corpus.V1.CounterProofSelection
+import EDSL.Corpus.V1.CounterSelected
 import EDSL.OS.TSO64.ScheduleComposition
 import EDSL.OS.TSO64.EffectSimulation.Mixed.RankedPrefix
 
@@ -57,24 +59,24 @@ theorem count_issuers (tid : Nat) (observations : List O) :
 
 /-- The exact ghosts' current completion invariant; stablePost transports a
 historical response along its real idle extension, without equating histories. -/
-def Completed {n : Nat} {initial : S} (subjects : Fin n → CohortSubject initial)
+def Completed {n : Nat} {initial : S} (subjects : Fin n → ProvedSubject initial)
     (slots : ∀ i, (subjects i).site.tid = i.val)
-    (ghosts : (counterRankedCohort subjects slots).Ghosts initial) : Prop :=
+    (ghosts : (provedRankedCohort subjects slots).Ghosts initial) : Prop :=
   ∀ i, Mixed.CompletionInvariant (ghosts i)
 
-theorem completed_step {n : Nat} {initial : S} {subjects : Fin n → CohortSubject initial}
+theorem completed_step {n : Nat} {initial : S} {subjects : Fin n → ProvedSubject initial}
     {slots : ∀ i, (subjects i).site.tid = i.val}
-    {before after : (counterRankedCohort subjects slots).Ghosts initial}
+    {before after : (provedRankedCohort subjects slots).Ghosts initial}
     {action : Action} {seen : O}
-    (advanced : (counterRankedCohort subjects slots).Step before action seen after)
+    (advanced : (provedRankedCohort subjects slots).Step before action seen after)
     (completed : Completed subjects slots before) : Completed subjects slots after := by
   intro i
   exact (advanced i).2.1.completionInvariant
     (stablePost (subjects i).site (subjects i).call) (completed i)
 
 theorem running_of_short_count {n : Nat} {initial : S}
-    {subjects : Fin n → CohortSubject initial} {slots : ∀ i, (subjects i).site.tid = i.val}
-    {ghosts : (counterRankedCohort subjects slots).Ghosts initial}
+    {subjects : Fin n → ProvedSubject initial} {slots : ∀ i, (subjects i).site.tid = i.val}
+    {ghosts : (provedRankedCohort subjects slots).Ghosts initial}
     (completed : Completed subjects slots ghosts) (i : Fin n)
     (short : Mixed.Counts.logRMW i.val (ghosts i).history < (subjects i).call.iterations.toNat) :
     ∃ node fuel, (ghosts i).control = .running node fuel := by
@@ -115,29 +117,29 @@ theorem own_labels {n : Nat} {profile : Profile} {family : RMWFamily}
 threads advance through those same positions. All exact ghosts, logs, choices
 and present-state gates are available for another segment or completion. -/
 structure Segment {n : Nat} {initial before : S}
-    (subjects : Fin n → CohortSubject initial) (slots : ∀ i, (subjects i).site.tid = i.val)
-    (ghosts : (counterRankedCohort subjects slots).Ghosts initial)
+    (subjects : Fin n → ProvedSubject initial) (slots : ∀ i, (subjects i).site.tid = i.val)
+    (ghosts : (provedRankedCohort subjects slots).Ghosts initial)
     (choices : Nat → Nat → Bool) (offset : Nat → Nat) (selected : Fin n) where
   actions : List Action
   observations : List O
   final : S
-  finalGhosts : (counterRankedCohort subjects slots).Ghosts initial
+  finalGhosts : (provedRankedCohort subjects slots).Ghosts initial
   actual : TSO64.schedule before actions .ownedOnly .arithmetic = .ok (final, observations)
   valid : WellFormed final .ownedOnly
   workers : final.workers.length = n
   empty : Quiescent final
-  current : (counterRankedCohort subjects slots).Current final finalGhosts
+  current : (provedRankedCohort subjects slots).Current final finalGhosts
   completed : Completed subjects slots finalGhosts
-  lifted : LiftTrace (counterRankedCohort subjects slots).Step ghosts actions observations finalGhosts
-  retiring : (counterRankedCohort subjects slots).toCohort.RetirementTrace actions observations
+  lifted : LiftTrace (provedRankedCohort subjects slots).Step ghosts actions observations finalGhosts
+  retiring : (provedRankedCohort subjects slots).toCohort.RetirementTrace actions observations
   chosen : Mixed.ChoiceTrace.ChosenFrom choices offset actions
   onlySelected : ∀ action ∈ actions, ∃ af, action = .issue selected.val af
   lastRMW : ∃ quiet event, observations = quiet ++ [.rmw selected.val event] ∧ issuers quiet = []
-  bound : actions.length ≤ (counterRankedCohort subjects slots).potential ghosts
+  bound : actions.length ≤ (provedRankedCohort subjects slots).potential ghosts
 
 theorem Segment.issuers {n : Nat} {initial before : S}
-    {subjects : Fin n → CohortSubject initial} {slots : ∀ i, (subjects i).site.tid = i.val}
-    {ghosts : (counterRankedCohort subjects slots).Ghosts initial}
+    {subjects : Fin n → ProvedSubject initial} {slots : ∀ i, (subjects i).site.tid = i.val}
+    {ghosts : (provedRankedCohort subjects slots).Ghosts initial}
     {choices : Nat → Nat → Bool} {offset : Nat → Nat} {selected : Fin n}
     (segment : Segment (before := before) subjects slots ghosts choices offset selected) :
     issuers segment.observations = [selected.val] := by
@@ -146,13 +148,13 @@ theorem Segment.issuers {n : Nat} {initial before : S}
   rfl
 
 private theorem run_at_potential {n : Nat} {initial : S}
-    (subjects : Fin n → CohortSubject initial) (slots : ∀ i, (subjects i).site.tid = i.val)
+    (subjects : Fin n → ProvedSubject initial) (slots : ∀ i, (subjects i).site.tid = i.val)
     (choices : Nat → Nat → Bool) (i : Fin n) :
     ∀ amount : Nat, ∀ {before : S}
-      (ghosts : (counterRankedCohort subjects slots).Ghosts initial) (offset : Nat → Nat),
-      (counterRankedCohort subjects slots).potential ghosts = amount →
+      (ghosts : (provedRankedCohort subjects slots).Ghosts initial) (offset : Nat → Nat),
+      (provedRankedCohort subjects slots).potential ghosts = amount →
       WellFormed before .ownedOnly → before.workers.length = n →
-      (counterRankedCohort subjects slots).Current before ghosts → Quiescent before →
+      (provedRankedCohort subjects slots).Current before ghosts → Quiescent before →
       Completed subjects slots ghosts →
       Mixed.Counts.logRMW i.val (ghosts i).history < (subjects i).call.iterations.toNat →
       Nonempty (Segment (before := before) subjects slots ghosts choices offset i) := by
@@ -161,7 +163,7 @@ private theorem run_at_potential {n : Nat} {initial : S}
   induction amount using Nat.strongRecOn with
   | ind amount ih =>
     intro before ghosts offset potential valid count current empty completed short
-    let cohort := counterRankedCohort subjects slots
+    let cohort := provedRankedCohort subjects slots
     obtain ⟨node, fuel, running⟩ := running_of_short_count completed i short
     obtain ⟨after, seen, next, actual, afterValid, afterCount, afterEmpty,
         _afterCovered, nextCurrent, advanced, retiring, smaller⟩ :=
@@ -238,10 +240,10 @@ private theorem run_at_potential {n : Nat} {initial : S}
 /-- Present checked invariants and a short own history construct the segment;
 no future success, intermediate value, PC oracle or desired label is assumed. -/
 theorem run_to_own_RMW {n : Nat} {initial before : S}
-    (subjects : Fin n → CohortSubject initial) (slots : ∀ i, (subjects i).site.tid = i.val)
-    (ghosts : (counterRankedCohort subjects slots).Ghosts initial)
+    (subjects : Fin n → ProvedSubject initial) (slots : ∀ i, (subjects i).site.tid = i.val)
+    (ghosts : (provedRankedCohort subjects slots).Ghosts initial)
     (valid : WellFormed before .ownedOnly) (count : before.workers.length = n)
-    (current : (counterRankedCohort subjects slots).Current before ghosts) (empty : Quiescent before)
+    (current : (provedRankedCohort subjects slots).Current before ghosts) (empty : Quiescent before)
     (completed : Completed subjects slots ghosts) (choices : Nat → Nat → Bool)
     (offset : Nat → Nat) (i : Fin n)
     (short : Mixed.Counts.logRMW i.val (ghosts i).history < (subjects i).call.iterations.toNat) :
@@ -249,8 +251,8 @@ theorem run_to_own_RMW {n : Nat} {initial before : S}
   run_at_potential subjects slots choices i _ ghosts offset rfl valid count current empty completed short
 
 theorem Segment.counts {n : Nat} {initial before : S}
-    {subjects : Fin n → CohortSubject initial} {slots : ∀ i, (subjects i).site.tid = i.val}
-    {ghosts : (counterRankedCohort subjects slots).Ghosts initial}
+    {subjects : Fin n → ProvedSubject initial} {slots : ∀ i, (subjects i).site.tid = i.val}
+    {ghosts : (provedRankedCohort subjects slots).Ghosts initial}
     {choices : Nat → Nat → Bool} {offset : Nat → Nat} {selected : Fin n}
     (segment : Segment (before := before) subjects slots ghosts choices offset selected) (i : Fin n) :
     Mixed.Counts.logRMW i.val (segment.finalGhosts i).history =
@@ -295,13 +297,15 @@ theorem requests_nat (i : Fin 2) :
 Upper RSI halves, all modeled initial flag bits and the old word stay arbitrary. -/
 def loadedSubjects (compiler : Compiler) (old : Word) (upper : Fin 2 → BitVec 32)
     (flags : Fin 2 → Word) :
-    Fin 2 → CohortSubject (CounterResources.initial compiler old requests upper flags) :=
+    Fin 2 → ProvedSubject (CounterResources.initial compiler old requests upper flags) :=
   fun i => {
     compiler := compiler
     site := CounterResources.site compiler old requests upper flags i
     call := CounterResources.call compiler old requests i
     pre := CounterResources.pre compiler old requests upper flags i
-    ownedOnly := rfl }
+    ownedOnly := rfl
+    proof := CounterCommon.checkedProofProvider compiler
+      (CounterResources.pre compiler old requests upper flags i) }
 
 theorem loadedSlots (compiler : Compiler) (old : Word) (upper : Fin 2 → BitVec 32)
     (flags : Fin 2 → Word) (i : Fin 2) :
@@ -309,11 +313,11 @@ theorem loadedSlots (compiler : Compiler) (old : Word) (upper : Fin 2 → BitVec
 
 abbrev loadedCohort (compiler : Compiler) (old : Word) (upper : Fin 2 → BitVec 32)
     (flags : Fin 2 → Word) :=
-  counterRankedCohort (loadedSubjects compiler old upper flags) (loadedSlots compiler old upper flags)
+  provedRankedCohort (loadedSubjects compiler old upper flags) (loadedSlots compiler old upper flags)
 
 abbrev loadedGhosts (compiler : Compiler) (old : Word) (upper : Fin 2 → BitVec 32)
     (flags : Fin 2 → Word) :=
-  counterInitialGhosts (loadedSubjects compiler old upper flags) (loadedSlots compiler old upper flags)
+  provedInitialGhosts (loadedSubjects compiler old upper flags) (loadedSlots compiler old upper flags)
 
 /-- A genuinely interleaved actual prefix, with both actual workers still
 running. Counts refer to the same exact ghosts and the real observation list. -/
@@ -346,17 +350,17 @@ abbrev LoadedPrefix (compiler : Compiler) (old : Word) (upper : Fin 2 → BitVec
 /-- Construct the actual own/peer/own prefix from any two presently admitted
 subjects. Every recursive AF offset counts the same thread's actual issues. -/
 theorem construct_prefix_of_subjects {initial : S}
-    (subjects : Fin 2 → CohortSubject initial)
+    (subjects : Fin 2 → ProvedSubject initial)
     (slots : ∀ i, (subjects i).site.tid = i.val)
     (valid : WellFormed initial .ownedOnly)
     (population : initial.workers.length = 2) (empty : Quiescent initial)
     (requested : ∀ i, (subjects i).call.iterations.toNat = if i.val = 0 then 3 else 9)
     (choices : Nat → Nat → Bool) :
-    Nonempty (Prefix (before := initial) (counterRankedCohort subjects slots)
-      (counterInitialGhosts subjects slots) choices) := by
-  let cohort := counterRankedCohort subjects slots
-  let ghosts := counterInitialGhosts subjects slots
-  have startCurrent := counterInitialGhosts_current subjects slots
+    Nonempty (Prefix (before := initial) (provedRankedCohort subjects slots)
+      (provedInitialGhosts subjects slots) choices) := by
+  let cohort := provedRankedCohort subjects slots
+  let ghosts := provedInitialGhosts subjects slots
+  have startCurrent := provedInitialGhosts_current subjects slots
   have startCompleted : Completed subjects slots ghosts := by intro i; trivial
   have historyEmpty : ∀ i, (ghosts i).history = [] := fun _ => rfl
   obtain ⟨first⟩ := run_to_own_RMW subjects slots ghosts
@@ -476,7 +480,7 @@ structure Cleanup (before final : S) (target : Atomics64.CellId64)
 subjects. The supplied successful run and returned workers establish cleanup
 success; target and address bindings refer to the supplied current cell. -/
 theorem cleanup_of_subjects {initial : S}
-    (subjects : Fin 2 → CohortSubject initial)
+    (subjects : Fin 2 → ProvedSubject initial)
     (slots : ∀ i, (subjects i).site.tid = i.val)
     (population : initial.workers.length = 2) (empty : Quiescent initial)
     (shapes : ∀ i, CleanupShape (subjects i).site)
@@ -504,14 +508,16 @@ theorem cleanup_of_subjects {initial : S}
       some (final.workers[1]'rightBound) := by
     rw [slots 1]
     exact List.getElem?_eq_getElem rightBound
-  obtain ⟨_value, _read, _total, frame⟩ := two_completed_total_frame
-    (subjects 0).pre (subjects 1).pre (subjects 0).ownedOnly (subjects 1).ownedOnly
+  obtain ⟨_value, _read, _total, frame⟩ := Selected.two_completed_total_frame
+    (subjects 0).pre (subjects 1).pre (subjects 0).proof (subjects 1).proof
+    (subjects 0).ownedOnly (subjects 1).ownedOnly
     (slots 0) (slots 1) population empty actual leftLive rightLive
     (returned _ (List.mem_of_getElem? leftLive)) (returned _ (List.mem_of_getElem? rightLive))
     target cell registered (targets 0) (targets 1) old readBefore
   obtain ⟨result, value, retired, valid, workers, contexts, resources, cells, ram,
-      history, revoked, counter, total⟩ := two_completed_retired_total
-    (subjects 0).pre (subjects 1).pre (subjects 0).ownedOnly (subjects 1).ownedOnly
+      history, revoked, counter, total⟩ := Selected.two_completed_retired_total
+    (subjects 0).pre (subjects 1).pre (subjects 0).proof (subjects 1).proof
+    (subjects 0).ownedOnly (subjects 1).ownedOnly
     (slots 0) (slots 1) population empty (shapes 0) (shapes 1) separate
     actual leftLive rightLive
     (returned _ (List.mem_of_getElem? leftLive)) (returned _ (List.mem_of_getElem? rightLive))
@@ -592,7 +598,7 @@ abbrev LoadedOutput (compiler : Compiler) (old : Word) (upper : Fin 2 → BitVec
 continuous AF offsets, then retire that same suffix endpoint. Every execution,
 trace, cleanup and result projection belongs to this one actual initial state. -/
 theorem complete_of_subjects {initial : S}
-    (subjects : Fin 2 → CohortSubject initial)
+    (subjects : Fin 2 → ProvedSubject initial)
     (slots : ∀ i, (subjects i).site.tid = i.val)
     (valid : WellFormed initial .ownedOnly)
     (population : initial.workers.length = 2) (empty : Quiescent initial)
@@ -606,10 +612,10 @@ theorem complete_of_subjects {initial : S}
     (readBefore : loadQWord (published initial.world) cell.address = .ok old)
     (requested : ∀ i, (subjects i).call.iterations.toNat = if i.val = 0 then 3 else 9)
     (choices : Nat → Nat → Bool) :
-    Nonempty (Output (counterRankedCohort subjects slots)
-      (counterInitialGhosts subjects slots) choices target cell old) := by
+    Nonempty (Output (provedRankedCohort subjects slots)
+      (provedInitialGhosts subjects slots) choices target cell old) := by
   obtain ⟨lead⟩ := construct_prefix_of_subjects subjects slots valid population empty requested choices
-  let cohort := counterRankedCohort subjects slots
+  let cohort := provedRankedCohort subjects slots
   obtain ⟨suffix⟩ := cohort.complete_from_current lead.valid lead.workers lead.current lead.empty
     choices (fun tid => 0 + Mixed.ChoiceTrace.issues tid lead.actions)
   have actual := schedule_append lead.actual suffix.actual

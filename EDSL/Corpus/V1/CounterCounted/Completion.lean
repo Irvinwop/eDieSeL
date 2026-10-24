@@ -31,6 +31,7 @@ variable {compiler : CounterCommon.Compiler} {target : Atomics64.CellId64}
 /-- Safety is an independently proved candidate obligation, used here to
 package the constructed completed execution. It is not part of entry Pre. -/
 theorem completion_of_safety
+    (proofs : CounterCommon.ProofProvider compiler)
     (pre : Spec.Pre (image compiler) target cell before requests)
     (safety : ∀ actions actual, schedule before actions .ownedOnly .arithmetic = .ok actual →
       SafePrefix (image compiler) target cell before requests actual)
@@ -47,17 +48,18 @@ theorem completion_of_safety
         Mixed.ChoiceTrace.ChosenFrom choices offset (prior ++ suffix)) ∧
       Nonempty (Post (image compiler) target cell before requests (prior ++ suffix)
         (finished.1, observations ++ finished.2)) := by
-  refine ⟨(cohort pre).potential (ghosts pre), ?_⟩
+  refine ⟨(cohort proofs pre).potential (ghosts proofs pre), ?_⟩
   intro choices offset
   obtain ⟨atCut, _cutCurrent, lifted, suffix, whole, _wholeLifted⟩ :=
-    completion_after_prefix pre actual choices offset
-  have potentialBound : (cohort pre).potential atCut ≤ (cohort pre).potential (ghosts pre) := by
+    completion_after_prefix proofs pre actual choices offset
+  have potentialBound : (cohort proofs pre).potential atCut ≤
+      (cohort proofs pre).potential (ghosts proofs pre) := by
     apply Mixed.RankedPotential.indexedSum_le
     intro slot
-    have budget := (cohort pre).own_issue_budget_of_schedule rfl (current pre)
+    have budget := (cohort proofs pre).own_issue_budget_of_schedule rfl (current proofs pre)
       pre.empty actual lifted slot
     exact Nat.le_trans (Nat.le_add_left _ _) budget
-  have post := post_of_safe pre whole (safety _ _ whole) suffix.returned
+  have post := post_of_safe proofs pre whole (safety _ _ whole) suffix.returned
   refine ⟨suffix.actions, (suffix.final, suffix.observations), suffix.chosen,
     suffix.actual, ⟨suffix.returned, suffix.quiescent⟩,
     Nat.le_trans suffix.issue_upper_bound potentialBound, whole, ?_, post⟩

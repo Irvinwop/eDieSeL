@@ -186,6 +186,8 @@ import EDSL.Corpus.V1.CounterClangRank
 import EDSL.OS.TSO64.EffectSimulation.Mixed.CountedRank
 import EDSL.Corpus.V1.CounterRanks
 import EDSL.Corpus.V1.CounterProofBundle
+import EDSL.Corpus.V1.CounterProofSelection
+import EDSL.Corpus.V1.CounterSelected
 import EDSL.Corpus.V1.CounterFrame
 import EDSL.Corpus.V1.CounterCompletion
 import EDSL.Corpus.V1.CounterResources.Image

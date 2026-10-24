@@ -166,11 +166,15 @@ requirements wherever the execution theorem requires them.
 `tests/SelectedProofDependencies.lean` traverses actual declaration dependencies
 to check that the direct counter bundles retain their own behavior proofs and
 exclude the other compiler's behavior proofs. The existing dispatcher is a
-positive control that reaches both. This checks proof selection at the bundle
-boundary. The complete counted-call certificates still use the earlier
-compiler dispatchers; migrating their prefix, progress, overlap and cleanup
-adapters is separate work. No new packet acceptance or corpus credit follows
-from this interface.
+positive control that reaches both. `CounterCounted.claimOf compiler proofs`
+threads the explicit provider through admission, prefix safety, returns and
+progress. The complete per-image constructors use the same selection for
+their overlap, byte frame and actual resource cleanup. The earlier
+`CounterCounted.claim compiler` remains a compatibility wrapper selecting
+both compiler families. `tests/CountedCertificateDependencies.lean` separately
+checks the complete public and all-input useful roots for opposite compiler
+behavior and file evidence. These dependency checks establish no packet
+acceptance, physical refinement or additional corpus credit.
 
 ## Compiler annotations and earlier adapters
 

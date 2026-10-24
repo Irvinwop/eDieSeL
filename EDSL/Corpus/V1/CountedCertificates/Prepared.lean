@@ -4,7 +4,7 @@ SPDX-License-Identifier: Apache-2.0
 -/
 import EDSL.Corpus.CountedResources.Loaded
 import EDSL.Corpus.V1.CounterCounted.Claim
-import EDSL.Corpus.V1.CounterCompletion
+import EDSL.Corpus.V1.CounterProofBundle
 import EDSL.Corpus.V1.CounterRetirement
 
 set_option autoImplicit false
@@ -41,6 +41,7 @@ variable (total : Image.Total named) (started : Workers.StartTotal named total)
 variable (present : Loaded.Present named total started)
 variable (compiler : CounterCommon.Compiler)
 variable (imageEq : named.image = CounterCounted.image compiler)
+variable (proofs : CounterCommon.ProofProvider compiler)
 
 /-- Current cleanup inputs concern the actual attached workers. No future
 behavior or successful resource retirement is a field of this record. -/
@@ -165,30 +166,31 @@ theorem initial_read (old : Word) (count upper : Fin 2 → BitVec 32)
 
 /-- Subjects preserve each exact site, actual call and derived present Pre. -/
 def subjects (old : Word) (count upper : Fin 2 → BitVec 32) (flags : Fin 2 → Word) :
-    Fin 2 → CounterCommon.CohortSubject
+    Fin 2 → CounterCommon.ProvedSubject
       (Workers.initial named total started old count upper flags) :=
   fun slot => {
     compiler := compiler
     site := site named total started present compiler imageEq old count upper flags slot
     call := call named total old count slot
     pre := pre named rx total started present compiler imageEq old count upper flags slot
-    ownedOnly := rfl }
+    ownedOnly := rfl
+    proof := proofs (pre named rx total started present compiler imageEq old count upper flags slot) }
 
 theorem slots (old : Word) (count upper : Fin 2 → BitVec 32)
     (flags : Fin 2 → Word) (i : Fin 2) :
-    (subjects named rx total started present compiler imageEq old count upper flags i).site.tid = i.val := rfl
+    (subjects named rx total started present compiler imageEq proofs old count upper flags i).site.tid = i.val := rfl
 
 /-- Keep counts explicit; overlap callers pass their independently fixed requests. -/
 abbrev cohort (old : Word) (count upper : Fin 2 → BitVec 32) (flags : Fin 2 → Word) :=
-  CounterCommon.counterRankedCohort
-    (subjects named rx total started present compiler imageEq old count upper flags)
-    (slots named rx total started present compiler imageEq old count upper flags)
+  CounterCommon.provedRankedCohort
+    (subjects named rx total started present compiler imageEq proofs old count upper flags)
+    (slots named rx total started present compiler imageEq proofs old count upper flags)
 
 /-- Initial proof state uses the same actual subjects and physical slots. -/
 abbrev ghosts (old : Word) (count upper : Fin 2 → BitVec 32) (flags : Fin 2 → Word) :=
-  CounterCommon.counterInitialGhosts
-    (subjects named rx total started present compiler imageEq old count upper flags)
-    (slots named rx total started present compiler imageEq old count upper flags)
+  CounterCommon.provedInitialGhosts
+    (subjects named rx total started present compiler imageEq proofs old count upper flags)
+    (slots named rx total started present compiler imageEq proofs old count upper flags)
 
 #print axioms CleanupPresent
 #print axioms site

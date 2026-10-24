@@ -32,17 +32,19 @@ variable {compiler : CounterCommon.Compiler} {target : Atomics64.CellId64}
 
 /-- Classify all original scheduler positions from present caller-only rules. -/
 theorem retirement_trace
+    (proofs : CounterCommon.ProofProvider compiler)
     (pre : Spec.Pre (image compiler) target cell before requests)
     (actual : schedule before actions .ownedOnly .arithmetic = .ok (cut, observations)) :
-    (cohort pre).toCohort.RetirementTrace actions observations := by
+    (cohort proofs pre).toCohort.RetirementTrace actions observations := by
   obtain ⟨_empty, _covered, _current, retiring⟩ :=
-    (cohort pre).toCohort.schedule_from_current ((cohort pre).covers rfl)
-      ((cohort pre).current_toCohort (current pre)) pre.empty actual
+    (cohort proofs pre).toCohort.schedule_from_current ((cohort proofs pre).covers rfl)
+      ((cohort proofs pre).current_toCohort (current proofs pre)) pre.empty actual
   exact retiring
 
 /-- Full optional cells, including permissions and inaccessible stored bytes,
 are unchanged outside the common qword throughout any successful prefix. -/
 theorem prefix_memory
+    (proofs : CounterCommon.ProofProvider compiler)
     (pre : Spec.Pre (image compiler) target cell before requests)
     (actual : schedule before actions .ownedOnly .arithmetic = .ok (cut, observations)) :
     ∀ address, ¬(AddressSpace.qwordRegion cell.address).Contains address →
@@ -50,15 +52,16 @@ theorem prefix_memory
         before.world.legacy.shared.resources.space.cells address := by
   have targets : ∀ tid event, Observation.rmw tid event ∈ observations → event.cell = target := by
     intro tid event member
-    obtain ⟨slot, _slotTid, eventOK⟩ := prefix_event pre actual member
+    obtain ⟨slot, _slotTid, eventOK⟩ := prefix_event proofs pre actual member
     exact eventOK.2.1
   exact CellFrame.schedule_frame pre.liveTarget
-    (retirement_trace pre actual).no_drains targets actual
+    (retirement_trace proofs pre actual).no_drains targets actual
 
 /-- The exact handle named by an actual RMW is the first matching initial
 ordered selection, with the original slot's resource principal and target.
 Current authority is transported through this very step's real prefix. -/
 theorem prefix_increment
+    (proofs : CounterCommon.ProofProvider compiler)
     (pre : Spec.Pre (image compiler) target cell before requests)
     (actual : schedule before actions .ownedOnly .arithmetic = .ok (cut, observations))
     {index tid : Nat} {event : Atomics64.FetchAddEvent}
@@ -71,7 +74,7 @@ theorem prefix_increment
         event.arithmetic.delta = 1 ∧
         Concurrency.ModuloCounter.Step event.arithmetic.event.before event.arithmetic.delta
           event.arithmetic.event.before event.arithmetic.event.after := by
-  obtain ⟨slot, slotTid, eventOK⟩ := prefix_event_at pre actual observed
+  obtain ⟨slot, slotTid, eventOK⟩ := prefix_event_at proofs pre actual observed
   let data := slotData pre slot
   obtain ⟨prior, action, next, prefixRun, _actionAt, actualStep⟩ :=
     ScheduleTrace.observation_at actual observed
@@ -105,10 +108,11 @@ theorem prefix_increment
 /-- No original observation is blocked or drained in an admitted successful
 prefix. This is derived from actual closure, rather than a filtered log. -/
 theorem prefix_retired
+    (proofs : CounterCommon.ProofProvider compiler)
     (pre : Spec.Pre (image compiler) target cell before requests)
     (actual : schedule before actions .ownedOnly .arithmetic = .ok (cut, observations)) :
     ∀ seen ∈ observations, seen.retired = 1 :=
-  (retirement_trace pre actual).all_retired
+  (retirement_trace proofs pre actual).all_retired
 
 #print axioms retirement_trace
 #print axioms prefix_memory

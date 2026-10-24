@@ -69,9 +69,11 @@ The implementation is split by responsibility:
 The [per-image resource and execution builders](counted-image-evidence.md)
 provide generic setup, full-image retention and same-run assembly helpers.
 The complete public constructors below use explicit per-image preparation;
-their declaration type/value dependencies exclude the opposite complete file
-and old shared loaded-state dispatch. Small shared instruction/graph hints
-remain. The independent behavior and environmental assumptions are unchanged.
+their declaration type/value dependencies exclude the opposite complete file,
+its instruction and rank proofs, and old shared loaded-state/proof dispatch.
+Each constructor passes its own proof provider through universal Claim and
+same-run overlap/cleanup assembly. Small shared graph and section hints remain.
+The independent behavior and environmental assumptions are unchanged.
 
 ## Frozen examples
 
