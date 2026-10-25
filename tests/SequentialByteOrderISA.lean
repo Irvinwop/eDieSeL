@@ -55,7 +55,7 @@ theorem decoded_forms :
      .ok (.cmpReg8 .rcx .r8 true), .ok (.cmpReg8 .rax .r8 true),
      .ok (.cmpReg8 .r15 .r13 true), .ok (.cmpReg8 .rsp .rsp true),
      .ok (.cmpReg8 .rcx .rbx false), .ok (.subReg32 .rax .r8 true),
-     .ok (.subReg32 .r9 .r15 true), .ok (.subReg32 .rax .rax false)] := by rfl
+     .ok (.subReg32 .r9 .r15 true), .ok (.subReg32 .rax .rax false)] := by cbv
 
 /-- A sole readable byte at the final low canonical address forces DATA1.
 Zero extension must clear every old high bit, while source/address aliases
@@ -66,7 +66,8 @@ theorem movzx_one_byte_and_alias (af : Bool) :
       .ok ([0x80,0x7fffffffffff],0x602,4099,[⟨.data,0x7fffffffffff,1⟩]) ∧
     observe (entry [0x0f,0xb6,4,0] (fun _ => 0x100000001)
       (oneByte 0x200000002 0xff)) [.rax,.rdi] af =
-      .ok ([0xff,0x100000001],0x602,4100,[⟨.data,0x200000002,1⟩]) := by exact ⟨rfl,rfl⟩
+      .ok ([0xff,0x100000001],0x602,4100,[⟨.data,0x200000002,1⟩]) := by
+  refine ⟨?_,?_⟩ <;> cbv
 
 /-- All three extension bits participate in a full64 scaled address. R8 is
 the destination; the low-byte source is memory, not a register or a DATA4 load. -/
@@ -74,7 +75,7 @@ theorem movzx_full64_rex_address :
     observe (entry [0x47,0x0f,0xb6,4,0xa6] (fun register => match register with
       | .r14 => 0x200000001 | .r12 => 0x100000002 | _ => 0xffffffffffffffff)
       (oneByte 0x600000009 0xa5)) [.r8,.r12,.r14] =
-      .ok ([0xa5,0x100000002,0x200000001],0x602,4101,[⟨.data,0x600000009,1⟩]) := by rfl
+      .ok ([0xa5,0x100000002,0x200000001],0x602,4101,[⟨.data,0x600000009,1⟩]) := by cbv
 
 /-- The prefixed low bank must read SPL/BPL/SIL/DIL, not AH/CH/DH/BH.
 Self-MOVZX reads the original byte, clears upper bits and leaves flags alone. -/
@@ -91,7 +92,7 @@ theorem movzx_register_banks :
      .ok ([0x33,0xffffffffffffffe7],0x602,4100,[]),
      .ok ([0x44,0xffffffffffffffe7],0x602,4100,[]),
      .ok ([0x80,0xffffffffffffffe7],0x602,4099,[]),
-     .ok ([0xfedcba987654ab80,0xe7],0x602,4100,[])] := by rfl
+     .ok ([0xfedcba987654ab80,0xe7],0x602,4100,[])] := by cbv
 
 /-- Fixed architectural flag vectors distinguish width8, subtraction order,
 overflow, auxiliary borrow, parity and high-half contamination. -/
@@ -102,7 +103,7 @@ theorem cmp8_flag_vectors (af : Bool) :
         observe (entry [0x44,0x38,0xc1] (fun register => match register with
           | .rcx => left | .r8 => right | _ => 0xdeadbeef)) [] af) =
     [.ok ([],0x697,4099,[]), .ok ([],0xe12,4099,[]), .ok ([],0xe83,4099,[]),
-     .ok ([],0x646,4099,[]), .ok ([],0xe83,4099,[]), .ok ([],0x616,4099,[])] := by rfl
+     .ok ([],0x646,4099,[]), .ok ([],0xe83,4099,[]), .ok ([],0x616,4099,[])] := by cbv
 
 /-- The opposite opcode direction, REX.B/R byte banks and self aliasing all
 reach real register CMP. Neither operand consults inaccessible DATA memory. -/
@@ -114,7 +115,8 @@ theorem cmp8_directions_and_alias :
     observe (entry [0x45,0x38,0xef] (fun register => if register = .r15 then 0x80 else 1)) [] =
       .ok ([],0xe12,4099,[]) ∧
     observe (entry [0x40,0x38,0xe4] (fun _ => 0xffffffffffffffff)) [] =
-      .ok ([],0x646,4099,[]) := by exact ⟨rfl,rfl,rfl,rfl⟩
+      .ok ([],0x646,4099,[]) := by
+  refine ⟨?_,?_,?_,?_⟩ <;> cbv
 
 /-- SUB produces a zero-extended low32 result and all six flags. These values
 also separate width32 from width8/64, and exercise both signed overflow edges. -/
@@ -126,14 +128,15 @@ theorem sub32_flag_and_value_vectors (af : Bool) :
         if register = Register.rax then left else if register = Register.r8 then right else 0)) [.rax] af) =
     [.ok ([0xffffffff],0x697,4099,[]), .ok ([0x7fffffff],0xe16,4099,[]),
      .ok ([0x80000000],0xe87,4099,[]), .ok ([0],0x646,4099,[]),
-     .ok ([0xffffff80],0x683,4099,[]), .ok ([0xf],0x616,4099,[])] := by rfl
+     .ok ([0xffffff80],0x683,4099,[]), .ok ([0xf],0x616,4099,[])] := by cbv
 
 theorem sub32_reverse_direction_and_alias :
     observe (entry [0x45,0x2b,0xcf] (fun register =>
       if register = .r9 then 0xffffffff00000007 else 0x100000003)) [.r9,.r15] =
       .ok ([4,0x100000003],0x602,4099,[]) ∧
     observe (entry [0x29,0xc0] (fun _ => 0xffffffffffffffff)) [.rax,.rsp] =
-      .ok ([0,0xffffffffffffffff],0x646,4098,[]) := by exact ⟨rfl,rfl⟩
+      .ok ([0,0xffffffffffffffff],0x646,4098,[]) := by
+  refine ⟨?_,?_⟩ <;> cbv
 
 /-- Universal frame proofs instantiate actual production step at relocated
 current code, including arbitrary GPRs, memory maps, nonarithmetic flags and AF. -/
@@ -143,7 +146,7 @@ theorem cmp_current_frames (state : State) (af : Bool)
       final.registers = state.registers ∧ final.memory = state.memory ∧
       final.flags &&& ~~~arithmeticFlagMask = state.flags &&& ~~~arithmeticFlagMask := by
   rw [step_code_eq_execute code (by decide) (offset := 0) (by decide) state rfl
-    (by simp) (by rfl : Sequential.decodeAt (codeState [0x44,0x38,0xc1] 0) =
+    (by simp) (by cbv : Sequential.decodeAt (codeState [0x44,0x38,0xc1] 0) =
       .ok (.cmpReg8 .rcx .r8 true)) af]
   obtain ⟨final, actual, registers, memory, _, flags, _⟩ := execute_cmpReg8_context state .rcx .r8 true af
   exact ⟨final, actual, registers, memory, flags⟩
@@ -157,7 +160,7 @@ theorem movzx_current_frames (state : State) (af : Bool) (value : Byte)
       (∀ register, register ≠ .r8 → final.registers register = state.registers register) ∧
       final.memory = state.memory ∧ final.flags = state.flags := by
   rw [step_code_eq_execute code (by decide) (offset := 0) (by decide) state rfl
-    (by simp) (by rfl : Sequential.decodeAt (codeState [0x44,0x0f,0xb6,4,6] 0) =
+    (by simp) (by cbv : Sequential.decodeAt (codeState [0x44,0x0f,0xb6,4,6] 0) =
       .ok (.movzxMem8 .r8 (.indexed .rsi .rax 0) true)) af]
   have read : readDataByte state.memory ((Address.indexed .rsi .rax 0).eval state) = .ok value := by
     simpa [Address.eval] using loaded
@@ -188,7 +191,8 @@ theorem missing_and_nonexecutable_fetches :
         executable := fun address => address != 4096 + BitVec.ofNat 64 offset } }) =
       [.error (.inaccessibleInstruction 4096), .error (.inaccessibleInstruction 4097),
        .error (.inaccessibleInstruction 4098), .error (.inaccessibleInstruction 4099),
-       .error (.inaccessibleInstruction 4100)] := by exact ⟨rfl,rfl⟩
+       .error (.inaccessibleInstruction 4100)] := by
+  refine ⟨?_,?_⟩ <;> cbv
 
 /-- Missing/noncanonical DATA faults produce no next state or fabricated
 read observation. Register instructions require no DATA access at all. -/
@@ -199,16 +203,17 @@ theorem operand_faults_and_fetch_boundary :
     observe (entry [0x0f,0xb6,7] (fun _ => 0xffffffffffffffff) (oneByte 0xffffffffffffffff 0xff)) [.rax] =
       .ok ([0xff],0x602,4099,[⟨.data,0xffffffffffffffff,1⟩]) ∧
     observe (entry [0x0f,0xb6,0xc1] (fun _ => 0xffffffffffffffff)) [.rax] =
-      .ok ([0xff],0x602,4099,[]) := by exact ⟨rfl,rfl,rfl,rfl⟩
+      .ok ([0xff],0x602,4099,[]) := by
+  refine ⟨?_,?_,?_,?_⟩ <;> cbv
 
-/-- Unsupported widths, high-byte registers, memory SUB, displacement and
+/-- Unsupported widths, high-byte registers, memory SUB, disp32 and
 missing-base/index encodings cannot be accepted with a weaker interpretation. -/
 theorem unsupported_forms :
     ([[0x0f,0xb6,0xc4], [0x0f,0xb6,0xc5], [0x0f,0xb6,0xc6], [0x0f,0xb6,0xc7],
       [0x38,0xc4], [0x38,0xe0], [0x3a,0xf8],
       [0x48,0x0f,0xb6,0xc0], [0x4f,0x0f,0xb6,0], [0x48,0x38,0xc0],
       [0x66,0x0f,0xb6,0], [0x67,0x0f,0xb6,0], [0x40,0x40,0x0f,0xb6,0],
-      [0x0f,0xb6,0x40,0], [0x44,0x0f,0xb6,0x84,0,0,0,0,0],
+      [0x44,0x0f,0xb6,0x84,0,0,0,0,0],
       [0x0f,0xb6,5,0,0,0,0], [0x41,0x0f,0xb6,5,0,0,0,0],
       [0x0f,0xb6,4,0x20], [0x41,0x0f,0xb6,4,5],
       [0x29,7], [0x2b,7], [0x44,0x29,7], [0x44,0x38,7], [0x66,0x3a,7]] : List (List Byte)).all
@@ -234,7 +239,8 @@ theorem memory_right_cmp (af : Bool) :
       | .rax => 0xfedcba9876543280 | .rdi => 0x7fffffffffff | _ => 0xdeadbeef)
       (oneByte 0x7fffffffffff 1)) [.rax,.rdi] af =
       .ok ([0xfedcba9876543280,0x7fffffffffff],0xe12,4098,
-        [⟨.data,0x7fffffffffff,1⟩]) := by exact ⟨rfl,rfl⟩
+        [⟨.data,0x7fffffffffff,1⟩]) := by
+  refine ⟨?_,?_⟩ <;> cbv
 
 theorem same_constructor_encodings :
     ([.movzxMem8 .rcx (.indexed .rdi .rax 0) false,
@@ -251,7 +257,8 @@ theorem same_constructor_encodings :
       .movzxMem8 .rax (.base .rbp) false, .movzxMem8 .rax (.base .r12) true,
       .movzxMem8 .rax (.indexed .rdi .rsp 0) true,
       .movzxMem8 .rax (.indexed .r13 .rcx 0) true] : List Sequential.Instruction).map
-      Literals.byteOrderEncoding = List.replicate 9 none := by exact ⟨rfl,rfl⟩
+      Literals.byteOrderEncoding = List.replicate 9 none := by
+  refine ⟨?_,?_⟩ <;> cbv
 
 /-- Entire exact manifest/ELF slices, including unreachable padding. These
 diagnostics establish CFG admission only, with no function-correctness credit. -/
@@ -269,13 +276,21 @@ theorem frozen_cfg_acceptance :
     [gccBytes,clangBytes].map (fun bytes => (CFG.analyze bytes).map (fun graph =>
       (bytes.length, graph.nodes.map (·.offset), CFG.check bytes graph))) =
     [.ok (51,[0,4,7,9,11,13,16,20,23,25,29,34,37,39,42,45,46,48,50],true),
-     .ok (45,[0,3,5,7,16,20,25,28,30,33,36,38,40,41,44],true)] := by rfl
+     .ok (45,[0,3,5,7,16,20,25,28,30,33,36,38,40,41,44],true)] := by decide +kernel
 
 private def guardInput (bytes : List Byte) : State :=
   entry bytes (fun register => match register with
     | .rdx => 0 | .rsp => 8192 | _ => 0x800000000000)
     (fun address => if 8192 ≤ address.toNat then
       ([0,0,2,0,0,0,0,0] : List Byte)[address.toNat - 8192]? else none)
+
+/-- Finite successful observations can be decided without equality on a
+failure's arbitrary machine state, while recovering the exact Except result. -/
+private theorem observed_ok {ε α : Type} {result : Except ε α} {value : α}
+    (observed : result.toOption = some value) : result = .ok value := by
+  cases result with
+  | error _ => cases observed
+  | ok _ => exact congrArg Except.ok (Option.some.inj observed)
 
 /-- Concrete production executions of the frozen zero-length paths. Neither
 input pointer is canonical or mapped; the sole operand access is actual RET's
@@ -286,7 +301,10 @@ theorem zero_length_guard (af : Bool) :
         (result.state.registers .rax, result.state.registers .rsp, result.state.rip,
           result.instructions, result.reads))) =
     [.ok (0,8200,0x20000,5,[⟨.stack,8192,8⟩]),
-     .ok (0,8200,0x20000,4,[⟨.stack,8192,8⟩])] := by cases af <;> rfl
+     .ok (0,8200,0x20000,4,[⟨.stack,8192,8⟩])] := by
+  cases af <;>
+    simp only [List.map_cons, List.map_nil, List.cons.injEq, and_true] <;>
+    constructor <;> apply observed_ok <;> decide +kernel
 
 /-- Even unreachable padding and exact instruction lengths stay authenticated.
 Branches into SIB/ModRM bytes, unmodeled suffixes and oversized graphs reject. -/
@@ -296,7 +314,7 @@ theorem cfg_rejects_changed_padding_and_edges :
     (CFG.analyze (gccBytes ++ [0x0f])).isOk = false ∧
     (CFG.analyze (List.replicate 33 0x90 ++ [0xc3])).isOk = false ∧
     (CFG.analyze (List.replicate 65 0x90)).isOk = false := by
-  exact ⟨by decide, by decide, by decide, by decide +kernel, by decide⟩
+  exact ⟨by decide +kernel, by decide +kernel, by decide +kernel, by decide +kernel, by decide +kernel⟩
 
 #print axioms supported_full64_sub_width
 

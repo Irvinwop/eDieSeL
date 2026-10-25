@@ -7,6 +7,7 @@ import EDSL.X86.Machine
 
 namespace EDSL.OS.MachineThreads
 open X86
+universe u
 
 /-- A function-call observation stops this worker at its actual RET. No mutex
 phase, guard, loan, expected opcode, or protocol check enters this state. -/
@@ -23,7 +24,8 @@ inductive Fault where
   | missingThread | alreadyReturned | syscallBoundary
   deriving DecidableEq, Repr
 
-@[simp] theorem throw_error (fault : Fault) : (throw fault : Except Fault α) = .error fault := rfl
+@[simp] theorem throw_error {α : Type u} (fault : Fault) :
+    (throw fault : Except Fault α) = .error fault := rfl
 
 def contextState (context : Threads.Context) (memory : X86.Memory) : X86.State :=
   ⟨context.registers, context.rip, context.flags, memory⟩

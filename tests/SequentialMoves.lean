@@ -24,7 +24,7 @@ def entry (code : List Byte) (registers : Register → Word := fun _ => 0)
     executable := fun address => decide (4096 ≤ address.toNat ∧ address.toNat < 4096 + code.length)
     writable := writable }
 
-def nextView (af : Bool) (state : State)
+def nextView {α : Type} (af : Bool) (state : State)
     (view : State → List Sequential.Read → α) : Except Error α := do
   let observation ← Sequential.step af state
   match observation.result with
@@ -52,7 +52,7 @@ example (af : Bool) :
     [.ok (0x80000001, 0xabcdef, 4098, []), .ok (0x80000001, 0xabcdef, 4098, []),
       .ok (0x80000001, 0xabcdef, 4098, []), .ok (0x80000001, 0xabcdef, 4098, []),
       .ok (0x80000001, 0xabcdef, 4098, []), .ok (0x80000001, 0xabcdef, 4098, []),
-      .ok (0x80000001, 0xabcdef, 4098, []), .ok (0x80000001, 0xabcdef, 4098, [])] := by rfl
+      .ok (0x80000001, 0xabcdef, 4098, []), .ok (0x80000001, 0xabcdef, 4098, [])] := by cbv
 
 /-- With precisely the same ModRM bytes, 8B reverses the operand direction.
 Every low-register source has different low bits; sign extension, swapped
@@ -65,7 +65,7 @@ example (af : Bool) :
     [.ok (0x10000011, 0xabcdef, 4098, []), .ok (0x20000022, 0xabcdef, 4098, []),
       .ok (0x30000033, 0xabcdef, 4098, []), .ok (0x40000044, 0xabcdef, 4098, []),
       .ok (0x50000055, 0xabcdef, 4098, []), .ok (0x60000066, 0xabcdef, 4098, []),
-      .ok (0x80000001, 0xabcdef, 4098, []), .ok (0xf00000ff, 0xabcdef, 4098, [])] := by rfl
+      .ok (0x80000001, 0xabcdef, 4098, []), .ok (0xf00000ff, 0xabcdef, 4098, [])] := by cbv
 
 /-- This observation also detects collateral writes outside the destination,
 including extension registers. -/
@@ -73,7 +73,7 @@ example (af : Bool) : nextView af (entry [0x89, 0xf1] registerInput)
     (fun s reads => (s.registers .rcx, s.registers .rsi, s.registers .rax,
       s.registers .rsp, s.registers .r8, s.registers .r15, s.flags, s.rip, reads)) =
     .ok (0x80000001, 0xfedcba9880000001, 0x1111111110000011,
-      0x5555555550000055, 0xabcdef0123456789, 0xabcdef0123456789, 0xabcdef, 4098, []) := by rfl
+      0x5555555550000055, 0xabcdef0123456789, 0xabcdef0123456789, 0xabcdef, 4098, []) := by cbv
 
 def wordBytes (base : Word) : Word → Option Byte := fun address =>
   if address = base then some 0x98
@@ -87,7 +87,7 @@ use the old RDI; the result is unsigned, despite its set bit31. -/
 example (af : Bool) : nextView af
     (entry [0x8b, 0x3f] (fun _ => 0x600000004) (wordBytes 0x600000004))
     (fun s reads => (s.registers .rdi, s.registers .rsi, s.flags, s.rip, reads)) =
-    .ok (0xfedcba98, 0x600000004, 0xabcdef, 4098, [⟨.data, 0x600000004, 4⟩]) := by rfl
+    .ok (0xfedcba98, 0x600000004, 0xabcdef, 4098, [⟨.data, 0x600000004, 4⟩]) := by cbv
 
 /-- The memory register field covers every low-register destination too,
 including ESP/EBP and the preserved legacy EAX encoding. -/
@@ -100,7 +100,7 @@ example (af : Bool) :
         (entry bytes (fun _ => 0x600000004) (wordBytes 0x600000004))
         (fun s _ => s.registers destination)) =
     [.ok 0xfedcba98, .ok 0xfedcba98, .ok 0xfedcba98, .ok 0xfedcba98,
-      .ok 0xfedcba98, .ok 0xfedcba98, .ok 0xfedcba98, .ok 0xfedcba98] := by rfl
+      .ok 0xfedcba98, .ok 0xfedcba98, .ok 0xfedcba98, .ok 0xfedcba98] := by cbv
 
 /-- Independently different source values exercise every low-register field
 in the store direction, including source=base and the legacy ESI store. -/
@@ -112,7 +112,7 @@ example (af : Bool) :
           (wordBytes 8192) (fun _ => true))
         (fun s _ => loadDWord s.memory 8192)) =
     [.ok (.ok 0x10000011), .ok (.ok 0x20000022), .ok (.ok 0x30000033), .ok (.ok 0x40000044),
-      .ok (.ok 0x50000055), .ok (.ok 0x60000066), .ok (.ok 0x80000001), .ok (.ok 8192)] := by rfl
+      .ok (.ok 0x50000055), .ok (.ok 0x60000066), .ok (.ok 0x80000001), .ok (.ok 8192)] := by cbv
 
 def indexedRegisters : Register → Word := fun register =>
   if register = .rdi then 0x200000000 else if register = .rcx then 0x100000001
@@ -148,7 +148,7 @@ example (af : Bool) :
     [.ok (0x80341281, 0xabcdef, 4099, [⟨.data, 0x300000001, 4⟩]),
       .ok (0x91452392, 0xabcdef, 4099, [⟨.data, 0x400000002, 4⟩]),
       .ok (0xa25634a3, 0xabcdef, 4099, [⟨.data, 0x600000004, 4⟩]),
-      .ok (0xb36745b4, 0xabcdef, 4099, [⟨.data, 0xa00000008, 4⟩])] := by rfl
+      .ok (0xb36745b4, 0xabcdef, 4099, [⟨.data, 0xa00000008, 4⟩])] := by cbv
 
 /-- All four scales also select the store destination, rather than affecting
 only load decoding. Only one of the four widely separated targets may change. -/
@@ -162,7 +162,7 @@ example (af : Bool) :
     [.ok (some 0x78, some 0x5a, some 0x5a, some 0x5a, 4099, []),
       .ok (some 0x5a, some 0x78, some 0x5a, some 0x5a, 4099, []),
       .ok (some 0x5a, some 0x5a, some 0x78, some 0x5a, 4099, []),
-      .ok (some 0x5a, some 0x5a, some 0x5a, some 0x78, 4099, [])] := by rfl
+      .ok (some 0x5a, some 0x5a, some 0x5a, some 0x78, 4099, [])] := by cbv
 
 /-- Loading ECX also aliases the SIB index. This differs from base aliasing:
 the old high index bits must participate in both the address and read event. -/
@@ -171,14 +171,14 @@ example (af : Bool) : nextView af
     (fun s reads => (s.registers .rcx, s.registers .rdi, s.registers .rdx,
       s.flags, s.rip, reads)) =
     .ok (0xfedcba98, 0x200000000, 0xaabbccdd12345678,
-      0xabcdef, 4099, [⟨.data, 0x600000004, 4⟩]) := by rfl
+      0xabcdef, 4099, [⟨.data, 0x600000004, 4⟩]) := by cbv
 
 /-- A legal non-RDI base and destination are exercised at an unaligned address. -/
 example (af : Bool) : nextView af (entry [0x8b, 0x1a]
     (fun register => if register = .rdx then 8193 else 0xfedcba9876543210)
     (wordBytes 8193))
     (fun s reads => (s.registers .rbx, s.registers .rdx, s.flags, s.rip, reads)) =
-    .ok (0xfedcba98, 8193, 0xabcdef, 4098, [⟨.data, 8193, 4⟩]) := by rfl
+    .ok (0xfedcba98, 8193, 0xabcdef, 4098, [⟨.data, 8193, 4⟩]) := by cbv
 
 /-- RSP is a legal SIB base even though a missing SIB index is unsupported.
 Writing ESP still performs a data read at the old full-width address; it does
@@ -188,7 +188,7 @@ example (af : Bool) : nextView af (entry [0x8b, 0x24, 0x04]
       else if register = .rax then 0x200000000 else 0)
     (wordBytes 0x300000001))
     (fun s reads => (s.registers .rsp, s.registers .rax, s.rip, reads)) =
-    .ok (0xfedcba98, 0x200000000, 4099, [⟨.data, 0x300000001, 4⟩]) := by rfl
+    .ok (0xfedcba98, 0x200000000, 4099, [⟨.data, 0x300000001, 4⟩]) := by cbv
 
 /-- The actual SIB store writes four little-endian low32 bytes, retains both
 neighbors and all permission queries, and produces no operand-read event. -/
@@ -201,7 +201,7 @@ example (af : Bool) : nextView af
       s.memory.writable 0x600000007, s.memory.writable 0x600000008,
       s.memory.executable 0x600000004, s.memory.executable 4096, reads)) =
     .ok (some 0x5a, some 0x78, some 0x56, some 0x34, some 0x12, some 0x5a,
-      0xaabbccdd12345678, 0x100000001, 0xabcdef, 4099, true, false, false, true, []) := by rfl
+      0xaabbccdd12345678, 0x100000001, 0xabcdef, 4099, true, false, false, true, []) := by cbv
 
 /-- Source and high64 base are the same register. Narrowing the source must
 not narrow the address; the unchanged RDI and explicit bytes detect either bug. -/
@@ -211,7 +211,7 @@ example (af : Bool) : nextView af (entry [0x89, 0x3f]
       s.memory.read 0x61234567a, s.memory.read 0x61234567b,
       s.memory.read 0x12345678, s.registers .rdi, s.flags, s.rip, reads)) =
     .ok (some 0x78, some 0x56, some 0x34, some 0x12,
-      some 0x5a, 0x612345678, 0xabcdef, 4098, []) := by rfl
+      some 0x5a, 0x612345678, 0xabcdef, 4098, []) := by cbv
 
 /-- An indexed store also supports source=index and must retain the full64
 index register, while storing only its low32 value. -/
@@ -220,44 +220,44 @@ example (af : Bool) : nextView af
     (fun s reads => (s.memory.read 0x600000004, s.memory.read 0x600000005,
       s.memory.read 0x600000006, s.memory.read 0x600000007,
       s.registers .rcx, s.flags, s.rip, reads)) =
-    .ok (some 1, some 0, some 0, some 0, 0x100000001, 0xabcdef, 4099, []) := by rfl
+    .ok (some 1, some 0, some 0, some 0, 0x100000001, 0xabcdef, 4099, []) := by cbv
 
 /-- The fourth byte is part of the operation: a three-byte readable/writable
 prefix neither completes a load nor permits a partially visible store. -/
 example (af : Bool) : nextView af
     (entry [0x8b, 0x0f] (fun _ => 8192)
       (fun address => if 8192 ≤ address.toNat ∧ address.toNat < 8195 then some 0 else none))
-    (fun s _ => s.rip) = .error (.inaccessibleData 8195) := by rfl
+    (fun s _ => s.rip) = .error (.inaccessibleData 8195) := by cbv
 example (af : Bool) : nextView af
     (entry [0x89, 0x07] (fun _ => 8192) (wordBytes 8192)
       (fun address => decide (8192 ≤ address.toNat ∧ address.toNat < 8195)))
-    (fun s _ => s.rip) = .error (.writeDenied 8192) := by rfl
+    (fun s _ => s.rip) = .error (.writeDenied 8192) := by cbv
 example (af : Bool) : nextView af
     (entry [0x89, 0x07] (fun _ => 8192)
       (fun address => if address = 8195 then none else some 0) (fun _ => true))
-    (fun s _ => s.rip) = .error (.writeDenied 8192) := by rfl
+    (fun s _ => s.rip) = .error (.writeDenied 8192) := by cbv
 
 /-- Mapped bytes and affirmative permissions cannot bypass canonicality or
 the whole-operand nonwrap check, including a fault after valid leading bytes. -/
 example (af : Bool) : nextView af
     (entry [0x8b, 0x0f] (fun _ => 0x7ffffffffffd) (fun _ => some 0))
-    (fun s _ => s.rip) = .error (.inaccessibleData 0x800000000000) := by rfl
+    (fun s _ => s.rip) = .error (.inaccessibleData 0x800000000000) := by cbv
 example (af : Bool) : nextView af
     (entry [0x89, 0x07] (fun _ => 0x7ffffffffffd) (fun _ => some 0) (fun _ => true))
-    (fun s _ => s.rip) = .error (.writeDenied 0x7ffffffffffd) := by rfl
+    (fun s _ => s.rip) = .error (.writeDenied 0x7ffffffffffd) := by cbv
 example (af : Bool) : nextView af
     (entry [0x8b, 0x0f] (fun _ => 0xfffffffffffffffe) (fun _ => some 0))
-    (fun s _ => s.rip) = .error (.inaccessibleData 0xfffffffffffffffe) := by rfl
+    (fun s _ => s.rip) = .error (.inaccessibleData 0xfffffffffffffffe) := by cbv
 example (af : Bool) : nextView af
     (entry [0x89, 0x07] (fun _ => 0xfffffffffffffffe) (fun _ => some 0) (fun _ => true))
-    (fun s _ => s.rip) = .error (.writeDenied 0xfffffffffffffffe) := by rfl
+    (fun s _ => s.rip) = .error (.writeDenied 0xfffffffffffffffe) := by cbv
 
 /-- The last nonwrapping four-byte word in the upper canonical region is
 valid. Rejecting all high addresses would incorrectly satisfy only negatives. -/
 example (af : Bool) : nextView af
     (entry [0x8b, 0x0f] (fun _ => 0xfffffffffffffffc) (wordBytes 0xfffffffffffffffc))
     (fun s reads => (s.registers .rcx, s.rip, reads)) =
-    .ok (0xfedcba98, 4098, [⟨.data, 0xfffffffffffffffc, 4⟩]) := by rfl
+    .ok (0xfedcba98, 4098, [⟨.data, 0xfffffffffffffffc, 4⟩]) := by cbv
 
 /-- Every preexisting MOV encoding wins before the generic fallback, including
 both memory directions. Existing theorem/client representations stay stable. -/
@@ -266,47 +266,48 @@ example : ([[0x89, 0x37], [0x89, 0x06], [0x89, 0xf8], [0x89, 0xf0],
     (fun bytes => Sequential.decodeAt (entry bytes)) =
     [.ok (.legacy .storeEsiRdi), .ok (.legacy .storeEaxRsi),
       .ok (.legacy .movEaxEdi), .ok (.legacy .movEaxEsi),
-      .ok (.legacy .loadEaxRdi), .ok (.legacy .loadEaxRsi)] := by rfl
+      .ok (.legacy .loadEaxRdi), .ok (.legacy .loadEaxRsi)] := by cbv
 
-/-- Extra legacy prefixes, displacements, RIP-relative and missing SIB operands
+/-- Extra legacy prefixes, disp32, RIP-relative and mod00 missing SIB operands
 are outside this profile; REX.W selects the separate full-width memory forms.
 In particular no-index SIB cannot be lowered to a 2-byte base
 instruction: it would silently give the wrong encoded length. -/
 example : Sequential.decodeAt (entry [0x66, 0x89, 0xc0]) =
-    .error .unsupportedEncoding := by rfl
+    .error .unsupportedEncoding := by cbv
 example : Sequential.decodeAt (entry [0x67, 0x8b, 0x0f]) =
-    .error (.unsupportedOpcode 0x67) := by rfl
+    .error (.unsupportedOpcode 0x67) := by cbv
 example : Sequential.decodeAt (entry [0xf0, 0x89, 0x07]) =
-    .error .unsupportedEncoding := by rfl
+    .error .unsupportedEncoding := by cbv
 example : Sequential.decodeAt (entry [0x48, 0x89, 0x07]) =
-    .ok (.storeMem64 (.base .rdi) .rax) := by rfl
+    .ok (.storeMem64 (.base .rdi) .rax) := by cbv
 example : Sequential.decodeAt (entry [0x49, 0x8b, 0x0f]) =
-    .ok (.loadMem64 .rcx (.base .r15)) := by rfl
-example : Sequential.decodeAt (entry [0x89, 0x47, 0]) = .error .unsupportedEncoding := by rfl
-example : Sequential.decodeAt (entry [0x8b, 0x8f, 0, 0, 0, 0]) = .error .unsupportedEncoding := by rfl
-example : Sequential.decodeAt (entry [0x8b, 0x05, 0, 0, 0, 0]) = .error .unsupportedEncoding := by rfl
-example : Sequential.decodeAt (entry [0x89, 0x04, 0x27]) = .error .unsupportedEncoding := by rfl
-example : Sequential.decodeAt (entry [0x8b, 0x04, 0x0d]) = .error .unsupportedEncoding := by rfl
-example : Sequential.decodeAt (entry [0x89]) = .error (.inaccessibleInstruction 4097) := by rfl
-example : Sequential.decodeAt (entry [0x8b, 0x04]) = .error (.inaccessibleInstruction 4098) := by rfl
+    .ok (.loadMem64 .rcx (.base .r15)) := by cbv
+example : Sequential.decodeAt (entry [0x89, 0x47, 0]) =
+    .ok (.storeMem32 (.baseDisp8 .rdi 0) .rax) := by cbv
+example : Sequential.decodeAt (entry [0x8b, 0x8f, 0, 0, 0, 0]) = .error .unsupportedEncoding := by cbv
+example : Sequential.decodeAt (entry [0x8b, 0x05, 0, 0, 0, 0]) = .error .unsupportedEncoding := by cbv
+example : Sequential.decodeAt (entry [0x89, 0x04, 0x27]) = .error .unsupportedEncoding := by cbv
+example : Sequential.decodeAt (entry [0x8b, 0x04, 0x0d]) = .error .unsupportedEncoding := by cbv
+example : Sequential.decodeAt (entry [0x89]) = .error (.inaccessibleInstruction 4097) := by cbv
+example : Sequential.decodeAt (entry [0x8b, 0x04]) = .error (.inaccessibleInstruction 4098) := by cbv
 
 /-- Fetch permission remains necessary for every encoded byte, including the
 new third SIB byte. Readable code bytes alone cannot authorize decoding. -/
 example : Sequential.decodeAt { entry [0x89, 0x14, 0x8f] with
     memory := { (entry [0x89, 0x14, 0x8f]).memory with
       executable := fun address => decide (address = 4096 ∨ address = 4097) } } =
-    .error (.inaccessibleInstruction 4098) := by rfl
+    .error (.inaccessibleInstruction 4098) := by cbv
 
 /-- Actual discovery retains its read-only policy even when a store might
 write the existing value, and rejects a later store after valid register code.
 The positive case confirms register MOV and load admission were retained. -/
 example : Sequential.CFG.analyze [0x89, 0x07, 0xc3] =
-    .error (.unsupportedInstruction 0) := by rfl
+    .error (.unsupportedInstruction 0) := by cbv
 example : Sequential.CFG.analyze [0x89, 0x14, 0x8f, 0xc3] =
-    .error (.unsupportedInstruction 0) := by rfl
+    .error (.unsupportedInstruction 0) := by cbv
 example : Sequential.CFG.analyze [0x89, 0xf1, 0x89, 0x07, 0xc3] =
-    .error (.unsupportedInstruction 2) := by rfl
-example : (Sequential.CFG.analyze [0x89, 0xf1, 0x8b, 0x0f, 0xc3]).isOk = true := by rfl
+    .error (.unsupportedInstruction 2) := by cbv
+example : (Sequential.CFG.analyze [0x89, 0xf1, 0x8b, 0x0f, 0xc3]).isOk = true := by cbv
 
 def tsoEntry (bytes : List Byte) : OS.TSO.State :=
   ⟨(entry bytes).memory, [⟨OS.Threads.Context.ofState (entry bytes), false, []⟩]⟩
@@ -318,7 +319,7 @@ example : ([[0x89, 0x07], [0x8b, 0x0f], [0x89, 0xf1], [0x8b, 0xf1],
     (fun bytes => (OS.TSO.step (tsoEntry bytes) (.issue 0)).map (fun _ => ())) =
     [.error (.machine .unsupportedEncoding), .error (.machine .unsupportedEncoding),
       .error (.machine .unsupportedEncoding), .error (.machine .unsupportedEncoding),
-      .error (.machine .unsupportedEncoding), .error (.machine .unsupportedEncoding)] := by rfl
+      .error (.machine .unsupportedEncoding), .error (.machine .unsupportedEncoding)] := by cbv
 
 end EDSL.Tests.SequentialMoves
 

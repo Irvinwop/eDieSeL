@@ -278,29 +278,40 @@ def decodeCounter32At (state : State) (opcode rex : Byte) (prefixed : Bool) :
       (← fetchByte state.memory (state.rip + (if prefixed then 3 else 2))) prefixed
   else return .inc32 destination prefixed
 
-/-- Mod01 addressing with an authenticated REX.W and ModRM. Every base is
-real, including RBP/R13. A no-index SIB remains distinct from a plain address;
-X=1 turns encoded index4 into R12. All suffix bytes are permission-checked.
-This helper does not authenticate its supplied prefix or ModRM. -/
-def decodeDisp8AddressAt (state : State) (rex modrm : Byte) : Except Error Address := do
+/-- Shared mod01 suffix, after an authenticated ModRM. `offset` is the first
+byte after ModRM, measured from instruction RIP. Every base is real, including
+RBP/R13. Encoded index4 is absent only with X=0; X=1 selects R12. The raw signed
+displacement and encoded scale are retained, including explicit zero offsets
+and no-index SIBs. SIB is fetched before displacement. This helper authenticates
+neither the supplied prefix/ModRM nor an enclosing opcode. -/
+def decodeDisp8AddressSuffixAt (state : State) (rex modrm : Byte) (offset : Nat) :
+    Except Error Address := do
   if modrm.toNat / 64 ≠ 1 then throw .unsupportedEncoding
   if modrm.toNat % 8 = 4 then
-    let sib ← fetchByte state.memory (state.rip + 3)
+    let sib ← fetchByte state.memory (state.rip + BitVec.ofNat 64 offset)
     let index := if sib.toNat / 8 % 8 = 4 ∧ rex.getLsbD 1 = false then none
       else some (rexSIBIndex rex sib)
     return .sibDisp8 (rexModRMRM rex sib) index
       ⟨sib.toNat / 64, by have := sib.isLt; omega⟩
-      (← fetchByte state.memory (state.rip + 4))
+      (← fetchByte state.memory (state.rip + BitVec.ofNat 64 (offset + 1)))
   else
-    let displacement ← fetchByte state.memory (state.rip + 3)
+    let displacement ← fetchByte state.memory (state.rip + BitVec.ofNat 64 offset)
     return .baseDisp8 (rexModRMRM rex modrm) displacement
 
-/-- MOVZX's mod00 full64 addresses, with a SIB at offset 3/4 depending on
-prefix presence. REX.B/X extend real bases/indices. Encoded base5 is absent
-even with B=1; encoded index4 denotes R12 only with X=1. No displacement,
-RIP-relative, missing-base/index or address-size override is modeled. -/
+/-- Compatibility entry point for one-byte REX/opcode encodings, whose
+ModRM is at offset2. CallReturn and existing LEA clients retain this API. -/
+def decodeDisp8AddressAt (state : State) (rex modrm : Byte) : Except Error Address :=
+  decodeDisp8AddressSuffixAt state rex modrm 3
+
+/-- MOVZX's full64 mod00/mod01 addresses, with a suffix at offset3/4
+depending on prefix presence. REX.B/X extend real bases/indices. Mod01 uses
+the shared signed-disp8 decoder, including real RBP/R13 and no-index SIB.
+Mod00 retains the existing real-base/index restriction; RIP-relative, disp32
+and address-size overrides remain unsupported. -/
 def decodeMovzxAddressAt (state : State) (rex modrm : Byte) (prefixed : Bool) :
     Except Error Address := do
+  if modrm.toNat / 64 = 1 then
+    return (← decodeDisp8AddressSuffixAt state rex modrm (if prefixed then 4 else 3))
   if modrm.toNat / 64 ≠ 0 then throw .unsupportedEncoding
   if modrm.toNat % 8 = 4 then
     let sib ← fetchByte state.memory (state.rip + (if prefixed then 4 else 3))
@@ -417,9 +428,12 @@ def decodeJccAt (state : State) (opcode : Byte) : Except Error Instruction := do
   return .jcc (Condition.ofNibble ⟨opcode.toNat % 16, Nat.mod_lt _ (by decide)⟩)
     displacement
 
-/-- The common mod=00 address subset. SIB has a real base and index; prefixes,
-displacements, RIP-relative and absent-base/index forms remain unsupported. -/
+/-- Unprefixed full64 mod00/mod01 address subset. Mod01 reuses the shared
+signed-disp8 suffix. Mod00 still requires a real base and SIB index; disp32,
+RIP-relative and address-size overrides remain unsupported. -/
 def decodeAddressAt (state : State) (modrm : Byte) : Except Error Address := do
+  if modrm.toNat / 64 = 1 then
+    return (← decodeDisp8AddressSuffixAt state 0 modrm 2)
   if modrm.toNat / 64 ≠ 0 then throw .unsupportedEncoding
   if modrm.toNat % 8 = 4 then
     let sib ← fetchByte state.memory (state.rip + 2)
@@ -429,9 +443,10 @@ def decodeAddressAt (state : State) (modrm : Byte) : Except Error Address := do
   else if modrm.toNat % 8 = 5 then throw .unsupportedEncoding
   else return .base (modRMRM modrm)
 
-/-- Continue after authenticated opcode 80. Only /7 and the existing unprefixed
-mod=00 address subset are admitted. The immediate follows the complete address;
-register operands, displacements, absent bases/indices and prefixes stay unsupported. -/
+/-- Continue after authenticated opcode80. Only /7 and the unprefixed
+mod00/mod01 address subset are admitted. The immediate is fetched after the
+complete address suffix. Register operands and unsupported address/prefix
+forms reject before fetching an unused immediate. -/
 def decodeCmpMemImm8At (state : State) : Except Error Instruction := do
   let modrm ← fetchByte state.memory (state.rip + 1)
   if modrm.toNat / 8 % 8 ≠ 7 then throw .unsupportedEncoding
@@ -439,8 +454,8 @@ def decodeCmpMemImm8At (state : State) : Except Error Instruction := do
   let immediate ← fetchByte state.memory (state.rip + BitVec.ofNat 64 (2 + address.suffixBytes))
   return .cmpMemImm8 address immediate
 
-/-- Continue after authenticated unprefixed 38/39. Only the existing mod=00
-address subset is admitted. Without REX, byte source codes 4..7 denote
+/-- Continue after authenticated unprefixed 38/39. Only the mod00/mod01
+address subset is admitted. Without REX, byte source codes4..7 denote
 AH/CH/DH/BH, so they are rejected instead of being interpreted as low8 GPRs.
 Intel SDM Vol.2 CMP (38/39 /r): memory is the left subtraction operand. -/
 def decodeCmpMemRegAt (state : State) (byteWidth : Bool) : Except Error Instruction := do
@@ -465,10 +480,13 @@ def decodeMovSignImm32At (state : State) (rex : Byte) : Except Error Instruction
   let b3 ← fetchByte state.memory (state.rip + 6)
   return .movSignImm32 (rexModRMRM rex modrm) (joinDWord b0 b1 b2 b3)
 
-/-- Mod=00 operands after a one-byte REX and one-byte opcode. B extends the real base and X extends the SIB
-index. Encoded base=5 still denotes a missing/RIP-relative base regardless
-of B. Index=4 is missing only when X=0; X=1 selects the real R12 index. -/
+/-- Mod00/mod01 operands after one REX and one opcode byte. Mod01 uses
+the shared signed-disp8 decoder with every base real and optional SIB index.
+Mod00 retains its real-base/index restrictions. B extends bases, X extends
+indices, and X=1 makes encoded index4 the real R12 register. -/
 def decodeQWordAddressAt (state : State) (rex modrm : Byte) : Except Error Address := do
+  if modrm.toNat / 64 = 1 then
+    return (← decodeDisp8AddressAt state rex modrm)
   if modrm.toNat / 64 ≠ 0 then throw .unsupportedEncoding
   if modrm.toNat % 8 = 4 then
     let sib ← fetchByte state.memory (state.rip + 3)
@@ -505,7 +523,7 @@ def decodeLea32At (state : State) (rex : Byte) (prefixed : Bool) :
   return .lea32 (rexModRMReg (if prefixed then rex else 0) modrm) address prefixed
 
 /-- Continue after authenticated 3A, with no prefix or one non-W REX. Only
-mod00 memory addresses from the existing helpers are admitted. Unprefixed
+mod00/mod01 memory addresses from the shared helpers are admitted. Unprefixed
 reg4..7 mean AH..BH and reject. This helper does not authenticate its supplied
 prefix/opcode; `decodeAt` does. No register operand is fabricated from memory. -/
 def decodeCmpRegMem8At (state : State) (rex : Byte) (prefixed : Bool) :
@@ -539,7 +557,7 @@ def decodeREX32At (state : State) (rex : Byte) : Except Error Instruction := do
   else if operation = 0x0f then decode0FREX32At state rex
   else if operation = 0x3a then
     let modrm ← fetchByte state.memory (state.rip + 2)
-    if modrm.toNat / 64 = 0 then decodeCmpRegMem8At state rex true
+    if modrm.toNat / 64 = 0 ∨ modrm.toNat / 64 = 1 then decodeCmpRegMem8At state rex true
     else decodeCmpReg8At state operation rex true
   else if operation = 0x38 then decodeCmpReg8At state operation rex true
   else if operation = 0x29 ∨ operation = 0x2b then decodeSubReg32At state operation rex true
@@ -706,13 +724,13 @@ one REX.W prefix 48..4F, including R/B and the SIB index extension X. Register
 ADD, AND/OR/XOR and CMOV ignore X. Logical instructions admit both opcode
 directions with mod=3 only. AND imm8 has its separate canonical 48/49 group route;
 memory operands and other full64 logical immediates remain unsupported.
-Opcode 03 additionally admits a mod=00 memory source;
+Opcode 03 additionally admits a mod00/mod01 memory source;
 opcode 01 memory destinations remain unsupported. CMOV accepts the sixteen
 0F 40..4F condition codes, with R extending its destination and B its source.
 Memory CMOV needs an unconditional operand-read contract and is unsupported.
 LEA uses the existing mod=00 address subset or generic mod=01 signed disp8
 plain/SIB forms, including no-index SIBs, to compute a value without a data
-access. Memory families retain their existing mod=00 restrictions. XCHG's short form uses B to
+access. Ordinary memory families reuse the mod01 signed-disp8 addresses. XCHG's short form uses B to
 extend its opcode register; unused R/X bits are ignored. Other 64-bit families
 retain exact prefix 48.
 Register CMP32 (39/3B), TEST32 (85), and CMOV32 (0F40..4F) accept no prefix
@@ -722,9 +740,9 @@ Memory-left CMP admits unprefixed 38/39 /r with `decodeAddressAt` operands;
 38 admits only AL/CL/DL/BL sources. Byte-immediate CMP admits unprefixed 80 /7 ib.
 Register CMP8 (38/3A), SUB32 (29/2B), and MOVZX r32,r/m8 (0F B6) accept no
 prefix or one W=0 REX40..47. Byte registers4..7 require REX; unprefixed high-byte
-registers reject. Memory MOVZX uses mod00 full64 R/B/X addressing and DATA1;
+registers reject. Memory MOVZX uses mod00/mod01 full64 R/B/X addressing and DATA1;
 memory SUB and prefixed memory-left CMP remain unsupported. Memory-right CMP
-uses 3A mod00, unprefixed or one non-W REX, with prestate LOW8 register left.
+uses 3A mod00/mod01, unprefixed or one non-W REX, with prestate LOW8 register left.
 Unprefixed B9/BB/BC/BD complete the low-bank MOV32 immediate family through
 the existing legacy MOV32 semantics; legacy B8/BA/BE/BF successes retain priority.
 Register-only
@@ -749,12 +767,15 @@ Exact ENDBR64 is
 interpreted under the named IBT-disabled target profile. NOPs are restricted
 to `NopEncoding.bytes`, with complete instruction fetches and no operand read.
 Register ModRM for legacy self-XOR32/TEST/CMP/INC/DEC/ADD-immediate, unprefixed MOV32, and mod=00
-ordinary ADD/MOV-memory addresses.
+ordinary ADD/MOV-memory addresses, extended with shared mod01 signed-disp8 suffixes.
 Short conditional branches admit the unprefixed 70..7F rel8 forms. The
 legacy-first decoder retains 75 as JNZ, and 74 retains the existing JE API.
-SIB allows all scales, no missing index (index=4), no missing base (base=5),
-and no displacement. A plain base=4 must use SIB; base=5 would be RIP-relative
-and is rejected. Unsupported forms never fall through to weaker addressing. -/
+Mod00 SIB retains all scales and its real-base/index restriction. Mod01 SIB
+retains all scales, every real base including RBP/R13, and an optional index;
+X=1 selects R12 for encoded index4. Signed disp8 is kept as a raw byte and
+evaluated at full64 width. Explicit zero disp8 and no-index SIB retain their
+encoded lengths. Mod10/disp32, RIP-relative, absent-base and 67 forms remain
+unsupported. Unsupported forms never fall through to weaker addressing. -/
 def decodeNewAt (state : State) (oldError : Error) : Except Error Instruction := do
   let opcode ← fetchByte state.memory state.rip
   if 0xb0 ≤ opcode.toNat ∧ opcode.toNat ≤ 0xb7 then decodeMovImm8At state opcode 0 false
@@ -763,11 +784,11 @@ def decodeNewAt (state : State) (oldError : Error) : Except Error Instruction :=
   else if opcode = 0x80 then decodeCmpMemImm8At state
   else if opcode = 0x38 then
     let modrm ← fetchByte state.memory (state.rip + 1)
-    if modrm.toNat / 64 = 0 then decodeCmpMemRegAt state true
+    if modrm.toNat / 64 = 0 ∨ modrm.toNat / 64 = 1 then decodeCmpMemRegAt state true
     else decodeCmpReg8At state opcode 0 false
   else if opcode = 0x3a then
     let modrm ← fetchByte state.memory (state.rip + 1)
-    if modrm.toNat / 64 = 0 then decodeCmpRegMem8At state 0 false
+    if modrm.toNat / 64 = 0 ∨ modrm.toNat / 64 = 1 then decodeCmpRegMem8At state 0 false
     else decodeCmpReg8At state opcode 0 false
   else if opcode = 0x29 ∨ opcode = 0x2b then decodeSubReg32At state opcode 0 false
   else if opcode = 0x31 ∨ opcode = 0x33 ∨ opcode = 0x09 ∨ opcode = 0x0b then decodeLogicalReg32At state opcode 0 false
@@ -778,7 +799,7 @@ def decodeNewAt (state : State) (oldError : Error) : Except Error Instruction :=
   else if opcode = 0x83 ∨ opcode = 0xff then decodeCounter32At state opcode 0 false
   else if opcode = 0x39 then
     let modrm ← fetchByte state.memory (state.rip + 1)
-    if modrm.toNat / 64 = 0 then decodeCmpMemRegAt state false
+    if modrm.toNat / 64 = 0 ∨ modrm.toNat / 64 = 1 then decodeCmpMemRegAt state false
     else decodeCompare32At state opcode 0 false
   else if opcode = 0x3b ∨ opcode = 0x85 then
     decodeCompare32At state opcode 0 false

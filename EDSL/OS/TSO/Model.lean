@@ -7,6 +7,7 @@ import EDSL.X86.StoreBuffer
 
 namespace EDSL.OS.TSO
 open X86
+universe u
 
 structure Worker where
   context : Threads.Context
@@ -37,7 +38,8 @@ inductive Fault where
   | unexpectedResult
   deriving DecidableEq, Repr
 
-@[simp] theorem throw_error (fault : Fault) : (throw fault : Except Fault α) = .error fault := rfl
+@[simp] theorem throw_error {α : Type u} (fault : Fault) :
+    (throw fault : Except Fault α) = .error fault := rfl
 
 def sharedState (state : State) (worker : Worker) : X86.State :=
   MachineThreads.contextState worker.context state.memory

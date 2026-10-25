@@ -18,6 +18,7 @@ import EDSL.X86.Sequential.Low8
 import EDSL.X86.Sequential.ByteComparePadding
 import EDSL.X86.Sequential.NopPadding
 import EDSL.X86.Sequential.AndImmediate64Decode
+import EDSL.X86.Sequential.DisplacedData
 import EDSL.X86.Sequential.AndImmediate64Resources
 import EDSL.X86.VCGen.AndImmediate64
 import EDSL.Grading.ByteEquality

@@ -65,6 +65,12 @@ jobs:
         env:
           LEAN_NUM_THREADS: '1'
         run: flock /tmp/edsl-lean-build.lock lake build PackedReadTests
+      - name: Check displaced DATA addresses and current-resource proofs
+        env:
+          LEAN_NUM_THREADS: '1'
+        run: |
+          flock /tmp/edsl-lean-build.lock lake build DisplacedDataTests
+          flock /tmp/edsl-lean-build.lock lake env lean -j1 -DwarningAsError=true -DautoImplicit=false -DmaxHeartbeats=300000 -DmaxRecDepth=128 tests/DisplacedDataAudit.lean
       - name: Check prepared and generated certificates
         run: |
           lake env lean -j1 -DwarningAsError=true -DautoImplicit=false -DmaxHeartbeats=300000 -DmaxRecDepth=128 EDSL/Grading/Export/PackedBytes.lean
@@ -553,6 +559,16 @@ jobs:
         with:
           name: and64-immediate-evidence
           path: artifacts/and64-immediate/
+          if-no-files-found: error
+      - name: Replay displaced DATA CPU observations through Lean
+        if: ${{ matrix.domain == 'sequential-cfg' }}
+        run: bash scripts/verify-displaced-data.sh
+      - name: Preserve displaced DATA native observations and kernel checks
+        if: ${{ always() && matrix.domain == 'sequential-cfg' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: displaced-data-evidence
+          path: artifacts/displaced-data/
           if-no-files-found: error
       - name: Replay owned CMP32, TEST32 and padding CPU observations through Lean
         if: ${{ matrix.domain == 'sequential-cfg' }}

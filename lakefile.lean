@@ -320,6 +320,23 @@ lean_lib PackedReadTests where
   moreLeanArgs := #["-DwarningAsError=true", "-DautoImplicit=false",
     "-DmaxHeartbeats=300000", "-DmaxRecDepth=128"]
 
+-- Ordinary displaced DATA operands reuse existing semantics and authority.
+lean_lib DisplacedDataTests where
+  roots := #[
+    `tests.CallReturnRaw, `tests.DisplacedDataAudit, `tests.DisplacedDataBase,
+    `tests.DisplacedDataDecode, `tests.DisplacedDataExecute, `tests.DisplacedDataFaults,
+    `tests.DisplacedDataNative01, `tests.DisplacedDataNative02, `tests.DisplacedDataNative03,
+    `tests.DisplacedDataNative04, `tests.DisplacedDataNative05, `tests.DisplacedDataNative06,
+    `tests.DisplacedDataNative07, `tests.DisplacedDataNative08, `tests.DisplacedDataNative09,
+    `tests.DisplacedDataNative10, `tests.DisplacedDataNative11, `tests.DisplacedDataNative12,
+    `tests.DisplacedDataNative13, `tests.DisplacedDataNative14, `tests.DisplacedDataNative15,
+    `tests.DisplacedDataNative16, `tests.DisplacedDataNative17, `tests.DisplacedDataNative18,
+    `tests.DisplacedDataNative19, `tests.DisplacedDataNative20, `tests.DisplacedDataNativeBase,
+    `tests.DisplacedDataResources, `tests.DisplacedDataStores, `tests.SequentialAddMemory64,
+    `tests.SequentialMemory64, `tests.SequentialMoves]
+  moreLeanArgs := #["-DwarningAsError=true", "-DautoImplicit=false",
+    "-DmaxHeartbeats=300000", "-DmaxRecDepth=128"]
+
 -- Full-address LEA32 narrowing and low-byte immediate TEST contracts.
 lean_lib AddressByteTests where
   roots := #[`tests.Address32, `tests.TestImmediate8, `tests.AddressByteTransport,

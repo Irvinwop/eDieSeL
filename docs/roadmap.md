@@ -33,11 +33,16 @@ decoding and native tests are separate evidence.
 2. Use the [ranked feature queue](corpus-blockers.md#ranked-reusable-features) for
    shared ISA work. [Register and immediate SUB64](sequential-sub64.md) now
    have reusable arithmetic, flag, continuation and current-resource rules.
-   The [new production diagnostic](../corpus/measurements/sub64-v1/) accepts
-   the complete Clang triangular and binary-search CFGs. DATA displacement
-   forms now lead the shared-feature queue, followed by AND64-immediate.
-   Default size gates, later instructions and each independent invariant/resource
-   contract still apply; instruction support alone earns no certification.
+   The [recorded production diagnostic](../corpus/measurements/sub64-v1/) accepts
+   the complete Clang triangular and binary-search CFGs. This integration's
+   [ordinary signed-disp8 DATA addresses](displaced-data.md), alongside
+   [signed-byte AND64](and64-immediate.md), remove shared decoder barriers.
+   Source audit advances eight compiler frontiers across seven disp8-blocked
+   functions to their next instruction or independent contract; it adds no
+   checker run or certification. XMM and W=0 REX DATA4 now lead the remaining
+   ISA queue. Develop the exposed scalar/read-only and mutable-array contracts
+   through existing execution/resource APIs. Default size gates, later
+   instructions and each independent invariant/resource contract still apply.
 3. Build XMM lane/memory rules, mutable-array ownership and DWORD lock protocols
    as reusable families. Select complete corpus contracts to exercise them,
    reuse the shared VCG and current-resource adapters, and update first blockers
