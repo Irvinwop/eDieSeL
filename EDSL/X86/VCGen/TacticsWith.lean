@@ -38,7 +38,7 @@ macro "vcgen_stepWith" graph:ident entry:ident simplify:tactic : tactic => `(tac
     dsimp only [executeWith, Instruction.registerChoiceEffect, imulReg64State,
       shiftRightImm32State, Instruction.selectedChoice,
       Instruction.choiceFlag, Instruction.choosesAF, FlagChoices.get,
-      execute, Instruction.operandReads, Instruction.length, NopEncoding.length,
+      execute, logical64State, Instruction.operandReads, Instruction.length, NopEncoding.length,
       Address.eval, executeInstruction, executeJnz, executeShortBranch,
       executeRet, State.writeRegister, pure_ok]
     (vcgen_factor => $simplify:tactic)

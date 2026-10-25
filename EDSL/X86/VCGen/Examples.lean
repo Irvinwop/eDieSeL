@@ -58,7 +58,7 @@ def graph (routine : Routine) : CFG.Graph :=
     cutpoint := decide (index = 0), depth := nodes.length - index }), nodes.length⟩
 
 theorem valid (routine : Routine) : CFG.Valid (bytes routine) (graph routine) := by
-  cases routine <;> exact CFG.check_sound (by decide)
+  cases routine <;> exact CFG.check_sound (by decide +kernel)
 
 def entry (routine : Routine) : (graph routine).Index :=
   ⟨0, by cases routine <;> decide⟩
@@ -143,7 +143,7 @@ local macro "reduce_generated" stack:ident target:ident data:ident : tactic => `
    conv in (CFG.Graph.node _ _).instruction =>
      simp [graph,instructions,nodesFrom,
        CFG.Graph.node,Sequential.Instruction.length]
-   simp only [Sequential.execute,Sequential.Instruction.operandReads,
+   simp only [Sequential.execute,Sequential.logical64State,Sequential.Instruction.operandReads,
      Sequential.Instruction.length,
      X86.executeInstruction,X86.executeRet,State.writeRegister,Address.eval,
      LogicalOp.eval,BitVec.shiftLeft_zero,ok_bind,pure_ok]

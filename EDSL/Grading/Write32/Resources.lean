@@ -168,7 +168,7 @@ theorem ResourcePolicy.returned {resource initial} (policy : ResourcePolicy reso
 
 /-- Every initially live unrelated loan keeps its record and exact cells at
 return; the final witness comes from the actual execution, not a new world. -/
-theorem ResourcePolicy.loan_frame {resource initial}
+theorem ResourcePolicy.loan_frame {bytes resource initial}
     (pre : ResourcePre bytes resource initial) (policy : ResourcePolicy resource initial)
     {choices result} (execution : Sequential.Executes choices initial result) :
     ∃ evolved,

@@ -133,7 +133,7 @@ macro "vcgen_block_step" graph:ident cut:ident simplify:tactic : tactic => `(tac
     intro af
     conv in (CFG.Graph.node _ _).instruction =>
       simp [$graph:ident, $cut:ident, CFG.Graph.node]
-    dsimp only [List.length, execute, Instruction.operandReads,
+    dsimp only [List.length, execute, logical64State, Instruction.operandReads,
       Instruction.length, NopEncoding.length, Address.eval, executeInstruction, executeJnz, executeShortBranch,
       executeLoop, executeRet, State.writeRegister, pure_ok]
     (vcgen_factor =>
@@ -158,7 +158,7 @@ macro "vcgen_step" graph:ident entry:ident simplify:tactic : tactic => `(tactic|
     intro af
     conv in (CFG.Graph.node _ _).instruction =>
       simp [$graph:ident, $entry:ident, CFG.Graph.node]
-    dsimp only [execute, Instruction.operandReads,
+    dsimp only [execute, logical64State, Instruction.operandReads,
       Instruction.length, Address.eval, executeInstruction, executeJnz, executeShortBranch,
       executeRet, State.writeRegister, pure_ok]
     (vcgen_factor => $simplify:tactic)
