@@ -36,23 +36,28 @@ if [[ $EUID != 0 ]]; then
     edsl_systemd=(sudo -n systemd-run)
 fi
 edsl_user=$(id -un)
+edsl_environment=()
 edsl_bounded() {
-    local phase=$1 memory=$2 tasks=$3 seconds=$4
+    local phase=$1 memory=$2 tasks=$3 seconds=$4 runtime
     shift 4
-    printf '%q ' "${edsl_systemd[@]}" --unit="edsl-$edsl_tag-$phase" "$@" \
-        >> "$edsl_out/commands.txt"
+    runtime=$((seconds + 5))
+    if [[ "$seconds" == 120 ]]; then runtime=130; fi
+    local command=("${edsl_systemd[@]}" --quiet --wait --pipe --collect
+        --unit="edsl-$edsl_tag-$phase" --working-directory="$edsl_source"
+        "${edsl_environment[@]}"
+        -p "User=$edsl_user" -p "MemoryMax=$memory" -p MemorySwapMax=0
+        -p CPUQuota=100% -p "TasksMax=$tasks" -p "RuntimeMaxSec=$runtime"
+        -p TimeoutStopSec=5s -- /usr/bin/time -v
+        timeout --signal=TERM --kill-after=5s "${seconds}s" "$@")
+    printf '%q ' "${command[@]}" >> "$edsl_out/commands.txt"
     printf '\n' >> "$edsl_out/commands.txt"
-    "${edsl_systemd[@]}" --quiet --wait --pipe --collect \
-        --unit="edsl-$edsl_tag-$phase" --working-directory="$edsl_source" \
-        -p "User=$edsl_user" -p "MemoryMax=$memory" -p MemorySwapMax=0 \
-        -p CPUQuota=100% -p "TasksMax=$tasks" -p "RuntimeMaxSec=$((seconds + 10))" \
-        -p TimeoutStopSec=5s -- /usr/bin/time -v \
-        timeout --signal=TERM --kill-after=5s "${seconds}s" "$@"
+    "${command[@]}"
 }
 
 edsl_inputs=(fixtures/sequential-sub64-check.c fixtures/sequential-sub64-probe.S
     scripts/verify-sequential-sub64.sh scripts/audit-sequential-sub64.cjs
-    scripts/prepare-sequential-sub64-replay.cjs lean-toolchain lakefile.lean
+    scripts/prepare-sequential-sub64-replay.cjs scripts/check-sequential-sub64-replay.cjs
+    tests/check-sequential-sub64-replay.cjs lean-toolchain lakefile.lean
     EDSL/X86/Sequential/Model.lean EDSL/X86/Sequential/Decode.lean
     EDSL/X86/Sequential/Machine.lean EDSL/X86/Sequential/MachineChoices.lean
     EDSL/X86/Sequential/Flags.lean EDSL/Audit.lean)
@@ -95,6 +100,8 @@ sha256sum --strict --quiet --check "$edsl_out/ELF.before.sha256"
 node scripts/audit-sequential-sub64.cjs "$edsl_out"
 node scripts/prepare-sequential-sub64-replay.cjs \
     "$edsl_out/NativeSequentialSub64.lean" "$edsl_out/replay"
+node scripts/check-sequential-sub64-replay.cjs --snapshots "$edsl_out" \
+    > "$edsl_out/snapshot-binding.json"
 if [[ "$edsl_native_only" == false ]]; then
     export PATH="$HOME/.elan/bin:$PATH" LEAN_NUM_THREADS=1
     flock /tmp/edsl-lean-build.lock lake build EDSL.X86.Sequential.MachineChoices EDSL.Audit \
@@ -102,6 +109,8 @@ if [[ "$edsl_native_only" == false ]]; then
     edsl_lean=$(lake env which lean)
     edsl_sysroot=$("$edsl_lean" --print-prefix)
     edsl_lean_path=$(lake env printenv LEAN_PATH)
+    edsl_environment=(--setenv=LEAN_NUM_THREADS=1 "--setenv=LEAN_SYSROOT=$edsl_sysroot"
+        "--setenv=LEAN_PATH=$edsl_lean_path")
     for edsl_replay in "$edsl_out"/replay/NativeSub64_*.lean; do
         edsl_name=$(basename "$edsl_replay" .lean)
         (
@@ -114,21 +123,29 @@ if [[ "$edsl_native_only" == false ]]; then
                 exit 1
             fi
             edsl_bounded "$edsl_name" 3221225472 64 120 \
-                env LEAN_NUM_THREADS=1 "LEAN_SYSROOT=$edsl_sysroot" "LEAN_PATH=$edsl_lean_path" \
                 "$edsl_lean" -j1 -DwarningAsError=true -DautoImplicit=false \
                 -DmaxHeartbeats=300000 -DmaxRecDepth=128 "$edsl_replay"
         ) > "$edsl_out/$edsl_name.log" 2>&1
         printf '%s\n' "$edsl_name" >> "$edsl_out/kernel-passed.txt"
     done
     [[ $(wc -l < "$edsl_out/kernel-passed.txt") == 8 ]]
-    printf '680\n' > "$edsl_out/kernel-proved.txt"
+    node scripts/check-sequential-sub64-replay.cjs --kernel "$edsl_out" \
+        > "$edsl_out/kernel-evidence.json"
+    node tests/check-sequential-sub64-replay.cjs "$edsl_out" "$edsl_out" \
+        > "$edsl_out/binding-controls.json"
 else
     printf 'Native-only mode: kernel replay was not run.\n' > "$edsl_out/scope.txt"
 fi
 sha256sum --strict --quiet --check "$edsl_out/SOURCES.before.sha256"
 sha256sum -- "${edsl_inputs[@]}" "$edsl_out/native-check.elf" "$edsl_out/instructions.bin" \
     "$edsl_out/observations.jsonl" "$edsl_out/NativeSequentialSub64.lean" \
-    "$edsl_out/axis-audit.json" "$edsl_out/replay/"*.lean > "$edsl_out/SHA256SUMS"
+    "$edsl_out/axis-audit.json" "$edsl_out/replay/REPLAY.json" \
+    "$edsl_out/snapshot-binding.json" "$edsl_out/replay/"*.lean > "$edsl_out/SHA256SUMS"
+if [[ "$edsl_native_only" == false ]]; then
+    sha256sum -- "$edsl_out/"NativeSub64_*.log "$edsl_out/kernel-evidence.json" \
+        "$edsl_out/binding-controls.json" >> "$edsl_out/SHA256SUMS"
+    printf '680\n' > "$edsl_out/kernel-proved.txt"
+fi
 cat "$edsl_out/native-results.txt"
 printf 'SUB64 native contracts and extraction controls passed. Evidence: %s\n' "$edsl_out"
 if [[ "$edsl_native_only" == false ]]; then

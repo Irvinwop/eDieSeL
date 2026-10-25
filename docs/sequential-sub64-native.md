@@ -32,7 +32,7 @@ The 68 positive windows each run ten profiles, for 680 positive observations:
   `127` in both register banks, with extra RSP and R12 cases.
 - Inputs include zero, unsigned borrow and wrap, signed overflow in both
   directions, auxiliary borrow, parity variation, and nonzero high halves.
-  Both operands are captured from the pre-state, including aliases.
+  Alias expectations use the requested pre-state for both operands.
 - Eight owned negative controls change source, direction, operand width,
   operation, destination write, carry, immediate sign extension, or register
   bank. Each must fail the C request contract. They are excluded from replay.
@@ -44,6 +44,9 @@ then does `pushfq` record flags. The capture clears DF and restores saved
 callee registers and the caller's original flags before returning. Requested
 flags alternate `0x202`/`0xed7`, including DF, while expectations use the
 effective user-mode flags captured immediately before the instruction.
+Pre-state GPR values are requested and installed by the assembly; they are not
+separately measured at the instruction boundary. Post-state GPRs and effective
+pre/post flags are measured; the continuation RIP comes from the linked label.
 The observer blocks maskable signals around probes. It is single-threaded
 and non-reentrant; the modeled RSP may be noncanonical because no window
 dereferences it.
@@ -67,6 +70,22 @@ memory-access trace. A mixed flag-choice vector is used; generic SUB64 theorems
 separately establish that all six flags are defined. Each generated theorem's
 axioms are printed, followed by the transitive `#audit_edsl` audit.
 
+A separate evidence checker parses the actual JSON and Lean proposition literals
+before replay. It binds all selected names, inputs, outputs and instruction
+bytes, and requires each shard to preserve the raw proposition exactly. After
+replay it checks the exact current source path in each compiler log, every
+expected theorem axiom line, one transitive audit and successful compiler
+status. Unknown diagnostics and missing, duplicate or mismatched evidence fail.
+The script writes its kernel-success marker only after these gates and source
+integrity checks. Textual log checks supplement the actual compiler invocation;
+they do not execute Lean or independently authenticate historical logs.
+
+Filesystem regression controls start from the actual successful capture and
+replay. They alter captured fields, propositions, profiles, paths, manifests and
+logs, requiring a passing baseline and the intended rejection before moving to
+the next control. Scratch copies explicitly rebase only path metadata; their
+contents are never reported as a new native or kernel execution.
+
 Run the complete native and kernel replay gate:
 
 ~~~sh
@@ -86,7 +105,8 @@ and all replay logs. The --native-only option skips Lake/kernel replay and
 records that limitation in scope.txt; it cannot establish a replay result.
 
 Compiler execution is capped at 30 seconds and 512 MiB. Each native probe run
-has 30 seconds and 128 MiB; all use one CPU and no swap. The full gate builds
+has 30 seconds and 128 MiB; their outer units allow 35 seconds. All use one CPU
+and no swap. The full gate builds
 the current production dependencies with Lake, then checks eight 85-observation
 Lean files serially. Each Lean invocation uses one thread/job,
 warningAsError=true, autoImplicit=false, heartbeats 300000, recursion depth

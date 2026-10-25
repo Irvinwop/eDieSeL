@@ -213,7 +213,7 @@ private def rejects (bytes : List Byte) (expected : Error := .unsupportedEncodin
     [false,true].all (fun af => fault (Sequential.step af state) expected)
 
 /-- Excluded group selectors, memory modes (including SIB/displacements),
-16/64-bit SUB, LOCK, extra prefixes and noncanonical R/X aliases stay rejected. -/
+16-bit SUB, LOCK, extra prefixes and noncanonical R/X aliases stay rejected. -/
 theorem excluded_forms :
     ([[0x83,0xc8,1], [0x83,0xd0,1], [0x83,0xd8,1], [0x83,0xf0,1],
       [0xff,0xe8], [0xff,0xf8], [0x83,0x28,1], [0x83,0x38,1],
@@ -222,7 +222,7 @@ theorem excluded_forms :
       [0x42,0x83,0xe8,1], [0x43,0x83,0xf8,1], [0x44,0x83,0xee,1],
       [0x45,0x83,0xfe,1], [0x46,0x83,0xee,1], [0x47,0x83,0xfe,1],
       [0x40,0x41,0x83,0xee,1], [0x41,0x40,0x83,0xfe,1],
-      [0x66,0x83,0xee,1], [0x66,0x83,0xfe,1], [0x48,0x83,0xee,1],
+      [0x66,0x83,0xee,1], [0x66,0x83,0xfe,1],
       [0xf0,0x83,0xee,1], [0xf3,0x83,0xfe,1], [0x80,0xee,1], [0x80,0xfe,1],
       [0x40,0x81,0xee,1,0,0,0], [0x41,0x81,0xff,1,0,0,0]] : List (List Byte)).all
       (fun bytes => rejects bytes) = true := by
@@ -235,14 +235,14 @@ theorem excluded_imm32_and_address_override :
   decide +kernel
 
 /-- Accepted old forms retain their constructors/width. The adjacent nonzero
-CMP EAX immediate becomes new CMP32; CMP64 stays a separate existing family. -/
+CMP EAX immediate becomes new CMP32; REX.W SUB/CMP retain their 64-bit width. -/
 theorem legacy_and_other_width_priority :
     ([[0x83,0xf8,0], [0x83,0xf8,0xff], [0x83,0xc0,1], [0x83,0xe0,0xff],
-      [0xff,0xc0], [0x48,0x83,0xf8,0x80]] : List (List Byte)).map
+      [0xff,0xc0], [0x48,0x83,0xf8,0x80], [0x48,0x83,0xee,1]] : List (List Byte)).map
       (fun bytes => (Sequential.decodeAt (codeState bytes 0)).toOption) =
     [some (.legacy .cmpEaxZero), some (.cmpImm32 .rax 0xff false),
      some (.addImm32 .rax 1 false), some (.logicalImm32 .band .rax 0xff false),
-     some (.inc32 .rax false), some (.cmpImm64 .rax 0x80)] := by
+     some (.inc32 .rax false), some (.cmpImm64 .rax 0x80), some (.subImm64 .rsi 1)] := by
   decide +kernel
 
 private def fetchFailures (bytes : List Byte) : Bool :=
