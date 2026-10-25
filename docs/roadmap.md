@@ -44,7 +44,9 @@ decoding and native tests are separate evidence.
    through existing execution/resource APIs. Default size gates, later
    instructions and each independent invariant/resource contract still apply.
 3. Build XMM lane/memory rules, mutable-array ownership and DWORD lock protocols
-   as reusable families. Select complete corpus contracts to exercise them,
+   as reusable families. The [sixteen-byte RAM primitives](memory128.md) now
+   provide checked functional loads, stores and outside-byte frames. XMM state,
+   instruction decoding, lane operations and interleaving rules remain open. Select complete corpus contracts to exercise them,
    reuse the shared VCG and current-resource adapters, and update first blockers
    after each milestone. Keep source-audit predictions separate from actual
    checker results and end-to-end acceptance.

@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 import EDSL
 import EDSL.ELF.PackedRead
 import EDSL.ELF.PackedMetadata
+import EDSL.X86.Memory128
 import EDSL.WordMath.BinarySearch
 import EDSL.X86.VCGen.Examples
 import EDSL.Semantics

@@ -65,6 +65,8 @@ jobs:
         env:
           LEAN_NUM_THREADS: '1'
         run: flock /tmp/edsl-lean-build.lock lake build PackedReadTests
+      - name: Check sixteen-byte ordinary RAM primitives
+        run: flock /tmp/edsl-lean-build.lock lake build Memory128Tests
       - name: Check displaced DATA addresses and current-resource proofs
         env:
           LEAN_NUM_THREADS: '1'

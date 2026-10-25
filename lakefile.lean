@@ -320,6 +320,12 @@ lean_lib PackedReadTests where
   moreLeanArgs := #["-DwarningAsError=true", "-DautoImplicit=false",
     "-DmaxHeartbeats=300000", "-DmaxRecDepth=128"]
 
+-- Sixteen-byte ordinary RAM operations and complete byte/permission boundaries.
+lean_lib Memory128Tests where
+  roots := #[`tests.Memory128]
+  moreLeanArgs := #["-DwarningAsError=true", "-DautoImplicit=false",
+    "-DmaxHeartbeats=300000", "-DmaxRecDepth=128"]
+
 -- Ordinary displaced DATA operands reuse existing semantics and authority.
 lean_lib DisplacedDataTests where
   roots := #[
