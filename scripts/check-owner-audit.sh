@@ -43,7 +43,8 @@ if timeout --signal=TERM --kill-after=5s 120s lean "${edsl_args[@]}" \
   echo 'Defining-module audit accepted an imported private untrusted dependency'
   exit 1
 fi
-if ! rg -q 'depends on unapproved axiom ExternalAuditDependency.untrusted' "$edsl_audit_dir/negative.log"; then
+edsl_negative_message=$(< "$edsl_audit_dir/negative.log")
+if [[ $edsl_negative_message != *'depends on unapproved axiom ExternalAuditDependency.untrusted'* ]]; then
   cat "$edsl_audit_dir/negative.log"
   echo 'Defining-module audit failed for an unexpected reason'
   exit 1
