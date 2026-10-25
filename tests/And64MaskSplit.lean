@@ -48,7 +48,7 @@ def Evidence (input : Input) (initial : State) (result : Result) : Prop :=
 postcondition and literal actual return read, for every admitted argument pair. -/
 theorem generated (input : Input) (initial : State) (pre : Pre bytes input initial) :
     wp graph initial.rip (Allowed initial) 7 entry initial (Evidence input initial) := by
-  vcgen_run graph entry simp [logical64State, Allowed, pre.stack, pre.returnCanonical,
+  vcgen_run graph entry simp [Allowed, pre.stack, pre.returnCanonical,
     BitVec.add_assoc]
   refine ⟨⟨?_, rfl, rfl, rfl, ?_, ?_⟩, rfl, rfl, ?_⟩
   · simp only [Result.prepend, reduceCtorEq, ite_false, ite_true, LogicalOp.eval, pre.left, pre.right]

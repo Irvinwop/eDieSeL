@@ -33,7 +33,7 @@ theorem all_vectors : wpWith graph initial.rip Allowed 3 entry initial
     .ok (8192#64) at stack
   have target : canonical (8192#64) = true := by decide
   have overflow : (7#64).smulOverflow (2#64) = false := by decide
-  vcgen_runWith graph entry simp [logical64State, Allowed, initial, Logical64.Domain.initial,
+  vcgen_runWith graph entry simp [Allowed, initial, Logical64.Domain.initial,
     stack, target, Result.prepend, LogicalOp.eval]
   constructor
   · exact (imulFlags64_bits ..).1.trans overflow
