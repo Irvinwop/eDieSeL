@@ -296,7 +296,21 @@ lean_lib Sub64Tests where
 
 -- Signed-byte full64 AND, exact CFG clients and owned native replay observations.
 lean_lib And64Tests where
-  roots := #[`tests.And64Audit]
+  roots := #[
+    `tests.And64Audit, `tests.And64BankDecode, `tests.And64Fetch,
+    `tests.And64GroupCompatibility, `tests.And64Literals01, `tests.And64Literals02,
+    `tests.And64Literals03, `tests.And64Literals04, `tests.And64MaskSplit,
+    `tests.And64MaskSplitFlags, `tests.And64MaskSplitMutants, `tests.And64Native01,
+    `tests.And64Native02, `tests.And64Native03, `tests.And64Native04,
+    `tests.And64Native05, `tests.And64Native06, `tests.And64Native07,
+    `tests.And64Native08, `tests.And64Native09, `tests.And64Native10,
+    `tests.And64Native11, `tests.And64Native12, `tests.And64Native13,
+    `tests.And64Native14, `tests.And64Native15, `tests.And64Native16,
+    `tests.And64Native17, `tests.And64Native18, `tests.And64Native19,
+    `tests.And64Native20, `tests.And64Native21, `tests.And64Native22,
+    `tests.And64Native23, `tests.And64Native24, `tests.And64Native25,
+    `tests.And64NativeBase, `tests.And64Resources, `tests.And64TestBase,
+    `tests.And64VectorContinuation, `tests.SequentialLogical64, `tests.SequentialLogical64Resources]
   moreLeanArgs := #["-DwarningAsError=true", "-DautoImplicit=false",
     "-DmaxHeartbeats=300000", "-DmaxRecDepth=128"]
 
