@@ -79,7 +79,7 @@ Earlier measurement files retain their historical counts. See
 | Loops and calls | Restricted sums/scans, owned direct calls, DATA8 effects and counted helper contracts | [Capability index](coverage.md#sequential-functions-and-calls) |
 | Proof packets | Fixed independent tasks, exact raw/full-ELF binding and fresh kernel-checked helper declarations | [Proof-packet interface](grading.md); task/ISA profiles remain restricted |
 | Packed-byte algebra | Checked little-endian round trips, concatenation, length and shift-based region slices | [Representation laws](packed-byte-certificates.md); complete-file packing certificates and Counted64 packet admission remain open |
-| Triangular arithmetic | Universal natural recurrences, two-at-a-time loop conservation, uint32/full64 word bounds and an independent low32-input/full64-result Spec | [Arithmetic API](triangular-arithmetic.md); machine-body proofs and corpus registration remain open |
+| Triangular contracts | Universal arithmetic/Spec and full37-byte Clang vector body, current-resource/actual-RET proofs with exact modeled retirement | [Contracts and machine proofs](triangular-arithmetic.md); full named-artifact binding, GCC body and corpus registration remain open |
 | Cost results | Exact modeled instruction/read totals and selected lower bounds | [Cost model](cost-model.md); no CPU-time or unrestricted optimum claim |
 
 The reusable import is [`EDSL`](../EDSL.lean); [`EDSL.All`](../EDSL/All.lean)

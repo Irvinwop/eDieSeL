@@ -1,4 +1,4 @@
-# Triangular arithmetic contracts
+# Triangular contracts and machine proofs
 
 The mathematical result is the natural number n(n+1)/2, reduced modulo 2^64.
 The API keeps that specification separate from a loop or a compiler's algebraic
@@ -50,13 +50,28 @@ holes. The modules are included in the full audit catalogue and fresh replay;
 CI also checks their source with warnings as errors, autoImplicit=false,
 heartbeats 300000 and recursion depth 128.
 
-These theorems do not certify either frozen triangular binary. The Clang
-routine has an accepted 14-node CFG; its vector execution and loaded-resource
-proof remain open. GCC needs its exact NOP7 encoding and a complete loop proof,
-with a compatible callable execution/resource adapter. The reusable
+The [Clang body proof](../EDSL/Corpus/V1/TriangularClangBody.lean) authenticates
+the complete 37-byte instruction window with the production CFG checker, then
+uses the existing vector VCG. It covers every unsigned low32 input, arbitrary
+upper32 RDI and incoming scratch/flags, and every independent flag-choice
+stream. It proves the independent full64 result, complete memory and caller
+frames, and exact modeled retirement: four instructions for zero and twelve
+for every nonzero input.
+
+The [resource adapter](../EDSL/Corpus/V1/TriangularClangResources.lean) retains
+the same admitted caller/code authority and current OS world at every prefix.
+The [return theorem](../EDSL/Corpus/V1/TriangularClangReturn.lean) identifies
+the actual decoded RET at index three or eleven, with no preceding operand
+reads and exactly one STACK8 read at the original RSP. That read returns the
+admitted canonical caller address. The sequential model assumes stable
+ordinary RAM, 64-bit mode, CET/IBT/shadow stacks disabled and no asynchronous
+interference.
+
+This is a window-level proof. Full original named-ELF identity, present-caller
+nonvacuity, certificate export and corpus registration remain open. GCC needs
+its exact NOP7 encoding and complete loop proof. The reusable
 [Bool-to-flags adapter](bool-policy-refinement.md) can transport a bounded Bool
 proof and its actual read policy without changing the callable contract.
-Source/IR preservation,
-native CPU or OS correspondence, concurrency and performance minima are not
-established. The accepted corpus score remains 20/40 functions and 40/80
-compiler artifacts.
+Source/compiler or physical CPU/OS correspondence, concurrency, timing and
+minimum-operation claims are not established. The accepted corpus score
+remains 20/40 functions and 40/80 compiler artifacts.

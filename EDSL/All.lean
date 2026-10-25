@@ -252,3 +252,6 @@ import EDSL.WordMath.Triangular32
 import EDSL.Arithmetic64.Triangular
 import EDSL.Grading.PolicyRefinement
 import EDSL.PureCall.ResourcesFromBool
+import EDSL.Corpus.V1.TriangularClangBody
+import EDSL.Corpus.V1.TriangularClangResources
+import EDSL.Corpus.V1.TriangularClangReturn
