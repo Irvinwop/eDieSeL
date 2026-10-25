@@ -424,6 +424,58 @@ requires kernel checking against the controller's independent contract. The
 [refinement integration checks](../tests/PreparedRefinement.lean) also retain
 and reject a corrupted old proof that the replacement no longer uses.
 
+### Generated data and proof blocks
+
+When a certificate needs names that are absent from the source environment, use
+`Export.refineTheoremValueWithGenerated trusted client closure target rhs generated`.
+It takes the same optional limits as ordinary refinement. The `generated` array
+contains `Export.GeneratedSingleton` payloads:
+
+| Payload | Ordinary declaration |
+| --- | --- |
+| `.defn name type value` | A safe monomorphic singleton definition |
+| `.thm name type proof` | A monomorphic singleton theorem |
+
+Payload fields are closed Lean expressions; term binders are allowed, while free
+universe parameters are not. Safety, universe scope, singleton metadata and
+reduction hints are fixed by the API. Source dependencies retain the existing
+safe reconstruction rules and may be polymorphic.
+
+Generated names must be fresh in the trusted environment, client environment
+and retained closure. Duplicates and reserved names fail. Dependencies determine
+emission order, so a payload may reference a later request. Cycles, singleton
+self references and references to the selected target or an old suffix fail,
+including through another support's type or body. Every supplied payload is
+emitted, including unused entries, and consumes the existing cumulative limits.
+Its type and value are prepared during discovery and final order validation.
+
+All supports precede the selected theorem. The prepared target type, every
+other old field, the old declaration order and root remain intact. Later
+refinements can reference a retained generated prefix without resubmitting its
+names. The original `refineTheoremValue` is the empty-payload case.
+
+This API constructs untrusted declaration data. It does not install constants
+in either environment or check their typing. Encode the complete returned
+closure and check every retained and generated declaration, including unused
+ones, against the independent final contract. The packet format and checker
+remain unchanged. See the [generated-refinement integration checks](../tests/GeneratedRefinement.lean)
+for functional contracts, dependency scheduling, reuse and rejection boundaries.
+
+### Symbolic byte-list algebra
+
+`EDSL.Grading.Export.ByteEquality.Lemmas` provides generic append, cut, flatten
+and chunk-drop lemmas in namespace `EDSLGrader.Export.ByteEquality`.
+`dropAtChunks` takes explicit file equality, prefix length and offset
+decomposition evidence; `dropAt` supplies the quotient/remainder form.
+`Run` lemmas compose outer-list contexts with a symbolic tail, while `finish`
+composes exact endpoint exposure with an internal equality certificate.
+
+These facts have no execution or environmental assumptions. A producer must
+still construct a complete certificate covering its actual byte expressions.
+When helpers are absent from the trusted snapshot, export them as ordinary
+checked dependencies. Length agreement and syntax construction alone do not
+establish byte identity or packet acceptance.
+
 ## Choosing client encoding limits
 
 The Lean producer APIs accept an explicit

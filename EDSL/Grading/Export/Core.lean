@@ -246,6 +246,34 @@ structure PreparedClosure where
 structure PreparedPacket extends Packet where
   preparation : PreparationStats
 
+/-- Untrusted monomorphic singleton syntax, without caller-selected safety,
+universe scope, mutual groups or reduction hints. Every emitted declaration
+still requires independent decoding, kernel checking and auditing. -/
+inductive GeneratedSingleton where
+  | defn (name : Name) (type value : Expr)
+  | thm (name : Name) (type proof : Expr)
+
+def GeneratedSingleton.name : GeneratedSingleton → Name
+  | .defn name _ _ => name
+  | .thm name _ _ => name
+
+/-- Canonical ordinary declaration data; this establishes no typing claim. -/
+def GeneratedSingleton.declaration : GeneratedSingleton → Declaration
+  | .defn name type value => .defnDecl {
+      name := name
+      levelParams := []
+      type := type
+      value := value
+      all := [name]
+      hints := .regular 0
+      safety := .safe }
+  | .thm name type proof => .thmDecl {
+      name := name
+      levelParams := []
+      type := type
+      value := proof
+      all := [name] }
+
 private def eligiblePreparationKey (trusted client : Kernel.Environment) (name : Name) : Bool :=
   if name.isAnonymous || certificationPrefix.isPrefixOf name || (trusted.find? name).isSome then
     false
@@ -392,11 +420,41 @@ private def preparedOwnership (client : Kernel.Environment) (decl : Declaration)
     | _ => pure ()
   return deps
 
+/-- A registry exists only during theorem-value refinement. It is lookup data,
+separate from DFS claims; generated syntax never becomes client metadata. -/
+private inductive PreparedSource where
+  | source
+  | generated (payload : GeneratedSingleton)
+
+private def preparedSource (generated : Option (NameMap GeneratedSingleton))
+    (name : Name) : PreparedSource :=
+  match generated.bind (fun entries => entries.find? name) with
+  | some payload => .generated payload
+  | none => .source
+
+private def PreparedSource.declaration (origin : PreparedSource)
+    (client : Kernel.Environment) (lim : Limits) (name : Name) :
+    Except Failure Declaration := do
+  match origin with
+  | .generated payload => return payload.declaration
+  | .source =>
+    let info ← lookup client name
+    reconstruct client lim info
+
+private def PreparedSource.ownership (origin : PreparedSource)
+    (client : Kernel.Environment) (decl : Declaration) : Except Failure NameSet :=
+  match origin with
+  | .generated _ => pure {}
+  | .source => preparedOwnership client decl
+
 /-- Same group-claiming DFS as the original route, with dependency edges from
 completed prepared fields and ownership metadata. Aggregate preparation state is
-threaded through the entire traversal; no field/group resets it. -/
+threaded through the entire traversal; no field/group resets it. Only refinement
+supplies a registry, including an empty one, and permits own edges solely for
+inductive groups. Ordinary prepared export retains its existing group handling. -/
 private def discoverPrepared (trusted client : Kernel.Environment) (lim : Limits)
-    (preparedLim : PreparedLimits) (tables : Prepare.Tables) :
+    (preparedLim : PreparedLimits) (tables : Prepare.Tables)
+    (generated : Option (NameMap GeneratedSingleton)) :
     Nat → List Work → Closure → PreparationStats →
       Except Failure (Closure × PreparationStats)
   | _, [], state, stats => pure (state, stats)
@@ -406,37 +464,44 @@ private def discoverPrepared (trusted client : Kernel.Environment) (lim : Limits
     match work with
     | .emit owner decl =>
       let completed := decl.getNames.foldl (fun seen name => seen.insert name) state.completed
-      discoverPrepared trusted client lim preparedLim tables fuel rest { state with
+      discoverPrepared trusted client lim preparedLim tables generated fuel rest { state with
         completed := completed
         active := state.active.erase owner
         declarations := state.declarations.push decl } stats
     | .visit name =>
       if (trusted.find? name).isSome || state.completed.contains name then
-        return ← discoverPrepared trusted client lim preparedLim tables fuel rest state stats
+        return ← discoverPrepared trusted client lim preparedLim tables generated fuel rest state stats
       if let some owner := state.owners.find? name then
         if state.active.contains owner then
           return ← fail .unsupported s!"cyclic client declaration dependency: {name}"
         return ← fail .internal "incomplete client group traversal"
-      let info ← lookup client name
-      let original ← reconstruct client lim info
+      let origin := preparedSource generated name
+      let original ← origin.declaration client lim name
       let declared := original.getNames
       let some owner := declared.head? | fail .internal "empty reconstructed declaration"
       let count := state.declaredNames + declared.length
       if count > lim.maxDeclarations then return ← fail .resource "client declared constant names"
       let mut owners := state.owners
-      for generated in declared do
-        if generated.isAnonymous || certificationPrefix.isPrefixOf generated then
-          return ← fail .unsupported s!"reserved client declaration name: {generated}"
-        if (trusted.find? generated).isSome then
-          return ← fail .unsupported s!"client group overlaps trusted names: {generated}"
-        if owners.contains generated then return ← fail .unsupported "overlapping client groups"
-        owners := owners.insert generated owner
-      let ownership ← preparedOwnership client original
+      for declaredName in declared do
+        if declaredName.isAnonymous || certificationPrefix.isPrefixOf declaredName then
+          return ← fail .unsupported s!"reserved client declaration name: {declaredName}"
+        if (trusted.find? declaredName).isSome then
+          return ← fail .unsupported s!"client group overlaps trusted names: {declaredName}"
+        if let .source := origin then
+          if let some entries := generated then
+            if entries.contains declaredName then
+              return ← fail .unsupported "client group overlaps generated refinement names"
+        if owners.contains declaredName then return ← fail .unsupported "overlapping client groups"
+        owners := owners.insert declaredName owner
+      let ownership ← origin.ownership client original
       let (decl, references, stats) ← prepareDeclaration preparedLim tables stats original
-      let own : NameSet := .ofList declared
+      let own : NameSet := if generated.isNone then .ofList declared else
+        match original with
+        | .inductDecl .. => .ofList declared
+        | _ => {}
       let deps := (references ++ ownership).toList.filter fun dependency => !own.contains dependency
       if deps.length > fuel then return ← fail .resource "client dependency discovery steps"
-      discoverPrepared trusted client lim preparedLim tables fuel
+      discoverPrepared trusted client lim preparedLim tables generated fuel
         (deps.map Work.visit ++ .emit owner decl :: rest)
         { state with owners, active := state.active.insert owner, declaredNames := count } stats
 
@@ -462,7 +527,7 @@ def discoverTheoremPrepared (trusted client : Kernel.Environment) (theoremName :
   let (value, valueRefs, stats) ←
     prepareExpression preparedLim tables stats .rootValue theoremName sourceRoot []
   let roots := typeRefs.toList ++ valueRefs.toList
-  let (state, stats) ← discoverPrepared trusted client lim preparedLim tables lim.maxSteps
+  let (state, stats) ← discoverPrepared trusted client lim preparedLim tables none lim.maxSteps
     (roots.map Work.visit) {} stats
   return {
     declarations := state.declarations.toList
@@ -624,6 +689,30 @@ private def refinementClaimNames (trusted : Kernel.Environment) (lim : Limits)
     count := count + 1
   return (seen, owners, count, budget)
 
+/-- Bound the complete request before indexing, and charge each name before
+set/environment operations. Registration never claims or completes a DFS name.
+Unused requests have the same collision checks as reachable requests. -/
+private def refinementGeneratedIndex (trusted client : Kernel.Environment)
+    (lim : Limits) (preparedLim : PreparedLimits) (budget : RefinementBudget)
+    (oldNames : NameSet) (count : Nat) (generated : Array GeneratedSingleton) :
+    Except Failure (NameMap GeneratedSingleton × RefinementBudget) := do
+  if generated.size > lim.maxDeclarations - count then
+    return ← fail .resource "client refinement generated declaration names"
+  let mut budget := budget
+  let mut entries : NameMap GeneratedSingleton := {}
+  for payload in generated do
+    budget ← refinementStep lim budget
+    let name := payload.name
+    budget ← refinementName preparedLim budget name
+    if name.isAnonymous || certificationPrefix.isPrefixOf name then
+      return ← fail .unsupported "reserved generated refinement name"
+    if (trusted.find? name).isSome || (client.find? name).isSome then
+      return ← fail .unsupported "generated refinement name overlaps environment"
+    if oldNames.contains name || entries.contains name then
+      return ← fail .malformed "duplicate or overlapping generated refinement names"
+    entries := entries.insert name payload
+  return (entries, budget)
+
 /-- Before discovery, unknown references may request fresh supports. Afterwards
 only the trusted snapshot, strict old prefix, preceding new supports, and the
 current supported inductive group's own names are available. -/
@@ -649,11 +738,16 @@ theorem (including a body-mode root absent from declarations) fails explicitly.
 The independently closed, monomorphic RHS uses empty substitution tables and
 scope. Existing prepared names seed completed discovery, but are not an audit
 preseed: references to the target or any later old entry are explicitly refused.
-Fresh safe support declarations are reconstructed by the existing prepared DFS
-with empty tables, then inserted immediately before the target in discovery
-order. Supports may be polymorphic. Their actual types, values and ownership
-edges must reference trusted names, the strict old prefix, or preceding supports;
-only supported inductive groups may refer to their own generated names.
+Fresh safe source supports and supplied generated singletons share one prepared
+DFS with empty tables, then are inserted immediately before the target in
+dependency order. Source supports may be polymorphic. Generated declarations
+have canonical safe monomorphic singleton metadata and no source ownership
+edges; their names must be absent from both environments and all old names.
+Every supplied payload is visited, including unused ones. Its actual type and
+value are prepared during discovery and again during final order validation.
+Support fields and source ownership edges must reference trusted names, the
+strict old prefix, or preceding supports; only supported inductive groups may
+refer to their own generated names. Singleton self references and cycles fail.
 
 All supplied counters are untrusted starting costs. Actual old/new names are
 counted and checked for duplicates, overlap and producer-supported metadata.
@@ -666,8 +760,9 @@ require external process bounds; these counters are not a primitive resource
 theorem. This preview does not encode, type-check, establish preservation, or
 admit data. The independent kernel must check all supports, all retained entries
 and the independently selected final proposition; encoding limits apply later. -/
-def refineTheoremValue (trusted client : Kernel.Environment) (closure : PreparedClosure)
-    (name : Name) (rhs : Expr) (lim : Limits := {}) (preparedLim : PreparedLimits := {}) :
+def refineTheoremValueWithGenerated (trusted client : Kernel.Environment)
+    (closure : PreparedClosure) (target : Name) (rhs : Expr)
+    (generated : Array GeneratedSingleton) (lim : Limits := {}) (preparedLim : PreparedLimits := {}) :
     Except Failure PreparedClosure := do
   if closure.discoverySteps > lim.maxSteps || closure.declaredNames > lim.maxDeclarations then
     return ← fail .resource "client refinement supplied closure limits"
@@ -680,17 +775,17 @@ def refineTheoremValue (trusted client : Kernel.Environment) (closure : Prepared
   let mut budget : RefinementBudget := {
     steps := closure.discoverySteps, preparation := closure.preparation }
   budget ← refinementStep lim budget
-  budget ← refinementName preparedLim budget name
-  if name.isAnonymous || certificationPrefix.isPrefixOf name || (trusted.find? name).isSome then
+  budget ← refinementName preparedLim budget target
+  if target.isAnonymous || certificationPrefix.isPrefixOf target || (trusted.find? target).isSome then
     return ← fail .unsupported "ineligible client theorem refinement key"
-  let info ← lookup client name
+  let info ← lookup client target
   safeInfo info
   let .thmInfo original := info
     | fail .unsupported "client refinement key is not a theorem"
   budget ← refinementName preparedLim budget original.name
-  if original.name != name || !original.levelParams.isEmpty then
+  if original.name != target || !original.levelParams.isEmpty then
     return ← fail .unsupported "client refinement requires a matching monomorphic theorem"
-  budget ← refinementSingleton lim preparedLim budget name original.levelParams original.all
+  budget ← refinementSingleton lim preparedLim budget target original.levelParams original.all
 
   let mut oldNames : NameSet := {}
   let mut owners : NameMap Name := {}
@@ -698,7 +793,7 @@ def refineTheoremValue (trusted client : Kernel.Environment) (closure : Prepared
   let mut count := 0
   let mut before : List Declaration := []
   let mut after : List Declaration := []
-  let mut target : Option TheoremVal := none
+  let mut selectedTarget : Option TheoremVal := none
   for decl in closure.declarations do
     let (names, charged) ← refinementDeclarationNames lim preparedLim budget decl
     let (seen, claimed, actual, charged) ←
@@ -707,33 +802,39 @@ def refineTheoremValue (trusted client : Kernel.Environment) (closure : Prepared
     owners := claimed
     count := actual
     budget := charged
-    if names.contains name then
+    if names.contains target then
       let .thmDecl value := decl
         | fail .unsupported "emitted client refinement target is not a theorem"
       if value.name != original.name || value.levelParams != original.levelParams ||
           value.all != original.all then
         return ← fail .malformed "emitted client refinement theorem metadata mismatch"
-      target := some value
-    else if target.isNone then
+      selectedTarget := some value
+    else if selectedTarget.isNone then
       before := decl :: before
       for declared in names do availablePrefix := availablePrefix.insert declared
     else
       after := decl :: after
   if count != closure.declaredNames then
     return ← fail .malformed "client refinement supplied name count mismatch"
-  let some targetValue := target
+  let some targetValue := selectedTarget
     | fail .unsupported "client refinement target is absent from emitted declarations"
 
+  let (entries, charged) ←
+    refinementGeneratedIndex trusted client lim preparedLim budget oldNames count generated
+  budget := charged
+  let registry := some entries
   let tables : Prepare.Tables := {}
   let (value, references, stats) ← prepareField preparedLim budget.preparation
-      .declarationValue name fun expressionLim => Prepare.rewrite expressionLim {} rhs []
+      .declarationValue target fun expressionLim => Prepare.rewrite expressionLim {} rhs []
   budget := { budget with preparation := stats }
   let roots := addPreparedReferences {} references
   budget ← refinementReferences trusted lim preparedLim budget roots availablePrefix oldNames true
   let initial : Closure := {
     completed := oldNames, owners, declaredNames := count, steps := budget.steps }
-  let (discovered, stats) ← discoverPrepared trusted client lim preparedLim tables
-    (lim.maxSteps - budget.steps) (references.toList.map Work.visit) initial budget.preparation
+  let work := references.toList.map Work.visit ++
+    generated.toList.map (fun payload => Work.visit payload.name)
+  let (discovered, stats) ← discoverPrepared trusted client lim preparedLim tables registry
+    (lim.maxSteps - budget.steps) work initial budget.preparation
   budget := { steps := discovered.steps, preparation := stats }
 
   let mut available := availablePrefix
@@ -749,7 +850,9 @@ def refineTheoremValue (trusted client : Kernel.Environment) (closure : Prepared
     let (support, references, stats) ←
       prepareDeclaration preparedLim tables budget.preparation support
     budget := { budget with preparation := stats }
-    let ownership ← preparedOwnership client support
+    let some owner := names[0]?
+      | fail .internal "empty client refinement support names"
+    let ownership ← (preparedSource registry owner).ownership client support
     let own : NameSet := match support with
       | .inductDecl .. => .ofList names.toList
       | _ => {}
@@ -767,5 +870,12 @@ def refineTheoremValue (trusted client : Kernel.Environment) (closure : Prepared
     declaredNames := count
     discoverySteps := budget.steps
     preparation := budget.preparation }
+
+/-- Compatibility route with no generated requests. All limits and cumulative
+counters are those of generated-aware theorem-value refinement. -/
+def refineTheoremValue (trusted client : Kernel.Environment) (closure : PreparedClosure)
+    (name : Name) (rhs : Expr) (lim : Limits := {}) (preparedLim : PreparedLimits := {}) :
+    Except Failure PreparedClosure :=
+  refineTheoremValueWithGenerated trusted client closure name rhs #[] lim preparedLim
 
 end EDSLGrader.Export
