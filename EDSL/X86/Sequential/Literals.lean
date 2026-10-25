@@ -75,6 +75,10 @@ def instruction : Instruction → String
   | .cmpImm32 left immediate prefixed =>
     s!"(.cmpImm32 {register left} {immediate.toNat} {prefixed})"
   | .cmpReg8 left right prefixed => s!"(.cmpReg8 {register left} {register right} {prefixed})"
+  | .subReg64 destination source =>
+    s!"(.subReg64 {register destination} {register source})"
+  | .subImm64 destination immediate =>
+    s!"(.subImm64 {register destination} {immediate.toNat})"
   | .subReg32 destination source prefixed =>
     s!"(.subReg32 {register destination} {register source} {prefixed})"
   | .subImm32 destination immediate prefixed =>

@@ -240,6 +240,34 @@ private theorem decodeCounter32At_refines {source destination : State} (opcode r
       | apply SuccessRefines.bind
       | intro value
 
+private theorem decodeSubReg64At_refines {source destination : State} (operation rex : Byte)
+    (transport : SuccessfulFetchTransport source destination) :
+    SuccessRefines (decodeSubReg64At source operation rex)
+      (decodeSubReg64At destination operation rex) := by
+  have t2 := transport 2 (by decide)
+  unfold decodeSubReg64At
+  repeat first
+    | with_reducible exact SuccessRefines.refl _
+    | exact t2
+    | apply SuccessRefines.ite
+    | apply SuccessRefines.bind
+    | intro value
+
+private theorem decodeGroup1Imm64At_refines {source destination : State} (rex : Byte)
+    (transport : SuccessfulFetchTransport source destination) :
+    SuccessRefines (decodeGroup1Imm64At source rex)
+      (decodeGroup1Imm64At destination rex) := by
+  have t2 := transport 2 (by decide)
+  have t3 := transport 3 (by decide)
+  unfold decodeGroup1Imm64At
+  repeat first
+    | with_reducible exact SuccessRefines.refl _
+    | exact t2
+    | exact t3
+    | apply SuccessRefines.ite
+    | apply SuccessRefines.bind
+    | intro value
+
 private theorem decodeREXWAt_refines {source destination : State} (rex : Byte)
     (transport : SuccessfulFetchTransport source destination) :
     SuccessRefines (decodeREXWAt source rex) (decodeREXWAt destination rex) := by
@@ -253,6 +281,8 @@ private theorem decodeREXWAt_refines {source destination : State} (rex : Byte)
     | exact t2
     | exact t3
     | exact decodeMovSignImm32At_refines _ transport
+    | exact decodeSubReg64At_refines _ _ transport
+    | exact decodeGroup1Imm64At_refines _ transport
     | exact decodeQWordAddressAt_refines _ _ transport
     | exact decodeDisp8AddressAt_refines _ _ transport
     | apply SuccessRefines.ite

@@ -209,6 +209,12 @@ inductive Instruction where
   | lea32 (destination : Register) (address : Address) (prefixed : Bool)
   /-- Register-register addition with full-width result and arithmetic flags. -/
   | addReg64 (destination source : Register)
+  /-- Full64 register subtraction using both prestate operands, with all six
+  subtraction flags defined. No data access or stack-specific authority. -/
+  | subReg64 (destination source : Register)
+  /-- Register-only REX.W 83 /5 ib. The byte is sign-extended to64 before
+  subtraction; CF and AF remain subtraction borrows, not ADD carries. -/
+  | subImm64 (destination : Register) (immediate : Byte)
   /-- Register-only full-width AND/OR/XOR, with an independent undefined AF
   choice. This is an ordinary instruction, not a locked operation. -/
   | logicalReg64 (operation : LogicalOp) (destination source : Register)

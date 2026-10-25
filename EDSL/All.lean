@@ -226,6 +226,9 @@ import EDSL.X86.Sequential.Rotate
 import EDSL.WordMath.Rotation
 import EDSL.X86.Sequential.Low8
 import EDSL.X86.Sequential.Immediate32
+import EDSL.X86.Sequential.Sub64
+import EDSL.X86.Sequential.Sub64Resources
+import EDSL.X86.VCGen.Sub64
 import EDSL.X86.Sequential.Address32
 import EDSL.X86.Sequential.TestImmediate8
 import EDSL.X86.Sequential.ShiftOne

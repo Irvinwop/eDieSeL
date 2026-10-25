@@ -31,11 +31,12 @@ decoding and native tests are separate evidence.
    composition and exact equality from length/value certificates are checked
    library APIs; generated full-file integration still needs independent replay.
 2. Use the [ranked feature queue](corpus-blockers.md#ranked-reusable-features) for
-   shared ISA work. Source audit identifies SUB64 at the first semantic frontier
-   of seven distinct uncovered functions, AND64-immediate at five and ordinary
-   DATA displacement forms at four. These are potential next-stage gains, not
-   promised certifications; default size gates, later instructions and each
-   independent invariant/resource contract still apply.
+   shared ISA work. [Register and immediate SUB64](sequential-sub64.md) now
+   have reusable arithmetic, flag, continuation and current-resource rules.
+   Refresh the original seven affected functions to expose their next gaps.
+   AND64-immediate and ordinary DATA displacement forms remain shared work.
+   Default size gates, later instructions and each independent invariant/resource
+   contract still apply; instruction support alone earns no certification.
 3. Build XMM lane/memory rules, mutable-array ownership and DWORD lock protocols
    as reusable families. Select complete corpus contracts to exercise them,
    reuse the shared VCG and current-resource adapters, and update first blockers

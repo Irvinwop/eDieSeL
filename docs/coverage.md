@@ -33,7 +33,7 @@ enforcement, MMIO/DMA and real exception delivery remain external.
 | Execution profile | Implemented scope | Exact reference |
 | --- | --- | --- |
 | Legacy `X86` | Selected LEA/MOV, RET, CMP/JNZ, JRCXZ/LOOP, XCHG32, LOCK XADD32 and userspace SYSCALL boundaries | [Exact functions](#checked-results), [control flow](control-flow.md), [exchange](atomic-exchange.md), [fetch-add](fetch-add.md) |
-| `X86.Sequential` | Choice-indexed execution, ordinary 32/64-bit memory/register operations, arithmetic/logical operations, comparisons and restricted branches | [MOV/XCHG](sequential-moves.md), [arithmetic](sequential-arithmetic64.md), [memory ADD](sequential-add-memory64.md), [logical operations](sequential-logical64.md) |
+| `X86.Sequential` | Choice-indexed execution, ordinary 32/64-bit memory/register operations, arithmetic/logical operations, comparisons and restricted branches | [MOV/XCHG](sequential-moves.md), [arithmetic](sequential-arithmetic64.md), [SUB64](sequential-sub64.md), [memory ADD](sequential-add-memory64.md), [logical operations](sequential-logical64.md) |
 | Sequential corpus extensions | Selected CMP/TEST, byte reads/order, CMOV32, unary/counter/displacement forms, logical shift by one, exact NOPs and ENDBR64 | [Corpus ISA](sequential-corpus-isa.md), [byte order](sequential-byte-order.md), [CMOV32](sequential-cmov32.md), [unary](sequential-unary.md), [shift](shift-one.md), [popcount](popcount.md) |
 | Conditional control | Register-only CMOV64 and all sixteen unprefixed short rel8 Jcc conditions | [CMOV64](sequential-cmov64.md), [short branches](sequential-short-jcc.md) |
 | Call/return | Separate `X86.CallReturn` engine with direct calls, actual RAM return targets, PUSH/POP and owned private stack writes | [Owned calls](call-stack.md) |

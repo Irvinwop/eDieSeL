@@ -509,6 +509,12 @@ theorem cmpFlags64_borrow (old left right : Word) :
   rw [(cmpFlags64_bits ..).1]
   simp [BitVec.usubOverflow]
 
+/-- Auxiliary carry is the low-nibble subtraction borrow at full width. -/
+theorem cmpFlags64_auxiliary (old left right : Word) :
+    (cmpFlags64 old left right).getLsbD 4 = true ↔ left.toNat % 16 < right.toNat % 16 := by
+  rw [(cmpFlags64_bits ..).2.2.1]
+  simp [BitVec.usubOverflow, BitVec.toNat_setWidth]
+
 theorem cmpFlags64_overflow (old left right : Word) :
     (cmpFlags64 old left right).getLsbD 11 = true ↔
       left.toInt - right.toInt < -(2^63 : Int) ∨ 2^63 ≤ left.toInt - right.toInt := by

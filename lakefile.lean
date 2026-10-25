@@ -287,6 +287,13 @@ lean_lib Immediate32Tests where
   moreLeanArgs := #["-DwarningAsError=true", "-DautoImplicit=false",
     "-DmaxHeartbeats=300000", "-DmaxRecDepth=128"]
 
+-- Full64 SUB contracts, current authority, CFG successors and vector continuations.
+lean_lib Sub64Tests where
+  roots := #[`tests.SequentialSub64, `tests.Sub64IntegrationCFG,
+    `tests.Sub64ReturnPolicy, `tests.Sub64StoreAuthority, `tests.Sub64VectorContinuation]
+  moreLeanArgs := #["-DwarningAsError=true", "-DautoImplicit=false",
+    "-DmaxHeartbeats=300000", "-DmaxRecDepth=128"]
+
 -- Full-address LEA32 narrowing and low-byte immediate TEST contracts.
 lean_lib AddressByteTests where
   roots := #[`tests.Address32, `tests.TestImmediate8, `tests.AddressByteTransport,

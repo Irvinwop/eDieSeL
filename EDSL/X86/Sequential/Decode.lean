@@ -53,7 +53,7 @@ def Instruction.length : Instruction → Nat
   | .legacy .ret => 1
   | .legacy _ => 2
   | .xorSelf32 _ | .movReg32 _ _ | .xchgRax64 _ | .je _ | .jcc _ _ | .jmp _ => 2
-  | .movReg64 _ _ | .addReg64 _ _ | .logicalReg64 _ _ _ | .xchgReg64 _ _ | .test64 _ _ | .cmp64 _ _
+  | .movReg64 _ _ | .addReg64 _ _ | .subReg64 _ _ | .logicalReg64 _ _ _ | .xchgReg64 _ _ | .test64 _ _ | .cmp64 _ _
   | .inc64 _ | .dec64 _ | .bswapReg64 _ | .shrOne64 _ | .rolCL64 _ => 3
   | .addMem32 _ address | .loadMem32 _ address | .storeMem32 address _ => 2 + address.suffixBytes
   | .lea64 _ address | .loadMem64 _ address | .addMem64 _ address | .storeMem64 address _ =>
@@ -61,7 +61,7 @@ def Instruction.length : Instruction → Nat
   | .shiftRightImm32 _ _ _ prefixed | .logicalImm32 _ _ _ prefixed | .addImm32 _ _ prefixed
   | .subImm32 _ _ prefixed | .cmpImm32 _ _ prefixed => if prefixed then 4 else 3
   | .inc32 _ prefixed => if prefixed then 3 else 2
-  | .imulReg64 _ _ | .cmpImm64 _ _ | .addImm64 _ _ | .cmovReg64 _ _ _ => 4
+  | .imulReg64 _ _ | .cmpImm64 _ _ | .addImm64 _ _ | .subImm64 _ _ | .cmovReg64 _ _ _ => 4
 
 def Instruction.isNew : Instruction → Bool
   | .legacy _ => false
@@ -543,6 +543,33 @@ def decodeREX32At (state : State) (rex : Byte) : Except Error Instruction := do
   else if operation = 0x83 ∨ operation = 0xff then decodeCounter32At state operation rex true
   else decodeCompare32At state operation rex true
 
+/-- Continue after authenticated REX.W and SUB opcode 29/2B. Only mod=3
+is admitted; R/B extend operand registers and X is ignored. This helper checks
+its supplied prefix/opcode, while decodeAt authenticates their actual bytes. -/
+def decodeSubReg64At (state : State) (operation rex : Byte) : Except Error Instruction := do
+  if rexWPrefix rex ≠ true ∨ (operation ≠ 0x29 ∧ operation ≠ 0x2b) then
+    throw .unsupportedEncoding
+  let modrm ← fetchByte state.memory (state.rip + 2)
+  if modrm.toNat / 64 ≠ 3 then throw .unsupportedEncoding
+  return if operation = 0x29 then .subReg64 (rexModRMRM rex modrm) (rexModRMReg rex modrm)
+    else .subReg64 (rexModRMReg rex modrm) (rexModRMRM rex modrm)
+
+/-- Shared register-only REX.W 83 imm8 group. Existing ADD remains exactly
+48 /0 and CMP exactly 48/49 /7. SUB adds exactly 48/49 /5. Group selectors
+use raw ModRM bits; unsupported memory/prefix/group forms reject before the
+immediate fetch. All admitted forms fetch the actual immediate at offset3. -/
+def decodeGroup1Imm64At (state : State) (rex : Byte) : Except Error Instruction := do
+  if rex ≠ 0x48 ∧ rex ≠ 0x49 then throw .unsupportedEncoding
+  let modrm ← fetchByte state.memory (state.rip + 2)
+  if modrm.toNat / 64 ≠ 3 then throw .unsupportedEncoding
+  if modrm.toNat / 8 % 8 = 7 then
+    return .cmpImm64 (rexModRMRM rex modrm) (← fetchByte state.memory (state.rip + 3))
+  else if modrm.toNat / 8 % 8 = 5 then
+    return .subImm64 (rexModRMRM rex modrm) (← fetchByte state.memory (state.rip + 3))
+  else if rex = 0x48 ∧ modrm.toNat / 8 % 8 = 0 then
+    return .addImm64 (modRMRM modrm) (← fetchByte state.memory (state.rip + 3))
+  else throw .unsupportedEncoding
+
 /-- Continue after the enclosing decoder has recognized one REX.W prefix.
 All addressing restrictions, ADD operand direction and register-only CMOV
 checks remain explicit. -/
@@ -574,6 +601,7 @@ def decodeREXWAt (state : State) (opcode : Byte) : Except Error Instruction := d
     return .cmovReg64
       (Condition.ofNibble ⟨conditionOpcode.toNat % 16, Nat.mod_lt _ (by decide)⟩)
       (rexModRMReg opcode modrm) (rexModRMRM opcode modrm)
+  else if operation = 0x29 ∨ operation = 0x2b then decodeSubReg64At state operation opcode
   else if operation = 0x87 then
     let modrm ← fetchByte state.memory (state.rip + 2)
     if modrm.toNat / 64 ≠ 3 then throw .unsupportedEncoding
@@ -611,15 +639,7 @@ def decodeREXWAt (state : State) (opcode : Byte) : Except Error Instruction := d
     return if operation = 0x21 ∨ operation = 0x09 ∨ operation = 0x31 then
       .logicalReg64 logical (rexModRMRM opcode modrm) (rexModRMReg opcode modrm)
       else .logicalReg64 logical (rexModRMReg opcode modrm) (rexModRMRM opcode modrm)
-  else if operation = 0x83 then
-    if opcode ≠ 0x48 ∧ opcode ≠ 0x49 then throw .unsupportedEncoding
-    let modrm ← fetchByte state.memory (state.rip + 2)
-    if modrm.toNat / 64 ≠ 3 then throw .unsupportedEncoding
-    if modrm.toNat / 8 % 8 = 7 then
-      return .cmpImm64 (rexModRMRM opcode modrm) (← fetchByte state.memory (state.rip + 3))
-    else if opcode = 0x48 ∧ modrm.toNat / 8 % 8 = 0 then
-      return .addImm64 (modRMRM modrm) (← fetchByte state.memory (state.rip + 3))
-    else throw .unsupportedEncoding
+  else if operation = 0x83 then decodeGroup1Imm64At state opcode
   else if opcode ≠ 0x48 then throw .unsupportedEncoding
   else if operation = 0x85 ∨ operation = 0x39 then
     let modrm ← fetchByte state.memory (state.rip + 2)
@@ -710,6 +730,9 @@ clears its destination upper32, and CMP preserves every GPR. The legacy-first
 X is ignored). SHR32/SAR32 admit C1 /5 or /7 ib, mod=3, with the same W=0
 REX scope; R/X are ignored and B extends the destination. Masked counts zero
 reject; counts 1..31 retain independent AF and (for counts >1) OF. CMP64 admits 48/49 83 /7 ib, mod=3, with sign extension to 64.
+SUB64 adds register-only 29/2B with one REX.W and both operand directions;
+R/B extend operands and X is ignored. Full64 sign-extended imm8 subtraction
+adds exactly 48/49 83 /5, mod=3. Existing ADD64/CMP64 restrictions are retained.
 Other group selectors, memory operands and unused group-1 REX.R/X bits reject.
 Exact ENDBR64 is
 interpreted under the named IBT-disabled target profile. NOPs are restricted
@@ -804,8 +827,8 @@ theorem Instruction.length_pos (instruction : Instruction) : 0 < instruction.len
   | lea64 destination address | loadMem64 destination address | addMem64 destination address
   | storeMem64 address destination =>
     cases address <;> simp [Instruction.length, Address.suffixBytes]
-  | xorSelf32 _ | movReg32 _ _ | movReg64 _ _ | cmovReg64 _ _ _ | addReg64 _ _ | logicalReg64 _ _ _ | xchgReg64 _ _ | xchgRax64 _
-  | imulReg64 _ _ | test64 _ _ | cmp64 _ _ | cmpImm64 _ _ | addImm64 _ _ | movSignImm32 _ _
+  | xorSelf32 _ | movReg32 _ _ | movReg64 _ _ | cmovReg64 _ _ _ | addReg64 _ _ | subReg64 _ _ | logicalReg64 _ _ _ | xchgReg64 _ _ | xchgRax64 _
+  | imulReg64 _ _ | test64 _ _ | cmp64 _ _ | cmpImm64 _ _ | addImm64 _ _ | subImm64 _ _ | movSignImm32 _ _
   | inc64 _ | dec64 _ | bswapReg64 _ | shrOne64 _ | rolCL64 _ | je _ | jcc _ _ | jmp _ => simp [Instruction.length]
 
 theorem Instruction.length_le_fifteen (instruction : Instruction) : instruction.length ≤ 15 := by
@@ -827,8 +850,8 @@ theorem Instruction.length_le_fifteen (instruction : Instruction) : instruction.
   | lea64 destination address | loadMem64 destination address | addMem64 destination address
   | storeMem64 address destination =>
     cases address <;> simp [Instruction.length, Address.suffixBytes]
-  | xorSelf32 _ | movReg32 _ _ | movReg64 _ _ | cmovReg64 _ _ _ | addReg64 _ _ | logicalReg64 _ _ _ | xchgReg64 _ _ | xchgRax64 _
-  | imulReg64 _ _ | test64 _ _ | cmp64 _ _ | cmpImm64 _ _ | addImm64 _ _ | movSignImm32 _ _
+  | xorSelf32 _ | movReg32 _ _ | movReg64 _ _ | cmovReg64 _ _ _ | addReg64 _ _ | subReg64 _ _ | logicalReg64 _ _ _ | xchgReg64 _ _ | xchgRax64 _
+  | imulReg64 _ _ | test64 _ _ | cmp64 _ _ | cmpImm64 _ _ | addImm64 _ _ | subImm64 _ _ | movSignImm32 _ _
   | inc64 _ | dec64 _ | bswapReg64 _ | shrOne64 _ | rolCL64 _ | je _ | jcc _ _ | jmp _ => simp [Instruction.length]
 
 /-- Admission of a NEW instruction never admits it in the old sequential/TSO

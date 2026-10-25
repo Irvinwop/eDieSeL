@@ -82,6 +82,14 @@ def OperandReadSucceeds (state : State) (read : Read) : Prop :=
     | 8 => ∃ value, loadQWord state.memory read.address = .ok value
     | _ => read.bytes = 4 ∧ ∃ value, loadDWord state.memory read.address = .ok value
 
+/-- Full64 subtraction shared by the register and sign-extended immediate
+forms. The caller captures the RHS in the original state before any write.
+RSP is an ordinary GPR here; no memory, allocation or loan authority changes. -/
+def sub64State (state : State) (destination : Register) (right : Word) (length : Nat) : State :=
+  { state.writeRegister destination (state.registers destination - right) with
+    rip := state.rip + BitVec.ofNat 64 length
+    flags := cmpFlags64 state.flags (state.registers destination) right }
+
 /-- The Bool selects the flag named by `choiceFlag`: AF for self-XOR32, TEST,
 logical32/64 and SHR1; OF for ROL with masked count > 1. Legacy execution retains
 its complete old result, including concrete flags, stores, atomics and syscall
@@ -227,6 +235,10 @@ def execute (state : State) (instruction : Instruction) (af : Bool) : Except Err
     let right := state.registers source
     return ⟨.next { state.writeRegister destination (left + right) with
       rip := state.rip + 3, flags := addFlags64 state.flags left right }, reads⟩
+  | .subReg64 destination source =>
+    return ⟨.next (sub64State state destination (state.registers source) 3), reads⟩
+  | .subImm64 destination immediate =>
+    return ⟨.next (sub64State state destination (immediate.signExtend 64) 4), reads⟩
   | .logicalReg64 operation destination source =>
     let result := operation.eval (state.registers destination) (state.registers source)
     return ⟨.next { state.writeRegister destination result with
@@ -1000,8 +1012,8 @@ theorem execute_storeIntent {state : State} {instruction : Instruction} {address
   | addImm32 _ _ _ | inc32 _ _
   | negReg32 _ _ | bswapReg64 _ | shrOne64 _ | rolCL64 _
   | movzxMem8 _ _ _ | movzxReg8 _ _ _ | cmpReg8 _ _ _ | subReg32 _ _ _
-  | movReg32 _ _ | movReg64 _ _ | setcc _ _ _ | movImm8 _ _ _ | movSignImm32 _ _ | cmovReg32 _ _ _ _ | cmovReg64 _ _ _ | lea64 _ _ | addReg64 _ _ | logicalReg64 _ _ _ | xchgReg64 _ _ | xchgRax64 _ | loadMem32 _ _ | loadMem64 _ _ | storeMem64 _ _ | xorSelf32 _ | test32 _ _ _ | cmp32 _ _ _ | endbr64IbtDisabled | nop _ | test64 _ _ | cmp64 _ _ | cmpMemImm8 _ _ | cmpRegMem8 _ _ _ | cmpMemReg8 _ _ | cmpMemReg32 _ _ | addMem32 _ _ | addMem64 _ _
-  | addImm64 _ _ | inc64 _ | dec64 _ | je _ | jcc _ _ | jmp _ =>
+  | movReg32 _ _ | movReg64 _ _ | setcc _ _ _ | movImm8 _ _ _ | movSignImm32 _ _ | cmovReg32 _ _ _ _ | cmovReg64 _ _ _ | lea64 _ _ | addReg64 _ _ | subReg64 _ _ | logicalReg64 _ _ _ | xchgReg64 _ _ | xchgRax64 _ | loadMem32 _ _ | loadMem64 _ _ | storeMem64 _ _ | xorSelf32 _ | test32 _ _ _ | cmp32 _ _ _ | endbr64IbtDisabled | nop _ | test64 _ _ | cmp64 _ _ | cmpMemImm8 _ _ | cmpRegMem8 _ _ _ | cmpMemReg8 _ _ | cmpMemReg32 _ _ | addMem32 _ _ | addMem64 _ _
+  | addImm64 _ _ | subImm64 _ _ | inc64 _ | dec64 _ | je _ | jcc _ _ | jmp _ =>
     simp [Instruction.storeIntent] at intent
 
 /-- Successful stores expose the exact checked memory result and empty operand
@@ -1334,13 +1346,13 @@ theorem execute_reads {state : State} {instruction : Instruction} {af : Bool}
   | negReg32 destination prefixed | bswapReg64 destination | shrOne64 destination | rolCL64 destination
   | movzxReg8 destination source prefixed
   | movReg32 destination source | movReg64 destination source | setcc condition destination prefixed | movImm8 destination immediate prefixed | movSignImm32 destination immediate | lea64 destination address
-  | cmovReg32 condition destination source prefixed | cmovReg64 condition destination source | addReg64 destination source | logicalReg64 operation destination source | xchgReg64 left right | xchgRax64 other
+  | cmovReg32 condition destination source prefixed | cmovReg64 condition destination source | addReg64 destination source | subReg64 destination source | logicalReg64 operation destination source | xchgReg64 left right | xchgRax64 other
   | cmpReg8 left right prefixed | subReg32 destination source prefixed
   | test32 left right prefixed | cmp32 left right prefixed | endbr64IbtDisabled | nop encoding
   | xorSelf32 destination | test64 left right | cmp64 left right
   | subImm32 destination immediate prefixed | cmpImm32 destination immediate prefixed
   | addImm32 destination immediate prefixed | inc32 destination prefixed
-  | addImm64 destination immediate | inc64 destination | dec64 destination =>
+  | addImm64 destination immediate | subImm64 destination immediate | inc64 destination | dec64 destination =>
     cases success
     rfl
 
@@ -1460,8 +1472,8 @@ theorem execute_reads_succeed {state : State} {instruction : Instruction} {af : 
   | addImm32 _ _ _ | inc32 _ _
   | negReg32 _ _ | bswapReg64 _ | shrOne64 _ | rolCL64 _
   | movzxReg8 _ _ _ | cmpReg8 _ _ _ | subReg32 _ _ _
-  | movReg32 _ _ | movReg64 _ _ | setcc _ _ _ | movImm8 _ _ _ | movSignImm32 _ _ | cmovReg32 _ _ _ _ | cmovReg64 _ _ _ | lea64 _ _ | addReg64 _ _ | logicalReg64 _ _ _ | xchgReg64 _ _ | xchgRax64 _ | storeMem32 _ _ | storeMem64 _ _ | xorSelf32 _ | test32 _ _ _ | cmp32 _ _ _ | endbr64IbtDisabled | nop _ | test64 _ _ | cmp64 _ _
-  | addImm64 _ _ | inc64 _ | dec64 _ | je _ | jcc _ _ | jmp _ =>
+  | movReg32 _ _ | movReg64 _ _ | setcc _ _ _ | movImm8 _ _ _ | movSignImm32 _ _ | cmovReg32 _ _ _ _ | cmovReg64 _ _ _ | lea64 _ _ | addReg64 _ _ | subReg64 _ _ | logicalReg64 _ _ _ | xchgReg64 _ _ | xchgRax64 _ | storeMem32 _ _ | storeMem64 _ _ | xorSelf32 _ | test32 _ _ _ | cmp32 _ _ _ | endbr64IbtDisabled | nop _ | test64 _ _ | cmp64 _ _
+  | addImm64 _ _ | subImm64 _ _ | inc64 _ | dec64 _ | je _ | jcc _ _ | jmp _ =>
     simp [Instruction.operandReads]
 
 /-- New operations without either store width preserve the full memory and
@@ -1492,13 +1504,13 @@ theorem execute_new_memory {state final : State} {instruction : Instruction} {af
   | negReg32 destination prefixed | bswapReg64 destination | shrOne64 destination | rolCL64 destination
   | movzxReg8 destination source prefixed
   | movReg32 destination source | movReg64 destination source | setcc condition destination prefixed | movImm8 destination immediate prefixed | movSignImm32 destination immediate | lea64 destination address
-  | cmovReg32 condition destination source prefixed | cmovReg64 condition destination source | addReg64 destination source | logicalReg64 operation destination source | xchgReg64 left right | xchgRax64 other
+  | cmovReg32 condition destination source prefixed | cmovReg64 condition destination source | addReg64 destination source | subReg64 destination source | logicalReg64 operation destination source | xchgReg64 left right | xchgRax64 other
   | cmpReg8 left right prefixed | subReg32 destination source prefixed
   | test32 left right prefixed | cmp32 left right prefixed | endbr64IbtDisabled | nop encoding
   | xorSelf32 destination | test64 left right | cmp64 left right
   | subImm32 destination immediate prefixed | cmpImm32 destination immediate prefixed
   | addImm32 destination immediate prefixed | inc32 destination prefixed
-  | addImm64 destination immediate | inc64 destination | dec64 destination =>
+  | addImm64 destination immediate | subImm64 destination immediate | inc64 destination | dec64 destination =>
     cases success
     cases next
     rfl
@@ -1603,13 +1615,13 @@ theorem execute_new_next {state : State} {instruction : Instruction} {af : Bool}
   | negReg32 destination prefixed | bswapReg64 destination | shrOne64 destination | rolCL64 destination
   | movzxReg8 destination source prefixed
   | movReg32 destination source | movReg64 destination source | setcc condition destination prefixed | movImm8 destination immediate prefixed | movSignImm32 destination immediate | lea64 destination address
-  | cmovReg32 condition destination source prefixed | cmovReg64 condition destination source | addReg64 destination source | logicalReg64 operation destination source | xchgReg64 left right | xchgRax64 other
+  | cmovReg32 condition destination source prefixed | cmovReg64 condition destination source | addReg64 destination source | subReg64 destination source | logicalReg64 operation destination source | xchgReg64 left right | xchgRax64 other
   | cmpReg8 left right prefixed | subReg32 destination source prefixed
   | test32 left right prefixed | cmp32 left right prefixed | endbr64IbtDisabled | nop encoding
   | xorSelf32 destination | test64 left right | cmp64 left right
   | subImm32 destination immediate prefixed | cmpImm32 destination immediate prefixed
   | addImm32 destination immediate prefixed | inc32 destination prefixed
-  | addImm64 destination immediate | inc64 destination | dec64 destination =>
+  | addImm64 destination immediate | subImm64 destination immediate | inc64 destination | dec64 destination =>
     cases success
     exact ⟨_, rfl⟩
   | loadMem32 destination address | addMem32 destination address =>
@@ -1752,6 +1764,9 @@ theorem execute_new_flags {state final : State} {instruction : Instruction} {af 
     cases success; cases next
     exact logicalFlags64_preserves ..
   | cmp64 left right =>
+    cases success; cases next
+    exact cmpFlags64_preserves ..
+  | subReg64 destination source | subImm64 destination immediate =>
     cases success; cases next
     exact cmpFlags64_preserves ..
   | addReg64 destination source =>
