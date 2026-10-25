@@ -58,8 +58,12 @@ rangeValue word offset count = (word / 256 ^ offset) % 256 ^ count
 
 `encodeAppend` joins adjacent length and encoding certificates. It works with
 ordinary byte lists and keeps the length needed for the right-hand shift
-explicit. Each leaf can be checked locally; the generic append theorem joins
-those facts without a whole-list reflexivity proof.
+explicit. [EncodingFacts.appendFacts](../EDSL/Grading/Export/PackedBytes/EncodingFacts.lean)
+accepts and returns a conjunction of the length and encoding facts. A producer
+can therefore pass one proof per child at each append, sharing the same
+certificate when either component is needed. The theorem retains both child
+lengths, including empty regions and trailing zero bytes. Each leaf can be
+checked locally; the generic append theorem joins those facts without a whole-list reflexivity proof.
 
 For a chunk collection, `EncodedRun word offset count F` certifies a context
 `F` for every outer-list tail. It records the additional flattened length and
