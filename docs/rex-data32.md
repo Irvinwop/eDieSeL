@@ -47,6 +47,19 @@ four-byte boundaries, CFG/VCG composition and current OS authority. Resource
 controls reject stale/wrong owners, undersized loans and absent grants. TSO
 controls exercise real buffered forwarding and retained queues.
 
+## Native conformance
+
+Run `scripts/verify-rex-data32-native.sh` on the documented Linux x86-64
+profile to capture 148 observations of 37 owned instruction probes. The
+independent C oracle checks all GPRs, measured flags and three complete pages;
+16 native, 41 parser and 15 artifact-binding controls exercise plausible
+width, bank, address, framing and authentication defects. CI runs this native
+check separately from the Lean proof target. See the
+[fixture guide](../fixtures/native/rex-data32/README.md) for requirements and
+[wire format](../fixtures/native/rex-data32/FORMAT.md) for capture binding.
+This driver supplies native conformance evidence; it performs no fresh Lean
+replay and makes no universal physical CPU or OS correspondence claim.
+
 This extension adds no end-to-end corpus certificate. Whole-function proofs
 still require the independent contract, exact final-ELF binding, caller and
 resource premises, and the applicable execution model. Physical CPU, loader,

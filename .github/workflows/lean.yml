@@ -474,6 +474,21 @@ jobs:
         env:
           CXX: clang++-18
         run: bash scripts/verify-counter-displacement.sh
+      - name: Install native capture digest dependency
+        if: ${{ matrix.domain == 'counter-displacement' }}
+        run: sudo apt-get install -y libssl-dev
+      - name: Check owned REX DATA4 native conformance and binding
+        if: ${{ matrix.domain == 'counter-displacement' }}
+        env:
+          EDSL_CC: gcc-13
+        run: bash scripts/verify-rex-data32-native.sh artifacts/rex-data32/ci
+      - name: Preserve REX DATA4 native conformance evidence
+        if: ${{ always() && matrix.domain == 'counter-displacement' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: rex-data32-native-evidence
+          path: artifacts/rex-data32/ci/
+          if-no-files-found: error
       - name: Preserve counter and displacement observations and kernel checks
         if: ${{ always() && matrix.domain == 'counter-displacement' }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
