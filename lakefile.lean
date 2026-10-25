@@ -347,7 +347,8 @@ lean_lib DisplacedDataTests where
 lean_lib RexData32Tests where
   roots := #[`tests.RexData32Audit, `tests.RexData32Base,
     `tests.RexData32Decode, `tests.RexData32Execute, `tests.RexData32Faults,
-    `tests.RexData32CFG, `tests.RexData32Resources, `tests.RexData32TSO]
+    `tests.RexData32CFG, `tests.RexData32Resources, `tests.RexData32TSO,
+    `tests.SequentialMoveResources, `tests.SequentialMoves64]
   moreLeanArgs := #["-DwarningAsError=true", "-DautoImplicit=false",
     "-DmaxHeartbeats=300000", "-DmaxRecDepth=128"]
 
