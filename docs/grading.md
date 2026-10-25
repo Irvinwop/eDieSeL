@@ -337,6 +337,12 @@ remain independently closed and monomorphic. An incomplete outcome has no
 usable output. `Prepare.prepareDefinitionValue` applies those tables to a
 safe singleton definition's value. These functions do no type checking.
 
+Composite reconstruction uses Lean's safe expression update operations, which
+can reuse an input node when its children are unchanged. Binder names and
+annotations, let flags, metadata and projection identities are retained.
+Traversal and logical reconstruction charges still apply to every processed
+composite, including reused nodes; reuse grants no extra preparation budget.
+
 `PreparedLimits` defaults to 2,000,000 aggregate dispatcher steps, 2,000,000
 aggregate name-work units and 4,096 prepared fields across replacement
 validation, roots and emitted expression fields. Its `expression` limits also

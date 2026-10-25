@@ -337,38 +337,40 @@ private def step (lim : Limits) (inline : NameMap Expr) (params : NameSet) : Wor
         let a ← popValue
         let f ← popValue
         pure {
-          rewritten := .app f.rewritten a.rewritten
+          rewritten := e.updateApp! f.rewritten a.rewritten
           need := max f.need a.need
           inputLabels := f.inputLabels || a.inputLabels }
-      | .lam n _ _ bi => do
+      | .lam _ _ _ bi => do
         let b ← popValue
         let t ← popValue
         pure {
-          rewritten := .lam n t.rewritten b.rewritten bi
+          rewritten := e.updateLambda! bi t.rewritten b.rewritten
           need := max t.need (b.need - 1)
           inputLabels := true }
-      | .forallE n _ _ bi => do
+      | .forallE _ _ _ bi => do
         let b ← popValue
         let t ← popValue
         pure {
-          rewritten := .forallE n t.rewritten b.rewritten bi
+          rewritten := e.updateForall! bi t.rewritten b.rewritten
           need := max t.need (b.need - 1)
           inputLabels := true }
-      | .letE n _ _ _ nondep => do
+      | .letE _ _ _ _ nondep => do
         let b ← popValue
         let v ← popValue
         let t ← popValue
         pure {
-          rewritten := .letE n t.rewritten v.rewritten b.rewritten nondep
+          rewritten := e.updateLet! t.rewritten v.rewritten b.rewritten nondep
           need := max (max t.need v.need) (b.need - 1)
           inputLabels := true }
-      | .mdata md _ => do
+      | .mdata _ _ => do
         let b ← popValue
-        pure { rewritten := .mdata md b.rewritten, need := b.need, inputLabels := true }
-      | .proj n i _ => do
+        pure { rewritten := e.updateMData! b.rewritten, need := b.need, inputLabels := true }
+      | .proj _ _ _ => do
         let b ← popValue
-        pure { rewritten := .proj n i b.rewritten, need := b.need, inputLabels := b.inputLabels }
+        pure { rewritten := e.updateProj! b.rewritten, need := b.need, inputLabels := b.inputLabels }
       | _ => throw "internal completion constructor"
+    -- Preserve the historical logical reconstruction charge even when an
+    -- update operation reuses an unchanged input node. Traversal is unchanged.
     match e with
     | .sort _ | .const _ _ => pure ()
     | _ => modify fun s => { s with rebuilt := s.rebuilt + 1 }
