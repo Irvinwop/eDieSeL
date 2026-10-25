@@ -63,6 +63,26 @@ It supplies no ABI disjointness, result, read, invariant, rank or execution fact
 It can be used inside `vcgen_factor` to keep continuation proofs shallow. -/
 syntax (name := vcgenScratchFrame) "vcgen_scratch_frame " term (" with " tactic)? : tactic
 
+/- Build the unchanged simp set as data so the quotation stays shallow under
+our fixed recursion limit. The resulting tactic still must close every goal. -/
+private def scratchFlagSteps (frame : TSyntax `term) : TacticM Syntax := do
+  let names := #[``State.writeRegister, ``Sequential.Result.prepend,
+    ``Sequential.statusFlags_preserves, ``Sequential.logicalFlags32_preserves,
+    ``Sequential.logicalFlags64_preserves, ``Sequential.shrOneFlags64_preserves,
+    ``Sequential.cmpFlags32_preserves, ``Sequential.cmpFlags64_preserves,
+    ``Sequential.incFlags32_preserves, ``Sequential.incFlags64_preserves,
+    ``Sequential.decFlags64_preserves, ``Sequential.addFlags64_preserves,
+    ``cmpZeroFlags32_preserves, ``addFlags32_preserves, ``Sequential.cmpFlags8_preserves]
+  let mut args : Array Syntax := #[]
+  for (name, index) in names.zipIdx do
+    if index = 2 then
+      let field ← `(Parser.Tactic.simpLemma| ($frame:term).flags)
+      args := args.push field.raw
+    let lemma ← `(Parser.Tactic.simpLemma| $(mkIdent name):ident)
+    args := args.push lemma.raw
+  let step := setSimpParams (← `(tactic| simp only [])) args
+  `(tactic| solve | $step:tactic)
+
 elab_rules : tactic
   | `(tactic| vcgen_scratch_frame $frame:term $[with $flags:tactic]?) => withMainContext do
     let goal ← getMainGoal
@@ -101,14 +121,7 @@ elab_rules : tactic
         ($frame:term).memory])))
     let flagSteps ← match flags with
       | some steps => pure steps.raw
-      | none => `(tactic| solve | simp only [State.writeRegister, Sequential.Result.prepend,
-          ($frame:term).flags,
-          Sequential.statusFlags_preserves, Sequential.logicalFlags32_preserves,
-          Sequential.logicalFlags64_preserves, Sequential.shrOneFlags64_preserves,
-          Sequential.cmpFlags32_preserves, Sequential.cmpFlags64_preserves,
-          Sequential.incFlags32_preserves, Sequential.incFlags64_preserves,
-          Sequential.decFlags64_preserves, Sequential.addFlags64_preserves,
-          cmpZeroFlags32_preserves, addFlags32_preserves, Sequential.cmpFlags8_preserves])
+      | none => scratchFlagSteps frame
     let flagGoal := obligations[2]!
     let checked ← scratchProof (← flagGoal.getType) flagSteps
     flagGoal.assign checked
