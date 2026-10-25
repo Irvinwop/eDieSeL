@@ -447,7 +447,7 @@ jobs:
       - name: Install native integration tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y clang-18 gcc gcc-13 binutils shellcheck
+          sudo apt-get install -y clang-18 gcc gcc-13 binutils shellcheck ripgrep
       - name: Replay owned NEG32 and BSWAP64 CPU observations through Lean
         if: ${{ matrix.domain == 'unary-registers' }}
         env:
