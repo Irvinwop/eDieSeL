@@ -5,6 +5,7 @@ SPDX-License-Identifier: Apache-2.0
 -- Full proof catalogue for project audits and fresh kernel replay.
 -- New verification clients should import EDSL or a specific module instead.
 import EDSL
+import EDSL.WordMath.BinarySearch
 import EDSL.X86.VCGen.Examples
 import EDSL.Semantics
 import EDSL.Concurrency.C23Atomic

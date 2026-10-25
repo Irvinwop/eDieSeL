@@ -93,6 +93,10 @@ prove termination.
 The [full64 popcount guide](popcount.md) adds a scalar-loop example using shared
 cardinality mathematics, counter/address rules and scratch/return frames.
 
+Ordered searches can reuse the [binary-search interval rules](binary-search.md)
+for midpoint bounds, exclusion and decreasing loop ranks. The machine proof
+binds these natural indices to actual registers and a current input snapshot.
+
 ## 4. Reuse the call/resource bridge
 
 `pureCall_semantics_of_generated` lifts the WP theorem to every admitted
