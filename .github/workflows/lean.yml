@@ -73,6 +73,12 @@ jobs:
         run: |
           flock /tmp/edsl-lean-build.lock lake build DisplacedDataTests
           flock /tmp/edsl-lean-build.lock lake env lean -j1 -DwarningAsError=true -DautoImplicit=false -DmaxHeartbeats=300000 -DmaxRecDepth=128 tests/DisplacedDataAudit.lean
+      - name: Check REX DATA4 loads and current-resource proofs
+        env:
+          LEAN_NUM_THREADS: '1'
+        run: |
+          flock /tmp/edsl-lean-build.lock lake build RexData32Tests
+          flock /tmp/edsl-lean-build.lock lake env lean -j1 -DwarningAsError=true -DautoImplicit=false -DmaxHeartbeats=300000 -DmaxRecDepth=128 tests/RexData32Audit.lean
       - name: Check prepared and generated certificates
         run: |
           lake env lean -j1 -DwarningAsError=true -DautoImplicit=false -DmaxHeartbeats=300000 -DmaxRecDepth=128 EDSL/Grading/Export/PackedBytes.lean

@@ -237,13 +237,13 @@ example : ([[0x48, 0x89, 0x87, 0, 0, 0, 0],
       .error .unsupportedEncoding, .error .unsupportedEncoding,
       .error .unsupportedEncoding] := by cbv
 
--- No new byte, word, non-W REX, address-size, segment or repeated-prefix forms.
+-- W=0 REX loads remain DATA4; stores, width overrides and extra prefixes reject.
 example : ([[0x40, 0x89, 0x07], [0x47, 0x8b, 0x07],
       [0x66, 0x48, 0x89, 0x07], [0x67, 0x48, 0x8b, 0x07],
       [0x64, 0x48, 0x8b, 0x07], [0xf2, 0x48, 0x8b, 0x07],
       [0xf3, 0x48, 0x89, 0x07]] : List (List Byte)).map
     (fun bytes => Sequential.decodeAt (entry bytes)) =
-    [.error .unsupportedEncoding, .error .unsupportedEncoding,
+    [.error .unsupportedEncoding, .ok (.loadMem32Rex .r8 (.base .r15)),
       .error .unsupportedEncoding, .error (.unsupportedOpcode 0x67),
       .error (.unsupportedOpcode 0x64), .error (.unsupportedOpcode 0xf2),
       .error .unsupportedEncoding] := by cbv

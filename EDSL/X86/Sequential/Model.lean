@@ -225,6 +225,11 @@ inductive Instruction where
   /-- Full-width exchange with RAX using the opcode-register encoding. -/
   | xchgRax64 (other : Register)
   | loadMem32 (destination : Register) (address : Address)
+  /-- Ordinary DATA4 load encoded with exactly one W=0 REX and 8B /r.
+  The full64 effective address is captured before the LOW32 destination
+  write, which clears upper32. REX presence is retained for exact length.
+  Register operands, legacy prefixes and other MOV directions are excluded. -/
+  | loadMem32Rex (destination : Register) (address : Address)
   | storeMem32 (address : Address) (source : Register)
   /-- Full-width ordinary DATA load with the pre-instruction address. -/
   | loadMem64 (destination : Register) (address : Address)

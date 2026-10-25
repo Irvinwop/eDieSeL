@@ -137,6 +137,7 @@ def instruction : Instruction → String
   | .xchgReg64 left right => s!"(.xchgReg64 {register left} {register right})"
   | .xchgRax64 other => s!"(.xchgRax64 {register other})"
   | .loadMem32 destination operand => s!"(.loadMem32 {register destination} {address operand})"
+  | .loadMem32Rex destination operand => s!"(.loadMem32Rex {register destination} {address operand})"
   | .storeMem32 operand source => s!"(.storeMem32 {address operand} {register source})"
   | .loadMem64 destination operand => s!"(.loadMem64 {register destination} {address operand})"
   | .storeMem64 operand source => s!"(.storeMem64 {address operand} {register source})"

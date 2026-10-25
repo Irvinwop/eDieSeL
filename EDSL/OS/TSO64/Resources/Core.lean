@@ -8,6 +8,7 @@ import EDSL.X86.Sequential.Return
 
 namespace EDSL.OS.TSO64
 open X86 AddressSpace
+universe u
 
 abbrev World := Atomics64.State
 abbrev Buffer := StoreBuffer.Mixed.Buffer
@@ -93,7 +94,7 @@ inductive Fault where
   | loan (fault : Borrowing.Fault)
   deriving DecidableEq, Repr
 
-@[simp] theorem throw_error (fault : Fault) : (throw fault : Except Fault α) = .error fault := rfl
+@[simp] theorem throw_error {α : Type u} (fault : Fault) : (throw fault : Except Fault α) = .error fault := rfl
 
 def grantFor (world : World) (resources : Resources) (store : Store) : Option Ownership.Ticket :=
   resources.grants.find? fun ticket => decide (StoreGate world resources.actor ticket store)

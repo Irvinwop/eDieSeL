@@ -187,6 +187,7 @@ private theorem rex32_rejects_stack {state : State} {rex opcode : Byte}
     rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;>
     simp [Sequential.decodeAt, X86.decodeAt, Sequential.decodeNewAt,
       Sequential.decodeREX32At, Sequential.decodeCompare32At, fetched, operation, notImm8,
+    outside (by decide : 0x8b < 256) (by decide),
     outside (by decide : 0x8d < 256) (by decide),
     outside (by decide : 0xf6 < 256) (by decide),
       outside (by decide : 0xf7 < 256) (by decide),

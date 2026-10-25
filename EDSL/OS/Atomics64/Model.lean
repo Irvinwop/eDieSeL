@@ -9,6 +9,7 @@ import EDSL.X86.AtomicMemory64
 
 namespace EDSL.OS.Atomics64
 open X86 AddressSpace
+universe u
 
 /-- Monotone logical identities, distinct from each other and from legacy IDs. -/
 structure CellId64 where
@@ -83,7 +84,7 @@ inductive Fault where
   | executable
   deriving DecidableEq, Repr
 
-@[simp] theorem throw_error (fault : Fault) :
+@[simp] theorem throw_error {α : Type u} (fault : Fault) :
     (throw fault : Except Fault α) = .error fault := rfl
 
 def reserved (state : State) (allocation : Nat) : Bool :=

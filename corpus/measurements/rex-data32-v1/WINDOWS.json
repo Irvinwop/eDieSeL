@@ -1,0 +1,722 @@
+[
+  {
+    "compiler": "gcc",
+    "id": "01",
+    "symbol": "c_clamp_i32",
+    "bytes": 17,
+    "offset": 11568,
+    "codeSHA256": "78fa4f83f85cf53cadcc41571b3a075594fe9098f6c0fac45d2a4ed4167c1b46",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "gcc",
+    "id": "02",
+    "symbol": "c_min_u64",
+    "bytes": 15,
+    "offset": 11600,
+    "codeSHA256": "ed933bd35498d10d7b6513899e698cc7e303e1295ca683bd3fb096659bca77f1",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "gcc",
+    "id": "03",
+    "symbol": "c_max_u64",
+    "bytes": 15,
+    "offset": 11616,
+    "codeSHA256": "d36f7f83a25ca31d76d6b73eeedf932883457062169462b3e51bca3eec5fa995",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "gcc",
+    "id": "04",
+    "symbol": "c_abs_i32",
+    "bytes": 12,
+    "offset": 11632,
+    "codeSHA256": "d1d230131d63336fa6512b99eaf7bbcf0a093fdbe34b196ab87a8bbe9f9fd416",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "gcc",
+    "id": "05",
+    "symbol": "c_sign_i32",
+    "bytes": 17,
+    "offset": 11648,
+    "codeSHA256": "5513b97d9416018976b47a9a813903acda5413dfd8062cde4dfd8ad7dd8704bf",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "gcc",
+    "id": "06",
+    "symbol": "c_add_mod64",
+    "bytes": 9,
+    "offset": 11680,
+    "codeSHA256": "be59452a1bc51a32d6b66f83850854f00313e22228e1564a02bce9ee48bee50d",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "gcc",
+    "id": "07",
+    "symbol": "c_mul_mod64",
+    "bytes": 12,
+    "offset": 11696,
+    "codeSHA256": "379d93230a9321b2cdba77fe20dc436470e1b2672e7dde2fbc1e5ac8b5667b67",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "gcc",
+    "id": "08",
+    "symbol": "c_average_u64",
+    "bytes": 20,
+    "offset": 11712,
+    "codeSHA256": "f6382a7f37731ee79731157733815d88ba810e994bd7dca2030517d00e9ed467",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "gcc",
+    "id": "09",
+    "symbol": "c_rotl64",
+    "bytes": 13,
+    "offset": 11744,
+    "codeSHA256": "5dea780388a24d61e5ed0e671c72716b8d320385cb933233d401600b96a642f3",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "gcc",
+    "id": "10",
+    "symbol": "c_byteswap64",
+    "bytes": 11,
+    "offset": 11760,
+    "codeSHA256": "0fc44bdc5c9393856221b8c20c3d40873bfcf036ddcd4afa05b93187060dac59",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "gcc",
+    "id": "11",
+    "symbol": "c_popcount_loop",
+    "bytes": 31,
+    "offset": 11776,
+    "codeSHA256": "4239cdaf74491f65e2ddd116544eaa48428d660b030143b7a0aa8b74279f06df",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "gcc",
+    "id": "12",
+    "symbol": "c_parity_loop",
+    "bytes": 33,
+    "offset": 11808,
+    "codeSHA256": "6c2561721a220daa54bb1bd3b781c5d183e2755235d275207a870eb2a694b71c",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "gcc",
+    "id": "13",
+    "symbol": "c_gcd_u32",
+    "bytes": 37,
+    "offset": 11856,
+    "codeSHA256": "660c6b10659928de2335b3e1f5815877e4d83adfd4b7203b6c908c828f37091f",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "gcc",
+    "id": "14",
+    "symbol": "c_factorial_mod64",
+    "bytes": 54,
+    "offset": 11904,
+    "codeSHA256": "d804f5c0bfb2e2a0a08483695651b8399efc62b9ee8849d825b9dcbce62ba3df",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "gcc",
+    "id": "15",
+    "symbol": "c_triangular_mod64",
+    "bytes": 60,
+    "offset": 11968,
+    "codeSHA256": "a5a9161ea0eaf649bfcaf6c3964b08c48bfdd611307fe92c2b4acdedc13c7576",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "gcc",
+    "id": "16",
+    "symbol": "c_pow_mod64",
+    "bytes": 41,
+    "offset": 12032,
+    "codeSHA256": "27f4d07c10264eaf0a188311ccd219c4b9cb5a60b7ee22c536f4e441a1f6579b",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "gcc",
+    "id": "17",
+    "symbol": "c_strlen_bytes",
+    "bytes": 35,
+    "offset": 12080,
+    "codeSHA256": "23fd1db32e37fdca45a6a89bb1c2ae1d03de5ac931947d5319fdc8ba00ca63ff",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "gcc",
+    "id": "18",
+    "symbol": "c_strnlen_bytes",
+    "bytes": 35,
+    "offset": 12128,
+    "codeSHA256": "3bdc1815e0b536eed9f4b15b64aa55e2f1af377a6c186830459272c5771fb7a4",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "gcc",
+    "id": "19",
+    "symbol": "c_memcmp_bytes",
+    "bytes": 51,
+    "offset": 12176,
+    "codeSHA256": "d30b09e5d26af1f44854109f5aef5c234525a6de94393d9ba1a9c91914d9ff67",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "gcc",
+    "id": "20",
+    "symbol": "c_bytes_equal",
+    "bytes": 46,
+    "offset": 12240,
+    "codeSHA256": "a0120d0b20a709cb4c43257f2d3d51840ba302a01f1aa29a89fb9d2a3a8dd077",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "gcc",
+    "id": "21",
+    "symbol": "c_memchr_index",
+    "bytes": 40,
+    "offset": 12288,
+    "codeSHA256": "1786e24622392c1fddeff7e575beb90d7f994192b3560d9cb145bbf403818d77",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "gcc",
+    "id": "22",
+    "symbol": "c_sum_u32",
+    "bytes": 35,
+    "offset": 12336,
+    "codeSHA256": "30ed8c0fe79f93cfe0287ebb64d1a919beb868cd34d2a15ce4552b58029e24a7",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "gcc",
+    "id": "23",
+    "symbol": "c_max_u32",
+    "bytes": 74,
+    "offset": 12384,
+    "codeSHA256": "08d2396005daaa2add94403e40e1da334874764e01b43e4c0cce1541ff36fb77",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "gcc",
+    "id": "24",
+    "symbol": "c_count_zero_u32",
+    "bytes": 43,
+    "offset": 12464,
+    "codeSHA256": "7ead6880e6df4398cc21759a92608a72cc0960a3bd82b381e541bc648048aa9c",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "gcc",
+    "id": "25",
+    "symbol": "c_linear_search_u32",
+    "bytes": 40,
+    "offset": 12512,
+    "codeSHA256": "80184dfad9b1db2be497d84375882f05e5ae218164dac20a919bb42ccfa21996",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "gcc",
+    "id": "26",
+    "symbol": "c_reverse_u32",
+    "bytes": 48,
+    "offset": 12560,
+    "codeSHA256": "02c4480a89917038e95f8a478156b6ba74b30e810fa4e87f9af012a51b83075d",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "gcc",
+    "id": "27",
+    "symbol": "c_fill_u32",
+    "bytes": 48,
+    "offset": 12608,
+    "codeSHA256": "78a2dd4f676fd546fb43bea993893b60c29331dda6b9a21afca7f6fbbcabd556",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "gcc",
+    "id": "28",
+    "symbol": "c_copy_u32",
+    "bytes": 25,
+    "offset": 12656,
+    "codeSHA256": "4a1ea599c56ecd9e0fb7671261d08eb51ca342014283cff3213a9fd563ea6e2f",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "gcc",
+    "id": "29",
+    "symbol": "c_dot_mod64",
+    "bytes": 55,
+    "offset": 12688,
+    "codeSHA256": "fcfdd519efb62e762cf069aa4b54ae7961821dd24b45df905f43b368d7b59841",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "gcc",
+    "id": "30",
+    "symbol": "c_prefix_sum_u32",
+    "bytes": 31,
+    "offset": 12752,
+    "codeSHA256": "44081df6acdfbd10aa5ba64d032dff741411bc529ff88152c818049db87f2286",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "gcc",
+    "id": "31",
+    "symbol": "c_struct_copy",
+    "bytes": 21,
+    "offset": 12784,
+    "codeSHA256": "c8cb6858ede8e9b7536fe9f4d974140479a74ad7f51d1691a31b1afc51fc0333",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "gcc",
+    "id": "32",
+    "symbol": "c_struct_sum",
+    "bytes": 20,
+    "offset": 12816,
+    "codeSHA256": "c4b9945a7ce609e705347036dcfe666b54baa5e88a82e11592e35421edfddae1",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "gcc",
+    "id": "33",
+    "symbol": "c_binary_search_u32",
+    "bytes": 67,
+    "offset": 12848,
+    "codeSHA256": "b5424217d77a79b3f277c31607c0521d834c6c79c5580cd7e0292cce434199d9",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "gcc",
+    "id": "34",
+    "symbol": "c_atomic_fetch_add64",
+    "bytes": 13,
+    "offset": 12928,
+    "codeSHA256": "fc2fbfafff9a7c3b6a088d62aa634dc93696eda9c57f03a00ec8666ba115064a",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "gcc",
+    "id": "35",
+    "symbol": "c_atomic_load_acquire64",
+    "bytes": 8,
+    "offset": 12944,
+    "codeSHA256": "03750c8d0867089415393b36e76e438be507323e6dd3e273be1f52bff642fc9b",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "gcc",
+    "id": "36",
+    "symbol": "c_atomic_store_release64",
+    "bytes": 8,
+    "offset": 12960,
+    "codeSHA256": "a8ccb2539c147405d608b8381e3c49b651cb5f80506f42f9cd9b7c85562731e9",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "gcc",
+    "id": "37",
+    "symbol": "c_spinlock_acquire",
+    "bytes": 25,
+    "offset": 12976,
+    "codeSHA256": "ee4f4d6ee66123bcc511f8c852f2d555d315f5d41d6a98db2081fe1457d46c6a",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "gcc",
+    "id": "38",
+    "symbol": "c_spinlock_release",
+    "bytes": 11,
+    "offset": 13008,
+    "codeSHA256": "b63d5a532b5ed55d311589dbcc6780893184e2c3f5ae45be7fe6e086b1026e00",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "gcc",
+    "id": "39",
+    "symbol": "c_futex_wait_loop",
+    "bytes": 105,
+    "offset": 13024,
+    "codeSHA256": "bc917c485e47ea4c05f47fca61a865ea93259d11469d5f6793020fe66914b602",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "gcc",
+    "id": "40",
+    "symbol": "c_counter_worker",
+    "bytes": 49,
+    "offset": 13136,
+    "codeSHA256": "9fb84686b355ceee2173ae31f26ae8e56b62c14b300a531e7dfb5b853c73d52a",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "clang",
+    "id": "01",
+    "symbol": "c_clamp_i32",
+    "bytes": 13,
+    "offset": 4816,
+    "codeSHA256": "0c98702c5d74ca0a54858389e2ceff0a4fc35d6b20a2ce1361271eaf95d14f5c",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "clang",
+    "id": "02",
+    "symbol": "c_min_u64",
+    "bytes": 11,
+    "offset": 4832,
+    "codeSHA256": "454391068731aa3f8c26ef609229d6dd81293114747686fcaf7e44c51079de6e",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "clang",
+    "id": "03",
+    "symbol": "c_max_u64",
+    "bytes": 11,
+    "offset": 4848,
+    "codeSHA256": "368556688f4a769420142caaae15dcf7190ced1e87e665a3df2f6b34c6ce6e56",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "clang",
+    "id": "04",
+    "symbol": "c_abs_i32",
+    "bytes": 8,
+    "offset": 4864,
+    "codeSHA256": "a99135cc88a1e86f8b02aba851dc7a930d9b25de6df58d3a5ad451bb98c8512b",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "clang",
+    "id": "05",
+    "symbol": "c_sign_i32",
+    "bytes": 15,
+    "offset": 4880,
+    "codeSHA256": "9fcdf254abd2b85837b6994ef082df7748238b5faa3bf4b0fc8673c18b73d8de",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "clang",
+    "id": "06",
+    "symbol": "c_add_mod64",
+    "bytes": 5,
+    "offset": 4896,
+    "codeSHA256": "d9cf89c572e9a193175b8735a341790208fabfe36d704868ed206cb6a85af1ba",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "clang",
+    "id": "07",
+    "symbol": "c_mul_mod64",
+    "bytes": 8,
+    "offset": 4912,
+    "codeSHA256": "887bde1c2b20faf559ab78f7cea2a762df4d0d81c2743d3be99b2a185a8f43a0",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "clang",
+    "id": "08",
+    "symbol": "c_average_u64",
+    "bytes": 16,
+    "offset": 4928,
+    "codeSHA256": "0b4de68b317a07f5cbf9f2e782fece14ffca13f3a2ae62bae92fc9e8e013a222",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "clang",
+    "id": "09",
+    "symbol": "c_rotl64",
+    "bytes": 9,
+    "offset": 4944,
+    "codeSHA256": "7877a615eb0e86783ae094c564b56f605bf79071e077cd1957d4ecf1217478b4",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "clang",
+    "id": "10",
+    "symbol": "c_byteswap64",
+    "bytes": 7,
+    "offset": 4960,
+    "codeSHA256": "820d1213081405be87dedc4efa4f8eecb95d22f65e290dbe5642db4251becdde",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "clang",
+    "id": "11",
+    "symbol": "c_popcount_loop",
+    "bytes": 28,
+    "offset": 4976,
+    "codeSHA256": "bb133c41f53b21ad3f05ac24c6b87a7e92fdd87190440dd4c23c572e947c6981",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "clang",
+    "id": "12",
+    "symbol": "c_parity_loop",
+    "bytes": 36,
+    "offset": 5008,
+    "codeSHA256": "47f30a937b7722464412d7c83df61d73cf7c0a50e14939145a56b4594ac1267e",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "clang",
+    "id": "13",
+    "symbol": "c_gcd_u32",
+    "bytes": 31,
+    "offset": 5056,
+    "codeSHA256": "e79fa6b552c8051418b10c2268ae02a6bf565597aaf96f2553866b672c07e602",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "clang",
+    "id": "14",
+    "symbol": "c_factorial_mod64",
+    "bytes": 38,
+    "offset": 5088,
+    "codeSHA256": "a974b42a88c5e84b525faa492e24bfba4ee2affe03cbc50575d83c62ca5e711a",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "clang",
+    "id": "15",
+    "symbol": "c_triangular_mod64",
+    "bytes": 37,
+    "offset": 5136,
+    "codeSHA256": "ed01ffca6b7a714a7dfeb06921fc8218fc127c9201573fecf5d65fd032ca6d62",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "clang",
+    "id": "16",
+    "symbol": "c_pow_mod64",
+    "bytes": 51,
+    "offset": 5184,
+    "codeSHA256": "6ef4b70068a23c3f2ae00338a2dee7f3fa70a83eef1d31c18972c570c2677d52",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "clang",
+    "id": "17",
+    "symbol": "c_strlen_bytes",
+    "bytes": 28,
+    "offset": 5248,
+    "codeSHA256": "b798621359c182977dbbec9717e9dd93075d64c124d9e791ddc7ef72e10924a6",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "clang",
+    "id": "18",
+    "symbol": "c_strnlen_bytes",
+    "bytes": 34,
+    "offset": 5280,
+    "codeSHA256": "29b353458a33e9a09d88d525affd201ae0eccf2f520d13f1504759a302b948d7",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "clang",
+    "id": "19",
+    "symbol": "c_memcmp_bytes",
+    "bytes": 45,
+    "offset": 5328,
+    "codeSHA256": "646eb1d702193202946033d255387f72756c690b3c47e20bb1373672a92dca1b",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "clang",
+    "id": "20",
+    "symbol": "c_bytes_equal",
+    "bytes": 68,
+    "offset": 5376,
+    "codeSHA256": "db742d0108ac3eac5d56ab7ed8253c61503fb3938919135b882c68dfc3cdd79c",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "clang",
+    "id": "21",
+    "symbol": "c_memchr_index",
+    "bytes": 34,
+    "offset": 5456,
+    "codeSHA256": "55de3909482f6f03bce06a64e22f3952871c78caa62e93bec597335839a325fb",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "clang",
+    "id": "22",
+    "symbol": "c_sum_u32",
+    "bytes": 124,
+    "offset": 5504,
+    "codeSHA256": "41958b35844551a829fbef05723db3e97b589af511ff778b623d84d8bf607bd1",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "clang",
+    "id": "23",
+    "symbol": "c_max_u32",
+    "bytes": 305,
+    "offset": 5632,
+    "codeSHA256": "53b5e3d5e9bbbba3069c4fc28bea24357d99950baf5ddcfdba03196323d7b7d7",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "clang",
+    "id": "24",
+    "symbol": "c_count_zero_u32",
+    "bytes": 161,
+    "offset": 5952,
+    "codeSHA256": "3ff42ce75202616d177ace6f403d563e8dcf740dd517f85537532b498529e98b",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "clang",
+    "id": "25",
+    "symbol": "c_linear_search_u32",
+    "bytes": 34,
+    "offset": 6128,
+    "codeSHA256": "9bb0b303cc508633d9972ee95f852dca9e720428cc1180b845e716520a75070e",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "clang",
+    "id": "26",
+    "symbol": "c_reverse_u32",
+    "bytes": 144,
+    "offset": 6176,
+    "codeSHA256": "77a5af4a61b6092b83aafd2b0b8a418fac042dbc125ac5f230db8fe98aa12032",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "clang",
+    "id": "27",
+    "symbol": "c_fill_u32",
+    "bytes": 92,
+    "offset": 6320,
+    "codeSHA256": "db077b64ce5c010552dc53990349ab78ffcf1bfaa83b27126d961e0058bed0b3",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "clang",
+    "id": "28",
+    "symbol": "c_copy_u32",
+    "bytes": 15,
+    "offset": 6416,
+    "codeSHA256": "9fad464edf0abc39180e3e4e3ab6f667243c101020d8e1cdf01b391b71e74184",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "clang",
+    "id": "29",
+    "symbol": "c_dot_mod64",
+    "bytes": 168,
+    "offset": 6432,
+    "codeSHA256": "f943c671632a9b3116ce5a64ef2bdb2baadf5078bbbd3f7450ca5b5b1082b67a",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "clang",
+    "id": "30",
+    "symbol": "c_prefix_sum_u32",
+    "bytes": 111,
+    "offset": 6608,
+    "codeSHA256": "fbb04d6d8005fbbc94983b38894edc045c597ca1d1261d8768563c738c8d03de",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "clang",
+    "id": "31",
+    "symbol": "c_struct_copy",
+    "bytes": 15,
+    "offset": 6720,
+    "codeSHA256": "b02d17cb6f8508acf3156eea0ef0f45f4b59c4dce173c1ece8e994afc7046a51",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "clang",
+    "id": "32",
+    "symbol": "c_struct_sum",
+    "bytes": 28,
+    "offset": 6736,
+    "codeSHA256": "f2533e551d485a7d8b69af03582c04c0d841be6ef4eae6a9e1fe1b5ac1f15bd1",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "clang",
+    "id": "33",
+    "symbol": "c_binary_search_u32",
+    "bytes": 58,
+    "offset": 6768,
+    "codeSHA256": "1103abad9c660b715b4f7f889b1be3a7949bf7e2214604a6c7eae112668aa985",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "clang",
+    "id": "34",
+    "symbol": "c_atomic_fetch_add64",
+    "bytes": 9,
+    "offset": 6832,
+    "codeSHA256": "2b079bc2ab8041211ba878ae23c3fbdf5edd583f48df09785b272a9d89ef2522",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "clang",
+    "id": "35",
+    "symbol": "c_atomic_load_acquire64",
+    "bytes": 4,
+    "offset": 6848,
+    "codeSHA256": "afae45c906d9e5d93a0612a2360b14d31fd758c9acf5c8f8787b5095927afc23",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "clang",
+    "id": "36",
+    "symbol": "c_atomic_store_release64",
+    "bytes": 4,
+    "offset": 6864,
+    "codeSHA256": "539cfe51c3dc23be3a51b13f4cd6c55a914a4a8b4c38fc3a0789fb490f8d23ac",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "clang",
+    "id": "37",
+    "symbol": "c_spinlock_acquire",
+    "bytes": 12,
+    "offset": 6880,
+    "codeSHA256": "03da88f4b393e5e5bd54a4be7485fb7ede5c5ee4a2b2cdd5ef6eff9d3ca33e47",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "clang",
+    "id": "38",
+    "symbol": "c_spinlock_release",
+    "bytes": 7,
+    "offset": 6896,
+    "codeSHA256": "1df8eed5de3158f416b76de6766b079a7067de033c465a3a0fb4c27772ff3be4",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "clang",
+    "id": "39",
+    "symbol": "c_futex_wait_loop",
+    "bytes": 126,
+    "offset": 6912,
+    "codeSHA256": "d83db19f795197312a1b5b28a4642360e9e15d2a6aaab4e4e39d4256892741fc",
+    "symbolAndLoadMappingChecked": true
+  },
+  {
+    "compiler": "clang",
+    "id": "40",
+    "symbol": "c_counter_worker",
+    "bytes": 86,
+    "offset": 7040,
+    "codeSHA256": "8d17169f16cf606ba018728c8d67075ad57137e8a3a9e7395cd3a89d0fbc2309",
+    "symbolAndLoadMappingChecked": true
+  }
+]

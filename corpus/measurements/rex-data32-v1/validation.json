@@ -1,0 +1,323 @@
+{
+  "schema": "ediesel.corpus.rex-data32-diagnostic.v1",
+  "publishedBaselineHead": "b7d6e55a4ccd7c0c2c6ca5f6a4d1fbc54d9734b9",
+  "profile": "production read-only CFG; 64 bytes / 32 static instructions",
+  "frozenWindows": 80,
+  "closures": {
+    "candidate": {
+      "modules": 20,
+      "allImportJoins": 48,
+      "sourceObjectJoins": 20
+    },
+    "baseline": {
+      "modules": 20,
+      "allImportJoins": 48,
+      "sourceObjectJoins": 20
+    }
+  },
+  "runs": [
+    {
+      "name": "gcc",
+      "accepted": 22,
+      "artifacts": 40,
+      "reportedCertifications": 0,
+      "wallSeconds": 2.24,
+      "maxRSSKiB": 1610320,
+      "compileAndPostflightExit": 0
+    },
+    {
+      "name": "clang",
+      "accepted": 20,
+      "artifacts": 40,
+      "reportedCertifications": 0,
+      "wallSeconds": 2.82,
+      "maxRSSKiB": 1594048,
+      "compileAndPostflightExit": 0
+    },
+    {
+      "name": "baseline-gcc",
+      "accepted": 21,
+      "artifacts": 40,
+      "reportedCertifications": 0,
+      "wallSeconds": 3.36,
+      "maxRSSKiB": 1587524,
+      "compileAndPostflightExit": 0
+    },
+    {
+      "name": "baseline-clang",
+      "accepted": 20,
+      "artifacts": 40,
+      "reportedCertifications": 0,
+      "wallSeconds": 1.82,
+      "maxRSSKiB": 1605944,
+      "compileAndPostflightExit": 0
+    }
+  ],
+  "baselineSources": [
+    {
+      "name": "EDSL.Audit",
+      "publishedHead": "b7d6e55a4ccd7c0c2c6ca5f6a4d1fbc54d9734b9",
+      "path": "EDSL/Audit.lean",
+      "sha256": "5ca6ab1b78bed0fb4de5bacc87a31e4f123ae769d65be203a69e6e40977d1719"
+    },
+    {
+      "name": "EDSL.X86.State",
+      "publishedHead": "b7d6e55a4ccd7c0c2c6ca5f6a4d1fbc54d9734b9",
+      "path": "EDSL/X86/State.lean",
+      "sha256": "a29c715d1cb6620e8397d97678608579f88a9a5648aec374132218aae74e88ac"
+    },
+    {
+      "name": "EDSL.X86.Memory",
+      "publishedHead": "b7d6e55a4ccd7c0c2c6ca5f6a4d1fbc54d9734b9",
+      "path": "EDSL/X86/Memory.lean",
+      "sha256": "db4e16a7b4ec8589dd7802a7ecab2816d8830fffa0902dbdc6dbad43f8721c1d"
+    },
+    {
+      "name": "EDSL.X86.AtomicMemory",
+      "publishedHead": "b7d6e55a4ccd7c0c2c6ca5f6a4d1fbc54d9734b9",
+      "path": "EDSL/X86/AtomicMemory.lean",
+      "sha256": "ae3019f6d933189b097b5c35053183e434461158030588c8a28720201f865d5c"
+    },
+    {
+      "name": "EDSL.X86.Flags",
+      "publishedHead": "b7d6e55a4ccd7c0c2c6ca5f6a4d1fbc54d9734b9",
+      "path": "EDSL/X86/Flags.lean",
+      "sha256": "3eca86a92cd3324252dbd636711e81e4f867ccd5d22415570ba17e15b5717a2b"
+    },
+    {
+      "name": "EDSL.X86.Syscall",
+      "publishedHead": "b7d6e55a4ccd7c0c2c6ca5f6a4d1fbc54d9734b9",
+      "path": "EDSL/X86/Syscall.lean",
+      "sha256": "18b1e9651022a18fac3d7d57258e0eefb029e7b78ddf083cfb6dcd658f4903ca"
+    },
+    {
+      "name": "EDSL.X86.Machine",
+      "publishedHead": "b7d6e55a4ccd7c0c2c6ca5f6a4d1fbc54d9734b9",
+      "path": "EDSL/X86/Machine.lean",
+      "sha256": "79167898124d242910cf42e8386235d22d87ed80a2a5c37ba203ce2e1d22d8dd"
+    },
+    {
+      "name": "EDSL.X86.Memory64",
+      "publishedHead": "b7d6e55a4ccd7c0c2c6ca5f6a4d1fbc54d9734b9",
+      "path": "EDSL/X86/Memory64.lean",
+      "sha256": "c7903ab3ea72505514e1e20559ce4248d2efcc1ebb3058974ca8ae03cd8a563a"
+    },
+    {
+      "name": "EDSL.X86.Sequential.Condition",
+      "publishedHead": "b7d6e55a4ccd7c0c2c6ca5f6a4d1fbc54d9734b9",
+      "path": "EDSL/X86/Sequential/Condition.lean",
+      "sha256": "38ab4b3b96384353f29d1f57837268981343fb8d840fdda8f12e4a4f3a70cd85"
+    },
+    {
+      "name": "EDSL.X86.Sequential.Model",
+      "publishedHead": "b7d6e55a4ccd7c0c2c6ca5f6a4d1fbc54d9734b9",
+      "path": "EDSL/X86/Sequential/Model.lean",
+      "sha256": "8406dead7d70247d94492bb6bc4a2c86899550f61a63dd6339ea14cdf63cec3f"
+    },
+    {
+      "name": "EDSL.X86.Sequential.Decode",
+      "publishedHead": "b7d6e55a4ccd7c0c2c6ca5f6a4d1fbc54d9734b9",
+      "path": "EDSL/X86/Sequential/Decode.lean",
+      "sha256": "a0d4a222b97ef9a36663b41956cf9aeaf4699859b726f9feeee4e97ebf6afe85"
+    },
+    {
+      "name": "EDSL.X86.Sequential.DecodeTransportSupport",
+      "publishedHead": "b7d6e55a4ccd7c0c2c6ca5f6a4d1fbc54d9734b9",
+      "path": "EDSL/X86/Sequential/DecodeTransportSupport.lean",
+      "sha256": "aad6ae5db0acc04be32b7b77bc597777a8d626ee764487528e96b80efaafa316"
+    },
+    {
+      "name": "EDSL.X86.Sequential.DecodeTransport",
+      "publishedHead": "b7d6e55a4ccd7c0c2c6ca5f6a4d1fbc54d9734b9",
+      "path": "EDSL/X86/Sequential/DecodeTransport.lean",
+      "sha256": "2b614b3b70494363166914cb1b7aef29ac88c5150353f403318afa2f64cdf12c"
+    },
+    {
+      "name": "EDSL.X86.Sequential.Code",
+      "publishedHead": "b7d6e55a4ccd7c0c2c6ca5f6a4d1fbc54d9734b9",
+      "path": "EDSL/X86/Sequential/Code.lean",
+      "sha256": "a387ac37d0abb1e7c5f2b6db70f18c8acf1635ef6ef46f5ec78e07897fff5691"
+    },
+    {
+      "name": "EDSL.X86.Sequential.Flags",
+      "publishedHead": "b7d6e55a4ccd7c0c2c6ca5f6a4d1fbc54d9734b9",
+      "path": "EDSL/X86/Sequential/Flags.lean",
+      "sha256": "f7bc86275a6dfcf68c623b9799bc57c2cfdec8d00175b9ec6041e732ff38372d"
+    },
+    {
+      "name": "EDSL.X86.ByteComparison",
+      "publishedHead": "b7d6e55a4ccd7c0c2c6ca5f6a4d1fbc54d9734b9",
+      "path": "EDSL/X86/ByteComparison.lean",
+      "sha256": "0400071cf120d8f67dca9f50fcddfcba191005d79b434c9c8856ae460a3cbc52"
+    },
+    {
+      "name": "EDSL.WordMath.Scalar",
+      "publishedHead": "b7d6e55a4ccd7c0c2c6ca5f6a4d1fbc54d9734b9",
+      "path": "EDSL/WordMath/Scalar.lean",
+      "sha256": "90298a6b9168b7fdf8c12bf37bb95952da8ae066df7e6a54e13df729be90620e"
+    },
+    {
+      "name": "EDSL.X86.Sequential.Machine",
+      "publishedHead": "b7d6e55a4ccd7c0c2c6ca5f6a4d1fbc54d9734b9",
+      "path": "EDSL/X86/Sequential/Machine.lean",
+      "sha256": "b3e65ea94b8a381412dd9bb908644c8de82f629ab0b28bdcd9c22b76b812ae80"
+    },
+    {
+      "name": "EDSL.X86.Sequential.CFG",
+      "publishedHead": "b7d6e55a4ccd7c0c2c6ca5f6a4d1fbc54d9734b9",
+      "path": "EDSL/X86/Sequential/CFG.lean",
+      "sha256": "b966ee60432cd19e489b2a1f201eaf873997a7e9f4da4aeac85d5849a169de8d"
+    },
+    {
+      "name": "EDSL.X86.Sequential.CFGDiscovery",
+      "publishedHead": "b7d6e55a4ccd7c0c2c6ca5f6a4d1fbc54d9734b9",
+      "path": "EDSL/X86/Sequential/CFGDiscovery.lean",
+      "sha256": "477207bc9dfb0e9120d9903539937173de608c74e876788ade39dbf17d8a9d18"
+    }
+  ],
+  "candidateSources": [
+    {
+      "name": "EDSL.Audit",
+      "file": "EDSL/Audit.lean",
+      "sha256": "5ca6ab1b78bed0fb4de5bacc87a31e4f123ae769d65be203a69e6e40977d1719"
+    },
+    {
+      "name": "EDSL.X86.State",
+      "file": "EDSL/X86/State.lean",
+      "sha256": "a29c715d1cb6620e8397d97678608579f88a9a5648aec374132218aae74e88ac"
+    },
+    {
+      "name": "EDSL.X86.Memory",
+      "file": "EDSL/X86/Memory.lean",
+      "sha256": "db4e16a7b4ec8589dd7802a7ecab2816d8830fffa0902dbdc6dbad43f8721c1d"
+    },
+    {
+      "name": "EDSL.X86.AtomicMemory",
+      "file": "EDSL/X86/AtomicMemory.lean",
+      "sha256": "ae3019f6d933189b097b5c35053183e434461158030588c8a28720201f865d5c"
+    },
+    {
+      "name": "EDSL.X86.Flags",
+      "file": "EDSL/X86/Flags.lean",
+      "sha256": "3eca86a92cd3324252dbd636711e81e4f867ccd5d22415570ba17e15b5717a2b"
+    },
+    {
+      "name": "EDSL.X86.Syscall",
+      "file": "EDSL/X86/Syscall.lean",
+      "sha256": "18b1e9651022a18fac3d7d57258e0eefb029e7b78ddf083cfb6dcd658f4903ca"
+    },
+    {
+      "name": "EDSL.X86.Machine",
+      "file": "EDSL/X86/Machine.lean",
+      "sha256": "79167898124d242910cf42e8386235d22d87ed80a2a5c37ba203ce2e1d22d8dd"
+    },
+    {
+      "name": "EDSL.X86.Memory64",
+      "file": "EDSL/X86/Memory64.lean",
+      "sha256": "c7903ab3ea72505514e1e20559ce4248d2efcc1ebb3058974ca8ae03cd8a563a"
+    },
+    {
+      "name": "EDSL.X86.Sequential.Condition",
+      "file": "EDSL/X86/Sequential/Condition.lean",
+      "sha256": "38ab4b3b96384353f29d1f57837268981343fb8d840fdda8f12e4a4f3a70cd85"
+    },
+    {
+      "name": "EDSL.X86.Sequential.Model",
+      "file": "EDSL/X86/Sequential/Model.lean",
+      "sha256": "4321864693a7130e8c7bb7b5876e0ce7ab376459609be72b7555f242613ff37a"
+    },
+    {
+      "name": "EDSL.X86.Sequential.Decode",
+      "file": "EDSL/X86/Sequential/Decode.lean",
+      "sha256": "5b67c138c51e34ac232bb03158c79c8652f236941293205e47de563f5f8b6b28"
+    },
+    {
+      "name": "EDSL.X86.Sequential.DecodeTransportSupport",
+      "file": "EDSL/X86/Sequential/DecodeTransportSupport.lean",
+      "sha256": "b2416cc02a7ca30c1b3667006223f13a2bd72ef86b0239c411b5bc09b108c68c"
+    },
+    {
+      "name": "EDSL.X86.Sequential.DecodeTransport",
+      "file": "EDSL/X86/Sequential/DecodeTransport.lean",
+      "sha256": "2b614b3b70494363166914cb1b7aef29ac88c5150353f403318afa2f64cdf12c"
+    },
+    {
+      "name": "EDSL.X86.Sequential.Code",
+      "file": "EDSL/X86/Sequential/Code.lean",
+      "sha256": "a387ac37d0abb1e7c5f2b6db70f18c8acf1635ef6ef46f5ec78e07897fff5691"
+    },
+    {
+      "name": "EDSL.X86.Sequential.Flags",
+      "file": "EDSL/X86/Sequential/Flags.lean",
+      "sha256": "f7bc86275a6dfcf68c623b9799bc57c2cfdec8d00175b9ec6041e732ff38372d"
+    },
+    {
+      "name": "EDSL.X86.ByteComparison",
+      "file": "EDSL/X86/ByteComparison.lean",
+      "sha256": "0400071cf120d8f67dca9f50fcddfcba191005d79b434c9c8856ae460a3cbc52"
+    },
+    {
+      "name": "EDSL.WordMath.Scalar",
+      "file": "EDSL/WordMath/Scalar.lean",
+      "sha256": "90298a6b9168b7fdf8c12bf37bb95952da8ae066df7e6a54e13df729be90620e"
+    },
+    {
+      "name": "EDSL.X86.Sequential.Machine",
+      "file": "EDSL/X86/Sequential/Machine.lean",
+      "sha256": "20ca31b7c596038b9418e1071592083973da8684705697bb99dc6978c498a89e"
+    },
+    {
+      "name": "EDSL.X86.Sequential.CFG",
+      "file": "EDSL/X86/Sequential/CFG.lean",
+      "sha256": "4ffd3436b08874f9339279cc0466fc7578622bb0f94f114822e8c2823a712dbe"
+    },
+    {
+      "name": "EDSL.X86.Sequential.CFGDiscovery",
+      "file": "EDSL/X86/Sequential/CFGDiscovery.lean",
+      "sha256": "477207bc9dfb0e9120d9903539937173de608c74e876788ade39dbf17d8a9d18"
+    },
+    {
+      "name": "corpus.Probe",
+      "file": "corpus/Probe.lean",
+      "sha256": "233c88fcaf4fc64b1f545b815bdcc3d68c90c1cc69e044222f1a05a3ec6cd313"
+    }
+  ],
+  "delta": [
+    {
+      "compiler": "gcc",
+      "id": "29",
+      "symbol": "c_dot_mod64",
+      "before": {
+        "symbol": "c_dot_mod64",
+        "first_obligation": "EDSL.X86.Sequential.CFG.DiscoveryError.decode 19 (EDSL.X86.Error.unsupportedEncoding)",
+        "end_to_end_certified": false,
+        "cfg_status": "unsupported",
+        "cfg_nodes": 0,
+        "bytes": 55
+      },
+      "after": {
+        "symbol": "c_dot_mod64",
+        "first_obligation": "independent contract, loaded final-ELF binding, ABI/memory/OS obligations and kernel proof remain",
+        "end_to_end_certified": false,
+        "cfg_status": "cfg-accepted",
+        "cfg_nodes": 19,
+        "bytes": 55
+      }
+    }
+  ],
+  "publishedConditionalCoverage": {
+    "functions": 20,
+    "artifacts": 40,
+    "concurrentFunctions": 3,
+    "newCredit": 0
+  },
+  "scope": "Current default64-byte/32-node read-only CFG diagnostic only. No rerun, proof/certificate admission, physical CPU/OS refinement or new corpus credit.",
+  "review": {
+    "completionSealSHA256": "bc7874ccac8c014b15b4c1fd72bc148e497f7c873fef9903189223957411342b",
+    "receiptSHA256": "854c31b0903e9997b836175118747453c8418e1b6de3ff238f86c2d05149ca91",
+    "rootReadOnlyReview": true
+  },
+  "nativeELFExecution": false,
+  "proofOrAdmissionAttempt": false,
+  "limitsChanged": false
+}

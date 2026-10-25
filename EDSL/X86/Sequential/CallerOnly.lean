@@ -48,7 +48,7 @@ def CallerOnly : Instruction → Prop
   | .imulReg64 _ _ | .shiftRightImm32 _ _ _ _
   | .movzxMem8 _ _ _ | .cmpMemImm8 _ _ | .cmpMemReg8 _ _
   | .cmpRegMem8 _ _ _ | .cmpMemReg32 _ _ | .addMem32 _ _ | .addMem64 _ _
-  | .loadMem32 _ _ | .storeMem32 _ _ | .loadMem64 _ _ | .storeMem64 _ _ => False
+  | .loadMem32 _ _ | .loadMem32Rex _ _ | .storeMem32 _ _ | .loadMem64 _ _ | .storeMem64 _ _ => False
 
 instance (instruction : Instruction) : Decidable (CallerOnly instruction) := by
   cases instruction with

@@ -20,7 +20,7 @@ theorem selected_encodings :
       [0x4d,0x8b,0x64,0xa5,0x80], [0x48,0x8b,0x44,0x24,0],
       [0x47,0x0f,0xb6,0x64,0xa5,0x80], [0x3a,0x46,0],
       [0x44,0x3a,0x46,0], [0x38,0x4a,4], [0x39,0x4a,4],
-      [3,0x4a,4], [0x0f,0xb6,0x40,0]] : List (List Byte)).map
+      [3,0x4a,4], [0x0f,0xb6,0x40,0], [0x40,0x8b,0x40,0]] : List (List Byte)).map
       (fun code => Sequential.decodeAt (entry code)) =
     [.ok (.cmpMemImm8 (.sibDisp8 .rdi (some .rax) 0 1) 0),
       .ok (.loadMem32 .rcx (.baseDisp8 .rdx 4)),
@@ -41,7 +41,8 @@ theorem selected_encodings :
       .ok (.cmpMemReg8 (.baseDisp8 .rdx 4) .rcx),
       .ok (.cmpMemReg32 (.baseDisp8 .rdx 4) .rcx),
       .ok (.addMem32 .rcx (.baseDisp8 .rdx 4)),
-      .ok (.movzxMem8 .rax (.baseDisp8 .rax 0) false)] := by decide +kernel
+      .ok (.movzxMem8 .rax (.baseDisp8 .rax 0) false),
+      .ok (.loadMem32Rex .rax (.baseDisp8 .rax 0))] := by decide +kernel
 
 /-- The explicit zero displacement still consumes a byte and is a real RBP base. -/
 theorem lengths :
@@ -57,7 +58,7 @@ retain their established rejection behavior. No suffix is read for wrong /group.
 theorem rejected_forms :
     ([[0x80,0x40], [0x38,0x60], [0x3a,0x60], [0x8b,0x82],
       [0x48,0x8b,0x05], [0x48,0x8b,0x04,0x24], [0x48,0x8b,0x04,0x25],
-      [0x40,0x8b,0x40,0], [0x67,0x8b,0x40,0]] : List (List Byte)).map
+      [0x40,0x8b,0x80,0,0,0,0], [0x67,0x8b,0x40,0]] : List (List Byte)).map
       (fun code => Sequential.decodeAt (entry code)) =
     [.error .unsupportedEncoding,.error .unsupportedEncoding,.error .unsupportedEncoding,
       .error .unsupportedEncoding,.error .unsupportedEncoding,.error .unsupportedEncoding,

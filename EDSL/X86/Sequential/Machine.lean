@@ -21,7 +21,7 @@ def Instruction.operandReads (instruction : Instruction) (state : State) : List 
   | .legacy .loadEaxRdi | .legacy .exchangeEaxRdi | .legacy .fetchAddEaxRdi =>
     [⟨.data, state.registers .rdi, 4⟩]
   | .legacy .loadEaxRsi => [⟨.data, state.registers .rsi, 4⟩]
-  | .loadMem32 _ address | .addMem32 _ address | .cmpMemReg32 address _ => [⟨.data, address.eval state, 4⟩]
+  | .loadMem32 _ address | .loadMem32Rex _ address | .addMem32 _ address | .cmpMemReg32 address _ => [⟨.data, address.eval state, 4⟩]
   | .cmpMemImm8 address _ | .cmpMemReg8 address _ | .cmpRegMem8 _ address _ | .movzxMem8 _ address _ =>
     [⟨.data, address.eval state, 1⟩]
   | .loadMem64 _ address | .addMem64 _ address => [⟨.data, address.eval state, 8⟩]
@@ -258,7 +258,7 @@ def execute (state : State) (instruction : Instruction) (af : Bool) : Except Err
   | .xchgRax64 other =>
     return ⟨.next { (state.writeRegister .rax (state.registers other)).writeRegister
       other (state.registers .rax) with rip := state.rip + 2 }, reads⟩
-  | .loadMem32 destination address =>
+  | .loadMem32 destination address | .loadMem32Rex destination address =>
     let value ← loadDWord state.memory (address.eval state)
     return ⟨.next { state.writeRegister destination (value.setWidth 64) with
       rip := state.rip + BitVec.ofNat 64 instruction.length }, reads⟩
@@ -768,6 +768,15 @@ theorem execute_loadMem32 (state : State) (destination : Register) (address : Ad
         rip := state.rip + BitVec.ofNat 64 (Instruction.loadMem32 destination address).length },
         [⟨.data, address.eval state, 4⟩]⟩ := rfl
 
+/-- The encoded REX byte changes length, while the DATA4 primitive and
+full64 prestate address retain the ordinary load contract. -/
+theorem execute_loadMem32Rex (state : State) (destination : Register) (address : Address) (af : Bool) :
+    execute state (.loadMem32Rex destination address) af = do
+      let value ← loadDWord state.memory (address.eval state)
+      return ⟨.next { state.writeRegister destination (value.setWidth 64) with
+        rip := state.rip + BitVec.ofNat 64 (Instruction.loadMem32Rex destination address).length },
+        [⟨.data, address.eval state, 4⟩]⟩ := rfl
+
 theorem execute_storeMem32 (state : State) (address : Address) (source : Register) (af : Bool) :
     execute state (.storeMem32 address source) af = do
       let memory ← storeDWord state.memory (address.eval state) ((state.registers source).setWidth 32)
@@ -868,6 +877,24 @@ theorem execute_loadMem32_context {state : State} {destination : Register} {addr
   · intro register different
     simp [State.writeRegister, different]
 
+/-- No distinctness assumption: destination may be any base/index or RSP. -/
+theorem execute_loadMem32Rex_context {state : State} {destination : Register} {address : Address}
+    {value : BitVec 32} (af : Bool)
+    (loaded : loadDWord state.memory (address.eval state) = .ok value) :
+    ∃ final, execute state (.loadMem32Rex destination address) af =
+        .ok ⟨.next final, [⟨.data, address.eval state, 4⟩]⟩ ∧
+      final.registers destination = value.setWidth 64 ∧
+      (∀ register, register ≠ destination → final.registers register = state.registers register) ∧
+      final.memory = state.memory ∧ final.flags = state.flags ∧
+      final.rip = state.rip + BitVec.ofNat 64 (Instruction.loadMem32Rex destination address).length := by
+  refine ⟨{ state.writeRegister destination (value.setWidth 64) with
+    rip := state.rip + BitVec.ofNat 64 (Instruction.loadMem32Rex destination address).length },
+    ?_, ?_, ?_, rfl, rfl, rfl⟩
+  · simp only [execute_loadMem32Rex, loaded, ok_bind, pure_ok]
+  · simp [State.writeRegister]
+  · intro register different
+    simp [State.writeRegister, different]
+
 /-- Success exposes the actual four-byte primitive result; an observation
 cannot assert an unchecked or differently addressed load. -/
 theorem execute_loadMem32_success_iff {state : State} {destination : Register} {address : Address}
@@ -878,6 +905,17 @@ theorem execute_loadMem32_success_iff {state : State} {destination : Register} {
           rip := state.rip + BitVec.ofNat 64 (Instruction.loadMem32 destination address).length },
           [⟨.data, address.eval state, 4⟩]⟩ := by
   rw [execute_loadMem32]
+  cases loaded : loadDWord state.memory (address.eval state) <;> simp [eq_comm]
+
+/-- Success retains the same checked four-byte primitive and exact read trace. -/
+theorem execute_loadMem32Rex_success_iff {state : State} {destination : Register} {address : Address}
+    {af : Bool} {observation : Observation} :
+    execute state (.loadMem32Rex destination address) af = .ok observation ↔
+      ∃ value, loadDWord state.memory (address.eval state) = .ok value ∧
+        observation = ⟨.next { state.writeRegister destination (value.setWidth 64) with
+          rip := state.rip + BitVec.ofNat 64 (Instruction.loadMem32Rex destination address).length },
+          [⟨.data, address.eval state, 4⟩]⟩ := by
+  rw [execute_loadMem32Rex]
   cases loaded : loadDWord state.memory (address.eval state) <;> simp [eq_comm]
 
 /-- The actual checked load uses the PRE-instruction address, even when the
@@ -1021,7 +1059,7 @@ theorem execute_storeIntent {state : State} {instruction : Instruction} {address
   | addImm32 _ _ _ | inc32 _ _
   | negReg32 _ _ | bswapReg64 _ | shrOne64 _ | rolCL64 _
   | movzxMem8 _ _ _ | movzxReg8 _ _ _ | cmpReg8 _ _ _ | subReg32 _ _ _
-  | movReg32 _ _ | movReg64 _ _ | setcc _ _ _ | movImm8 _ _ _ | movSignImm32 _ _ | cmovReg32 _ _ _ _ | cmovReg64 _ _ _ | lea64 _ _ | addReg64 _ _ | subReg64 _ _ | logicalReg64 _ _ _ | xchgReg64 _ _ | xchgRax64 _ | loadMem32 _ _ | loadMem64 _ _ | storeMem64 _ _ | xorSelf32 _ | test32 _ _ _ | cmp32 _ _ _ | endbr64IbtDisabled | nop _ | test64 _ _ | cmp64 _ _ | cmpMemImm8 _ _ | cmpRegMem8 _ _ _ | cmpMemReg8 _ _ | cmpMemReg32 _ _ | addMem32 _ _ | addMem64 _ _
+  | movReg32 _ _ | movReg64 _ _ | setcc _ _ _ | movImm8 _ _ _ | movSignImm32 _ _ | cmovReg32 _ _ _ _ | cmovReg64 _ _ _ | lea64 _ _ | addReg64 _ _ | subReg64 _ _ | logicalReg64 _ _ _ | xchgReg64 _ _ | xchgRax64 _ | loadMem32 _ _ | loadMem32Rex _ _ | loadMem64 _ _ | storeMem64 _ _ | xorSelf32 _ | test32 _ _ _ | cmp32 _ _ _ | endbr64IbtDisabled | nop _ | test64 _ _ | cmp64 _ _ | cmpMemImm8 _ _ | cmpRegMem8 _ _ _ | cmpMemReg8 _ _ | cmpMemReg32 _ _ | addMem32 _ _ | addMem64 _ _
   | addImm64 _ _ | subImm64 _ _ | andImm64 _ _ | inc64 _ | dec64 _ | je _ | jcc _ _ | jmp _ =>
     simp [Instruction.storeIntent] at intent
 
@@ -1318,7 +1356,7 @@ theorem execute_reads {state : State} {instruction : Instruction} {af : Bool}
   | cmpMemReg32 address source =>
     obtain ⟨value, _, rfl⟩ := execute_cmpMemReg32_success_iff.mp success
     rfl
-  | loadMem32 destination address | addMem32 destination address =>
+  | loadMem32 destination address | loadMem32Rex destination address | addMem32 destination address =>
     cases loaded : loadDWord state.memory (address.eval state) <;> simp [execute, loaded] at success
     cases success
     rfl
@@ -1459,7 +1497,7 @@ theorem execute_reads_succeed {state : State} {instruction : Instruction} {af : 
     simp only [Instruction.operandReads, List.mem_singleton] at member
     subst read
     exact ⟨rfl, value, loaded⟩
-  | loadMem32 destination address | addMem32 destination address =>
+  | loadMem32 destination address | loadMem32Rex destination address | addMem32 destination address =>
     cases loaded : loadDWord state.memory (address.eval state) with
     | error fault => simp [execute, loaded] at success
     | ok value =>
@@ -1523,7 +1561,7 @@ theorem execute_new_memory {state final : State} {instruction : Instruction} {af
     cases success
     cases next
     rfl
-  | loadMem32 destination address | addMem32 destination address =>
+  | loadMem32 destination address | loadMem32Rex destination address | addMem32 destination address =>
     cases loaded : loadDWord state.memory (address.eval state) <;> simp [execute, loaded] at success
     cases success
     cases next
@@ -1633,7 +1671,7 @@ theorem execute_new_next {state : State} {instruction : Instruction} {af : Bool}
   | addImm64 destination immediate | subImm64 destination immediate | andImm64 destination immediate | inc64 destination | dec64 destination =>
     cases success
     exact ⟨_, rfl⟩
-  | loadMem32 destination address | addMem32 destination address =>
+  | loadMem32 destination address | loadMem32Rex destination address | addMem32 destination address =>
     cases loaded : loadDWord state.memory (address.eval state) <;> simp [execute, loaded] at success
     cases success
     exact ⟨_, rfl⟩
@@ -1736,7 +1774,7 @@ theorem execute_new_flags {state final : State} {instruction : Instruction} {af 
   | endbr64IbtDisabled | nop encoding =>
     cases success; cases next
     rfl
-  | loadMem32 destination address =>
+  | loadMem32 destination address | loadMem32Rex destination address =>
     cases loaded : loadDWord state.memory (address.eval state) <;> simp [execute, loaded] at success
     cases success; cases next
     rfl

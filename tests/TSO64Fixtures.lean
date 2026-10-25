@@ -61,10 +61,10 @@ structure Ready where
   atomicA : OS.Atomics64.HandleId64
   atomicB : OS.Atomics64.HandleId64
 
-/-- Project-owned synthetic programs and mappings, installed with the actual
-checked resource operations. The program words are parameters to the fixture,
-never dispatch inputs to the scheduler. -/
-def fixture (first second old : Word) : Except OSFault Ready := do
+-- Split the existing checked setup sequence so elaboration stays within
+-- maxRecDepth 128. Allocation, initialization, loans and their order are unchanged.
+private def prepareAtomic (old : Word) :
+    Except OSFault (Checked × OS.Atomics64.HandleId64 × OS.Atomics64.HandleId64) := do
   let (atomic, out) ← change seed (.allocate 7 ⟨65536, 16⟩ readWrite)
   let atomicTicket ← ticket out
   let (initialized, _) ← change atomic (.store64 7 atomicTicket 65536 old)
@@ -72,27 +72,44 @@ def fixture (first second old : Word) : Except OSFault Ready := do
   let (registered, cell) ← enroll neighbor atomicTicket
   let (one, atomicA) ← handle registered cell 11
   let (two, atomicB) ← handle one cell 12
-  let (dataOne, out) ← change two (.allocate 11 ⟨131072, 16⟩ readWrite)
+  return (two, atomicA, atomicB)
+
+private def prepareData (before : Checked) :
+    Except OSFault (Checked × OS.Ownership.Ticket × OS.Ownership.Ticket) := do
+  let (dataOne, out) ← change before (.allocate 11 ⟨131072, 16⟩ readWrite)
   let dataA ← ticket out
   let (dataTwo, out) ← change dataOne (.allocate 12 ⟨196608, 16⟩ readWrite)
   let dataB ← ticket out
-  let (stackOne, out) ← change dataTwo (.allocate 21 ⟨262144, 8⟩ readWrite)
-  let stackA ← ticket out
-  let (writtenA, _) ← change stackOne (.store64 21 stackA 262144 0x7000)
-  let (protectedA, _) ← change writtenA (.protect 21 stackA readOnly)
-  let (loanA, callerA) ← borrow protectedA 21 stackA 11 ⟨262144, 8⟩
-  let (stackTwo, out) ← change loanA (.allocate 22 ⟨327680, 8⟩ readWrite)
-  let stackB ← ticket out
-  let (writtenB, _) ← change stackTwo (.store64 22 stackB 327680 0x8000)
-  let (protectedB, _) ← change writtenB (.protect 22 stackB readOnly)
-  let (loanB, callerB) ← borrow protectedB 22 stackB 12 ⟨327680, 8⟩
-  let (code, out) ← change loanB (.allocate 23 ⟨393216, 16⟩ readWrite)
+  return (dataTwo, dataA, dataB)
+
+private def prepareCaller (before : Checked) (owner actor : Nat) (address returned : Word) :
+    Except OSFault (Checked × Nat) := do
+  let (stack, out) ← change before (.allocate owner ⟨address, 8⟩ readWrite)
+  let stackTicket ← ticket out
+  let (written, _) ← change stack (.store64 owner stackTicket address returned)
+  let (readOnlyStack, _) ← change written (.protect owner stackTicket readOnly)
+  borrow readOnlyStack owner stackTicket actor ⟨address, 8⟩
+
+private def prepareCode (before : Checked) (first second : Word) :
+    Except OSFault (Checked × Nat × Nat) := do
+  let (code, out) ← change before (.allocate 23 ⟨393216, 16⟩ readWrite)
   let codeTicket ← ticket out
   let (low, _) ← change code (.store64 23 codeTicket 393216 first)
   let (high, _) ← change low (.store64 23 codeTicket 393224 second)
   let (executable, _) ← change high (.protect 23 codeTicket readExecute)
   let (codeOne, codeA) ← borrow executable 23 codeTicket 11 ⟨393216, 16⟩
   let (codeTwo, codeB) ← borrow codeOne 23 codeTicket 12 ⟨393216, 16⟩
+  return (codeTwo, codeA, codeB)
+
+/-- Project-owned synthetic programs and mappings, installed with the actual
+checked resource operations. The program words are parameters to the fixture,
+never dispatch inputs to the scheduler. -/
+def fixture (first second old : Word) : Except OSFault Ready := do
+  let (two, atomicA, atomicB) ← prepareAtomic old
+  let (dataTwo, dataA, dataB) ← prepareData two
+  let (loanA, callerA) ← prepareCaller dataTwo 21 11 262144 0x7000
+  let (loanB, callerB) ← prepareCaller loanA 22 12 327680 0x8000
+  let (codeTwo, codeA, codeB) ← prepareCode loanB first second
   return ⟨codeTwo, codeA, codeB, callerA, callerB, dataA, dataB, atomicA, atomicB⟩
 
 def context (stack data delta initial : Word) : Context where

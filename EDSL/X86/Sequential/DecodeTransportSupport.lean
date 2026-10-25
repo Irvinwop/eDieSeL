@@ -517,6 +517,7 @@ theorem decodeREX32At_refines {source destination : State} (rex : Byte)
     | with_reducible exact SuccessRefines.refl _
     | exact t1
     | exact t2
+    | with_reducible exact decodeQWordAddressAt_refines _ _ transport
     | with_reducible exact decodeMovImm8At_refines _ _ _ transport
     | with_reducible exact decode0FREX32At_refines _ transport
     | with_reducible exact decodeCmpRegMem8At_refines _ _ transport

@@ -343,6 +343,14 @@ lean_lib DisplacedDataTests where
   moreLeanArgs := #["-DwarningAsError=true", "-DautoImplicit=false",
     "-DmaxHeartbeats=300000", "-DmaxRecDepth=128"]
 
+-- W=0 REX DATA4 loads, generic execution/VCG frames and current OS authority.
+lean_lib RexData32Tests where
+  roots := #[`tests.RexData32Audit, `tests.RexData32Base,
+    `tests.RexData32Decode, `tests.RexData32Execute, `tests.RexData32Faults,
+    `tests.RexData32CFG, `tests.RexData32Resources, `tests.RexData32TSO]
+  moreLeanArgs := #["-DwarningAsError=true", "-DautoImplicit=false",
+    "-DmaxHeartbeats=300000", "-DmaxRecDepth=128"]
+
 -- Full-address LEA32 narrowing and low-byte immediate TEST contracts.
 lean_lib AddressByteTests where
   roots := #[`tests.Address32, `tests.TestImmediate8, `tests.AddressByteTransport,

@@ -73,7 +73,7 @@ and lower-bound claims.
 | --- | --- |
 | Execution, branches and loops | [Control flow](control-flow.md), [CFG proofs](cfg.md), [explicit CFG bounds](cfg-profiles.md), [effect-independent structure and continuation](structural-cfg.md), [effect-aware VCs](effect-vcg.md), [short branches](sequential-short-jcc.md) |
 | Caller-only execution across changed RAM | [Exact execution transport](caller-only-transport.md), [reusing sequential proofs in the OS model](caller-only-os-proofs.md) |
-| Register and memory instructions | [Moves](sequential-moves.md), [memory64](memory64.md), [arithmetic64](sequential-arithmetic64.md), [memory addition](sequential-add-memory64.md), [logic64](sequential-logical64.md), [signed-byte AND64](and64-immediate.md) |
+| Register and memory instructions | [Moves](sequential-moves.md), [memory64](memory64.md), [arithmetic64](sequential-arithmetic64.md), [memory addition](sequential-add-memory64.md), [logic64](sequential-logical64.md), [signed-byte AND64](and64-immediate.md), [REX DATA4 loads](rex-data32.md) |
 | Native arithmetic RMW | [Exact qword XADD/ADD/INC CPU family and compatibility](native-add-rmw64-isa.md) |
 | Conditions and operand widths | [Corpus ISA](sequential-corpus-isa.md), [CMOV64](sequential-cmov64.md), [CMOV32](sequential-cmov32.md), [byte order](sequential-byte-order.md), [low32 logic and CMP64](sequential-parity-isa.md), [SUB32/CMP32 imm8](sequential-immediate32.md), [LEA32 and byte TEST](address32-byte-test.md), [low-byte results](low8-results.md) |
 | Unary, counter and shift rules | [NEG32/BSWAP64](sequential-unary.md), [counter/address rules](popcount.md#reusable-proof-components), [SHR64 by one](shift-one.md), [SHR/SAR32 and vector effects](shift-right32.md), [ROL64 by CL](rotate.md) |

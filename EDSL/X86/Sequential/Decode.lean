@@ -58,6 +58,7 @@ def Instruction.length : Instruction → Nat
   | .movReg64 _ _ | .addReg64 _ _ | .subReg64 _ _ | .logicalReg64 _ _ _ | .xchgReg64 _ _ | .test64 _ _ | .cmp64 _ _
   | .inc64 _ | .dec64 _ | .bswapReg64 _ | .shrOne64 _ | .rolCL64 _ => 3
   | .addMem32 _ address | .loadMem32 _ address | .storeMem32 address _ => 2 + address.suffixBytes
+  | .loadMem32Rex _ address => 3 + address.suffixBytes
   | .lea64 _ address | .loadMem64 _ address | .addMem64 _ address | .storeMem64 address _ =>
     3 + address.suffixBytes
   | .shiftRightImm32 _ _ _ prefixed | .logicalImm32 _ _ _ prefixed | .addImm32 _ _ prefixed
@@ -563,6 +564,10 @@ def decodeREX32At (state : State) (rex : Byte) : Except Error Instruction := do
   else if operation = 0x29 ∨ operation = 0x2b then decodeSubReg32At state operation rex true
   else if operation = 0x31 ∨ operation = 0x33 ∨ operation = 0x09 ∨ operation = 0x0b then decodeLogicalReg32At state operation rex true
   else if operation = 0xc1 then decodeShiftRightImm32At state rex true
+  else if operation = 0x8b then
+    let modrm ← fetchByte state.memory (state.rip + 2)
+    let address ← decodeQWordAddressAt state rex modrm
+    return .loadMem32Rex (rexModRMReg rex modrm) address
   else if operation = 0x8d then decodeLea32At state rex true
   else if operation = 0xf6 then decodeTestImm8At state rex true
   else if operation = 0xf7 then decodeNegReg32At state rex true
@@ -853,7 +858,8 @@ theorem Instruction.length_pos (instruction : Instruction) : 0 < instruction.len
   | endbr64IbtDisabled => decide
   | nop encoding => cases encoding <;> decide
   | legacy old => cases old <;> simp [Instruction.length]
-  | addMem32 destination address | loadMem32 destination address | storeMem32 address destination
+  | addMem32 destination address | loadMem32 destination address | loadMem32Rex destination address
+  | storeMem32 address destination
   | cmpMemImm8 address immediate
   | cmpMemReg8 address source | cmpMemReg32 address source
   | lea64 destination address | loadMem64 destination address | addMem64 destination address
@@ -876,7 +882,8 @@ theorem Instruction.length_le_fifteen (instruction : Instruction) : instruction.
   | endbr64IbtDisabled => decide
   | nop encoding => cases encoding <;> decide
   | legacy old => cases old <;> simp [Instruction.length]
-  | addMem32 destination address | loadMem32 destination address | storeMem32 address destination
+  | addMem32 destination address | loadMem32 destination address | loadMem32Rex destination address
+  | storeMem32 address destination
   | cmpMemImm8 address immediate
   | cmpMemReg8 address source | cmpMemReg32 address source
   | lea64 destination address | loadMem64 destination address | addMem64 destination address
