@@ -258,3 +258,5 @@ import EDSL.Corpus.V1.TriangularClangReturn
 import EDSL.ELF.FunctionSelection
 import EDSL.Corpus.V1.ClangLookup
 import EDSL.Corpus.V1.TriangularClangArtifact
+import EDSL.Corpus.V1.TriangularGCCArtifact
+import EDSL.Corpus.V1.TriangularGCCObservations

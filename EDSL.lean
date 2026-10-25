@@ -7,8 +7,10 @@ SPDX-License-Identifier: Apache-2.0
 import EDSL.Semantics
 import EDSL.X86.VCGen
 import EDSL.X86.VCGen.PureCall
+import EDSL.X86.VCGen.CutpointsFlags
 import EDSL.X86.VCGen.BufferCall
 import EDSL.PureCall.ELFCertificate
+import EDSL.PureCall.ELFCertificateFor
 import EDSL.ELF.CallerResources.Stack
 import EDSL.PureCall.Frame
 import EDSL.PureCall.Candidate
@@ -17,3 +19,4 @@ import EDSL.X86.Sequential.ByteComparePadding
 import EDSL.X86.Sequential.NopPadding
 import EDSL.Grading.ByteEquality
 import EDSL.ELF.FunctionCandidateSource
+import EDSL.ELF.FunctionSelection

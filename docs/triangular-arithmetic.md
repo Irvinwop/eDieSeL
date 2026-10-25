@@ -81,10 +81,28 @@ file and requested name still pass the independent production checker. Shared
 [Clang lookup normalization](../EDSL/Corpus/V1/ClangLookup.lean) reuses the
 existing full-file proofs for subsequent functions.
 
-Certificate export and corpus/task registration remain open. The exact GCC NOP7 encoding is supported; its complete loop proof remains
-open. The reusable
-[Bool-to-flags adapter](bool-policy-refinement.md) can transport a bounded Bool
-proof and its actual read policy without changing the callable contract.
-Source/compiler or physical CPU/OS correspondence, concurrency, timing and
-minimum-operation claims are not established. The accepted corpus score
+The [GCC loop proof](../EDSL/Corpus/V1/TriangularGCCClient.lean) checks the complete
+60-byte, 21-instruction graph, including ENDBR64, exact padding and all three
+returns. Its entry and loop conditions cover zero, one, every even and odd
+uint32 input, arbitrary upper32 RDI and incoming scratch/flags. A conserved
+triangular budget and a decreasing rank prove totality. The Bool execution
+bound is `13*(floor(n/2)+2)`; exact GCC path counts remain open.
+
+The [ordered-read theorem](../EDSL/Corpus/V1/TriangularGCCObservations.lean)
+identifies the sole STACK8 read at the original RSP for every complete Bool
+or independent flag-vector execution. The
+[GCC artifact certificate](../EDSL/Corpus/V1/TriangularGCCArtifact.lean) binds
+these semantics to the complete unchanged 41,016-byte ELF, unique exact name,
+60-byte symbol extent and executable mapping, with a useful installed caller.
+
+New programs can reuse the [countdown arithmetic](../EDSL/WordMath/TriangularCountdown.lean),
+[production state/frame lemmas](../EDSL/X86/Sequential/CountdownState.lean), and
+[cutpoint-to-flags bridge](../EDSL/X86/VCGen/CutpointsFlags.lean). The latter
+combines universal block proofs and their original read policy with the shared
+current-resource adapter; arithmetic grants no memory authority.
+
+Both compiler outputs now have body/resource and named-ELF/caller certificates.
+Task registration, certificate export and installed grader acceptance remain
+open. Source/compiler or physical CPU/OS correspondence, concurrency, timing
+and minimum-operation claims are not established. The accepted corpus score
 remains 20/40 functions and 40/80 compiler artifacts.

@@ -117,6 +117,13 @@ the helper requires no instruction support or successful execution. The
 [unsigned-average client](unsigned-average.md) shows this path with an
 overflowing full64 pair and separate compiler-specific semantic evidence.
 
+For independent flag vectors, `pureCall_semantics_of_cutpoints_flags` combines
+universal block annotations with the existing safe Bool-to-flags resource
+bridge. It is exported by `EDSL`. The
+[GCC triangular client](../EDSL/Corpus/V1/TriangularGCCClient.lean) demonstrates
+entry/loop annotations, a mathematical decreasing rank and the same complete
+caller contract. Its assumptions stay in ordinary present-only admission.
+
 For read-only buffers, use `EDSL.BufferCall` and its VCG adapter. Snapshots,
 permitted operand reads and current input loans are additional obligations;
 accessible RAM alone is not authority. Writable memory, syscalls and concurrent

@@ -54,7 +54,7 @@ integration blocker.
 | --- | ---: | --- | --- | --- |
 | 13 `c_gcd_u32` | 37 / 31 | `DIV32` (`F7 /6`), `+0x14` | `DIV32` (`F7 /6`), `+0x14` | **A.** Euclidean invariant, nonzero divisor, quotient range/no divide fault, termination and independent gcd result. |
 | 14 `c_factorial_mod64` | 54 / 38 | Register `TEST8` (`84 /r`), `+0x27` | `DEC32` (`FF /1`), `+0x19` | **P.** SUB64 is implemented. Reuse the vector IMUL semantics; prove product invariant, early-zero exit and all-uint32 termination. |
-| 15 `c_triangular_mod64` | 60 / 37 | Independent loop/termination and caller-resource proof; no missing instruction identified | Task registration, certificate export and grader acceptance; no missing instruction identified | **P/A.** The complete Clang read-only CFG is accepted with 14 nodes. GCC uses a two-at-a-time loop; Clang uses a closed formula. [Independent arithmetic and complete Clang body/resource/actual-RET proofs](triangular-arithmetic.md) are checked. Clang now has a full named-ELF/caller certificate; task/export/grader acceptance and the GCC loop proof remain. |
+| 15 `c_triangular_mod64` | 60 / 37 | Task registration, certificate export and grader acceptance; no missing instruction identified | The same integration gates; no missing instruction identified | **D.** Complete GCC (21 nodes) and Clang (14 nodes) graphs, independent arithmetic, universal body/current-resource/actual-return proofs and full named-ELF/caller certificates are checked. GCC uses a two-at-a-time loop; Clang uses a closed formula. [Triangular proofs](triangular-arithmetic.md) preserve the same all-uint32 specification. Registered export and installed grader acceptance remain open. |
 | 16 `c_pow_mod64` | 41 / 51 | Count-one `SHR32` (`D1 /5`), `+0x1e` | The same encoding, `+0x23` | **A.** Immediate `C1` SHR32 and full64 `D1` SHR already exist; this low32 encoding does not. Reuse IMUL/CMOV; prove exponentiation invariant and decreasing exponent. |
 | 17 `c_strlen_bytes` | 35 / 28 | Sequential route stops on reachable `CALL` (`E8`), `+0x11`; the sibling CallReturn decoder already supports that instruction | DATA1 compare with SIB+disp8, `+0x10` | **P/A.** Unbounded first-NUL snapshot/extent and termination; GCC needs reachable `strlen@plt` target/dependency binding and private-call-stack composition through the existing sibling route. A source symbol name is no external proof. |
 | 22 `c_sum_u32` | 35 / 124† | Independent modular-fold invariant and current-buffer/caller adapter; no missing instruction identified | `AND64` imm8, `+0x17`; then XMM operations | **A/H.** GCC's complete read-only CFG was accepted by the [comparison/padding measurement](../corpus/measurements/cmp32-endbr-nop-v1/); that is not a current end-to-end certificate. Clang needs lane-wise sum/reduction, exact widened-read authority and scalar-tail composition. |
@@ -107,19 +107,21 @@ was run. A decoded sibling instruction supplies no external-call or OS contract.
 | 6= | DATA4 compare with sign-extended imm8 | **1:** 24 | Reaches the scalar carry-consuming ADC64 count, whose rule and cardinality invariant remain. |
 | 6= | Ordinary DATA4 immediate store (`C7 /0`) | **1:** 38 | Enables release-store decoding, with publication and ownership work still required. |
 | 6= | Independent modular-fold/current-buffer adapter | **1:** 22 | Advances GCC beyond its accepted CFG; Clang SIMD obligations prevent function credit. |
-| 6= | Triangular registration and certificate export | **1:** 15 | Clang named-ELF/caller certificate and body/current-resource/RET proofs are checked; task/export/grader acceptance remains. GCC still needs its loop proof. |
+| 6= | Triangular registration and certificate export | **1:** 15 | Both compiler bodies, current resources, return/read traces and named-ELF/caller certificates are checked; task/export/grader acceptance remains. |
 | 6= | Sorted-interval binary-search contract/current-resource adapter | **1:** 33 | Advances Clang beyond its accepted CFG; GCC still needs a larger profile and extended loads. |
 | 6= | Reachable libc/PLT contract via existing CallReturn rules | **1:** 17 | Justifies GCC's actual strlen call target, dependency bytes and private stack; Clang's DATA1 gap remains. |
 | 6= | DWORD lock-invariant/interleaving adapter | **1:** 37 | Advances the decoded Clang loop beyond structure, with the GCC protocol proof still open. Shared protocol work also supports 38. |
 | 6= | Bounded full-file Counted64 packet export/admission | **1:** 40 | Closest existing model proof to a new numerator; both compiler packets, isolated installed acceptance, negative controls and corpus registration must pass first. |
 
 Next work should combine shared-feature counts with the distance to a complete
-independent contract. Finish the demonstrated row-40 packet gate, then prefer
-reusable DATA-address and AND64-immediate rules. Exact NOP7/NOP8 now share
+independent contract. Complete registered acceptance for the checked triangular
+certificates and the demonstrated row-40 packet gate, alongside shared
+DATA-address and AND64-immediate rules. Exact NOP7/NOP8 now share
 the existing decoder, frame, WP and permission model. SUB64 is complete
 for its documented subset and no longer belongs in the missing-feature rank.
-Use the accepted Clang triangular and binary-search CFGs to develop reusable
-arithmetic/interval contracts alongside their GCC blockers. Keep separate tracks
+Reuse the triangular arithmetic and loop/resource bridges for later functions;
+develop the accepted Clang binary-search CFG into an interval contract while
+addressing its GCC blockers. Keep separate tracks
 for XMM lanes, mutable-array ownership and interleaved lock protocols. After each
 milestone, remove newly covered IDs, record newly exposed first blockers and
 update the ranking from the unchanged 40-function denominator.
