@@ -7,12 +7,14 @@ import EDSL.X86.Sequential.CFGDiscovery
 import EDSL.X86.Sequential.CFGTransport
 import EDSL.X86.Sequential.Literals
 import EDSL.Audit
+import tests.Support.ExceptDecidable
 
 set_option autoImplicit false
 set_option warningAsError true
 
 namespace EDSL.Tests.SequentialSearchISA
 open X86 X86.Sequential
+open scoped EDSL.Tests.Support
 
 private def entry (bytes : List Byte) (registers : Register → Word := fun _ => 8192)
     (data : Word → Option Byte := fun _ => none) : State where
@@ -48,7 +50,7 @@ theorem cmp8_flags (af : Bool) :
           (fun (register : Register) => if register = Register.rdx then right else 8192) (singleByte left)) af) =
     [.ok (0x697,4098,[⟨.data,8192,1⟩]), .ok (0xe12,4098,[⟨.data,8192,1⟩]),
      .ok (0xe83,4098,[⟨.data,8192,1⟩]), .ok (0x646,4098,[⟨.data,8192,1⟩]),
-     .ok (0xe83,4098,[⟨.data,8192,1⟩]), .ok (0x616,4098,[⟨.data,8192,1⟩])] := by rfl
+     .ok (0xe83,4098,[⟨.data,8192,1⟩]), .ok (0x616,4098,[⟨.data,8192,1⟩])] := by cases af <;> decide +kernel
 
 /-- The byte key must come from the actual source field, for all supported
 unprefixed byte registers. Data has no write or execute permission. -/
@@ -58,7 +60,7 @@ theorem cmp8_sources :
         | .rax => 0x100000001 | .rcx => 0x200000002 | .rdx => 0x300000003
         | .rbx => 0x400000004 | _ => 8192) (singleByte 3))) =
     [.ok (0x602,4098,[⟨.data,8192,1⟩]), .ok (0x602,4098,[⟨.data,8192,1⟩]),
-     .ok (0x646,4098,[⟨.data,8192,1⟩]), .ok (0x697,4098,[⟨.data,8192,1⟩])] := by rfl
+     .ok (0x646,4098,[⟨.data,8192,1⟩]), .ok (0x697,4098,[⟨.data,8192,1⟩])] := by decide +kernel
 
 /-- Word operands use all four little-endian bytes, LOW32 of the source and
 32-bit flags. A byte compare, full64 compare or reversed subtraction fails. -/
@@ -72,7 +74,7 @@ theorem cmp32_flags (af : Bool) :
           (fun (register : Register) => if register = Register.rdx then right else 8192) (littleWord left)) af) =
     [.ok (0x697,4098,[⟨.data,8192,4⟩]), .ok (0xe16,4098,[⟨.data,8192,4⟩]),
      .ok (0xe87,4098,[⟨.data,8192,4⟩]), .ok (0x646,4098,[⟨.data,8192,4⟩]),
-     .ok (0x683,4098,[⟨.data,8192,4⟩]), .ok (0x616,4098,[⟨.data,8192,4⟩])] := by rfl
+     .ok (0x683,4098,[⟨.data,8192,4⟩]), .ok (0x616,4098,[⟨.data,8192,4⟩])] := by cases af <;> decide +kernel
 
 /-- The byte high-register rejection must not reject the same source fields
 at width32: here they mean ESP/EBP/ESI/EDI, with unrestricted upper halves. -/
@@ -82,7 +84,7 @@ theorem cmp32_upper_source_fields :
         | .rsp => 0x100000001 | .rbp => 0x200000002 | .rsi => 0x300000003
         | .rdi => 0x400000004 | _ => 8192) (littleWord [3,0,0,0]))) =
     [.ok (0x602,4098,[⟨.data,8192,4⟩]), .ok (0x602,4098,[⟨.data,8192,4⟩]),
-     .ok (0x646,4098,[⟨.data,8192,4⟩]), .ok (0x697,4098,[⟨.data,8192,4⟩])] := by rfl
+     .ok (0x646,4098,[⟨.data,8192,4⟩]), .ok (0x697,4098,[⟨.data,8192,4⟩])] := by decide +kernel
 
 /-- One byte is readable at the last low canonical address; a wider read
 would fault. Conversely CMP32 needs bytes 1..3 even when the low byte matches. -/
@@ -92,7 +94,7 @@ theorem exact_width :
       (fun address => if address = 0x7fffffffffff then some 0x80 else none)) =
       .ok (0x646,4098,[⟨.data,0x7fffffffffff,1⟩]) ∧
     observe (entry [0x39,0x17] (fun _ => 8192) (singleByte 0)) =
-      .error (.inaccessibleData 8193) := by exact ⟨rfl,rfl⟩
+      .error (.inaccessibleData 8193) := by decide +kernel
 
 /-- Full64 base/index and scale four select a high address. Source and index
 alias RDX, so the same high register must provide the address and LOW32 key. -/
@@ -101,12 +103,12 @@ theorem high_address_and_source_alias :
       (fun register => if register = .rdi then 0x200000001 else 0x100000002)
       (fun address => if 0x600000009 ≤ address.toNat then
         ([2,0,0,0] : List Byte)[address.toNat - 0x600000009]? else none)) =
-      .ok (0x646,4099,[⟨.data,0x600000009,4⟩]) := by rfl
+      .ok (0x646,4099,[⟨.data,0x600000009,4⟩]) := by decide +kernel
 
 theorem all_address_registers_alias :
     observe (entry [0x38,0x14,0x52] (fun _ => 8192)
       (fun address => if address = 24576 then some 0 else none)) =
-      .ok (0x646,4099,[⟨.data,24576,1⟩]) := by rfl
+      .ok (0x646,4099,[⟨.data,24576,1⟩]) := by decide +kernel
 
 /-- Byte canonicality and complete word-span validation come from production
 memory primitives, including the high canonical range's wrapping boundary. -/
@@ -116,7 +118,8 @@ theorem data_faults :
       observe (entry [0x39,0x17] (fun _ => 0x7ffffffffffe) (fun _ => some 0)),
       observe (entry [0x39,0x17] (fun _ => 0xfffffffffffffffe) (fun _ => some 0))) =
     (.error (.inaccessibleData 8192), .error (.inaccessibleData 0x800000000000),
-     .error (.inaccessibleData 0x800000000000), .error (.inaccessibleData 0xfffffffffffffffe)) := by rfl
+     .error (.inaccessibleData 0x800000000000), .error (.inaccessibleData 0xfffffffffffffffe)) := by
+  refine Prod.ext ?_ (Prod.ext ?_ (Prod.ext ?_ ?_)) <;> decide +kernel
 
 private def moved (bytes : List Byte) (destination : Register := .rax) :
     Except Error (Word × Word × Word × List Read) := do
@@ -134,7 +137,7 @@ theorem mov_immediate_width :
       List (List Byte)).map (fun bytes => moved bytes) =
     [.ok (0xffffffffffffffff,0x602,4103,[]), .ok (0xffffffff80000000,0x602,4103,[]),
      .ok (0x7fffffff,0x602,4103,[]), .ok (128,0x602,4103,[]),
-     .ok (32768,0x602,4103,[]), .ok (0x12345678,0x602,4103,[])] := by rfl
+     .ok (32768,0x602,4103,[]), .ok (0x12345678,0x602,4103,[])] := by decide +kernel
 
 /-- Destinations include RSP and both banks; /0 must not be decoded as a
 source register. No stack/data memory exists in any of these cases. -/
@@ -143,7 +146,7 @@ theorem mov_destinations :
       ([0x49,0xc7,0xc0,0xfe,0xff,0xff,0xff],.r8),
       ([0x49,0xc7,0xc7,0xfe,0xff,0xff,0xff],.r15)] :
       List (List Byte × Register)).map (fun (bytes,destination) => moved bytes destination) =
-    List.replicate 3 (.ok (0xfffffffffffffffe,0x602,4103,[])) := by rfl
+    List.replicate 3 (.ok (0xfffffffffffffffe,0x602,4103,[])) := by decide +kernel
 
 private def sentinel : List Byte := [0x48,0xc7,0xc0,0xff,0xff,0xff,0xff]
 
@@ -157,20 +160,20 @@ theorem mov_fetches :
       Sequential.decodeAt { initial with memory := { initial.memory with
         executable := fun address => address != 4096 + BitVec.ofNat 64 offset } }) =
       (List.range 7).map (fun offset => .error (.inaccessibleInstruction (4096 + BitVec.ofNat 64 offset))) := by
-  exact ⟨rfl,rfl⟩
+  decide +kernel
 
 theorem cmp_fetches :
     ([[0x38], [0x38,0x14], [0x39], [0x39,0x14]] : List (List Byte)).map
       (fun bytes => Sequential.decodeAt (entry bytes)) =
     [.error (.inaccessibleInstruction 4097), .error (.inaccessibleInstruction 4098),
-     .error (.inaccessibleInstruction 4097), .error (.inaccessibleInstruction 4098)] := by rfl
+     .error (.inaccessibleInstruction 4097), .error (.inaccessibleInstruction 4098)] := by decide +kernel
 
 theorem cmp_sib_fetch_permission :
     ([[0x38,0x14,7], [0x39,0x14,0x8f]] : List (List Byte)).map (fun bytes =>
       let initial := entry bytes (data := fun _ => some 0)
       observe { initial with memory := { initial.memory with
         executable := fun address => address != 4098 } }) =
-    List.replicate 2 (.error (.inaccessibleInstruction 4098)) := by rfl
+    List.replicate 2 (.error (.inaccessibleInstruction 4098)) := by decide +kernel
 
 /-- Transport binds all seven current bytes at an arbitrary code address,
 while preserving the complete supplied RAM, flag word, and other GPRs. -/
@@ -179,7 +182,7 @@ theorem sentinel_current_code (state : State) (code : CodeAt state.memory state.
     Sequential.step af state = .ok ⟨.next { state.writeRegister .rax 0xffffffffffffffff with
       rip := state.rip + 7 }, []⟩ := by
   rw [step_code_eq_execute code (by decide) (offset := 0) (by decide) state rfl
-    (by simp) (by rfl : Sequential.decodeAt (codeState sentinel 0) =
+    (by simp) (by decide +kernel : Sequential.decodeAt (codeState sentinel 0) =
       .ok (.movSignImm32 .rax 0xffffffff)) af]
   rfl
 
@@ -194,7 +197,7 @@ theorem cmp32_current_code (state : State) (af : Bool) (value : BitVec 32)
       flags := cmpFlags32 state.flags value ((state.registers .rdx).setWidth 32) },
       [⟨.data,state.registers .rdi + (state.registers .rcx <<< (2 : Nat)),4⟩]⟩ := by
   rw [step_code_eq_execute code (by decide) (offset := 0) (by decide) state rfl (by simp)
-    (by rfl : Sequential.decodeAt (codeState [0x39,0x14,0x8f] 0) =
+    (by decide +kernel : Sequential.decodeAt (codeState [0x39,0x14,0x8f] 0) =
       .ok (.cmpMemReg32 (.indexed .rdi .rcx 2) .rdx)) af]
   have actualLoad : loadDWord state.memory ((Address.indexed .rdi .rcx 2).eval state) = .ok value := loaded
   rw [execute_cmpMemReg32, actualLoad]
@@ -208,7 +211,7 @@ theorem cmp8_current_code (state : State) (af : Bool) (value : Byte)
       flags := cmpFlags8 state.flags value ((state.registers .rdx).setWidth 8) },
       [⟨.data,state.registers .rdi + state.registers .rax,1⟩]⟩ := by
   rw [step_code_eq_execute code (by decide) (offset := 0) (by decide) state rfl (by simp)
-    (by rfl : Sequential.decodeAt (codeState [0x38,0x14,7] 0) =
+    (by decide +kernel : Sequential.decodeAt (codeState [0x38,0x14,7] 0) =
       .ok (.cmpMemReg8 (.indexed .rdi .rax 0) .rdx)) af]
   have actualLoad : readDataByte state.memory ((Address.indexed .rdi .rax 0).eval state) = .ok value := by
     change readDataByte state.memory (state.registers .rdi + (state.registers .rax <<< (0 : Nat))) = .ok value
@@ -230,7 +233,7 @@ theorem literal_encodings :
       .cmpMemReg32 (.base .rdi) .r10, .cmpMemReg32 (.base .r12) .rdx,
       .cmpMemReg8 (.base .rbp) .rdx, .cmpMemReg32 (.indexed .rdi .rsp 2) .rdx,
       .cmpMemReg32 (.indexed .r13 .rcx 2) .rdx] : List Sequential.Instruction).map
-      Literals.searchEncoding = List.replicate 7 none := by exact ⟨rfl,rfl⟩
+      Literals.searchEncoding = List.replicate 7 none := by decide +kernel
 
 /-- Unsupported high-byte codes, disp32, absent SIB
 components, extra prefixes, memory C7, and C7 extensions other than /0 reject. -/
@@ -249,7 +252,7 @@ theorem unsupported_forms :
         | .error .unsupportedEncoding => true | _ => false) = true ∧
     (Sequential.decodeAt (entry [0xc7,0xc0,1,0,0,0])).isOk = false ∧
     (X86.decodeAt (entry sentinel)).isOk = false ∧
-    (X86.decodeAt (entry [0x38,0x17])).isOk = false := by exact ⟨rfl,rfl,rfl,rfl⟩
+    (X86.decodeAt (entry [0x38,0x17])).isOk = false := by decide +kernel
 
 /-- Exact full frozen ELF slices independently extracted by manifest offsets.
 These finite CFG tests confer no functional certificate or corpus score. -/
@@ -277,7 +280,7 @@ theorem frozen_cfgs :
     [.ok (40,[0,4,7,9,11,13,16,20,23,25,28,30,31,32,39]),
      .ok (40,[0,4,7,9,11,13,16,20,23,25,28,30,31,32,39]),
      .ok (34,[0,7,10,12,14,16,19,21,24,27,29,30,33]),
-     .ok (34,[0,7,10,12,14,16,19,21,24,27,29,30,33])] := by rfl
+     .ok (34,[0,7,10,12,14,16,19,21,24,27,29,30,33])] := by decide +kernel
 
 private def gccGraph : CFG.Graph := CFG.annotate [
   ⟨0,.endbr64IbtDisabled,false,0⟩, ⟨4,.test64 .rsi .rsi,false,0⟩,
@@ -300,7 +303,7 @@ theorem cfg_binding :
     CFG.check (List.replicate 32 0x90 ++ [0xc3])
       ⟨(List.range 32).map (fun offset => ⟨offset,.nop .one,true,0⟩) ++
         [⟨32,.legacy .ret,false,0⟩],0⟩ = false := by
-  exact ⟨by decide, by decide, by decide, by decide, by decide, by decide⟩
+  decide +kernel
 
 end EDSL.Tests.SequentialSearchISA
 

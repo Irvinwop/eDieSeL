@@ -13,20 +13,20 @@ open EDSL.X86 EDSL.X86.Sequential
 
 -- Architectural mod01 base5 is RBP/R13, and SIB index4 changes meaning with X.
 example : Sequential.decodeAt (codeState [0x48,0x8d,0x45,0x80] 0) =
-    .ok (.lea64 .rax (.baseDisp8 .rbp 0x80)) := by rfl
+    .ok (.lea64 .rax (.baseDisp8 .rbp 0x80)) := by cbv
 example : Sequential.decodeAt (codeState [0x4d,0x8d,0x45,0xff] 0) =
-    .ok (.lea64 .r8 (.baseDisp8 .r13 0xff)) := by rfl
+    .ok (.lea64 .r8 (.baseDisp8 .r13 0xff)) := by cbv
 example : Sequential.decodeAt (codeState [0x49,0x8d,0x44,0xa5,0x80] 0) =
-    .ok (.lea64 .rax (.sibDisp8 .r13 none 2 0x80)) := by rfl
+    .ok (.lea64 .rax (.sibDisp8 .r13 none 2 0x80)) := by cbv
 example : Sequential.decodeAt (codeState [0x4b,0x8d,0x44,0xa5,0x80] 0) =
-    .ok (.lea64 .rax (.sibDisp8 .r13 (some .r12) 2 0x80)) := by rfl
+    .ok (.lea64 .rax (.sibDisp8 .r13 (some .r12) 2 0x80)) := by cbv
 example : ([[0x4b,0x8d,0x44,0x05,0], [0x4b,0x8d,0x44,0x45,0],
       [0x4b,0x8d,0x44,0x85,0], [0x4b,0x8d,0x44,0xc5,0]] : List (List Byte)).map
       (fun bytes => Sequential.decodeAt (codeState bytes 0)) =
     [.ok (.lea64 .rax (.sibDisp8 .r13 (some .r8) 0 0)),
      .ok (.lea64 .rax (.sibDisp8 .r13 (some .r8) 1 0)),
      .ok (.lea64 .rax (.sibDisp8 .r13 (some .r8) 2 0)),
-     .ok (.lea64 .rax (.sibDisp8 .r13 (some .r8) 3 0))] := by rfl
+     .ok (.lea64 .rax (.sibDisp8 .r13 (some .r8) 3 0))] := by cbv
 
 -- Equal computed values retain different instruction lengths and SIB syntax.
 example : (Sequential.Instruction.lea64 .rax (.base .rdi)).length = 3 ∧
@@ -48,19 +48,19 @@ example (state : State) (destination base index : Register) (scale : Fin 4)
 private def noncanonical : State :=
   { codeState [0x48,0x8d,0x47,0xff] 0 with registers := fun _ => 0x800000000001 }
 example : step false noncanonical =
-    .ok ⟨.next { noncanonical.writeRegister .rax 0x800000000000 with rip := 4 }, []⟩ := by rfl
+    .ok ⟨.next { noncanonical.writeRegister .rax 0x800000000000 with rip := 4 }, []⟩ := by cbv
 
 -- Every required displacement/SIB byte must have execute/read permission.
 example : Sequential.decodeAt (codeState [0x48,0x8d,0x47] 0) =
-    .error (.inaccessibleInstruction 3) := by rfl
+    .error (.inaccessibleInstruction 3) := by cbv
 example : Sequential.decodeAt (codeState [0x48,0x8d,0x44] 0) =
-    .error (.inaccessibleInstruction 3) := by rfl
+    .error (.inaccessibleInstruction 3) := by cbv
 example : Sequential.decodeAt (codeState [0x48,0x8d,0x44,0x20] 0) =
-    .error (.inaccessibleInstruction 4) := by rfl
+    .error (.inaccessibleInstruction 4) := by cbv
 private def blockedDisplacement : State :=
   let state := codeState [0x48,0x8d,0x47,0xff] 0
   { state with memory := { state.memory with executable := fun address => address != 3 } }
-example : Sequential.decodeAt blockedDisplacement = .error (.inaccessibleInstruction 3) := by rfl
+example : Sequential.decodeAt blockedDisplacement = .error (.inaccessibleInstruction 3) := by cbv
 
 private def crossingHole : State where
   registers := fun _ => 0
@@ -69,23 +69,23 @@ private def crossingHole : State where
   memory := {
     read := fun address => ([0x48,0x8d,0x47,0xff] : List Byte)[(address - 0x7ffffffffffd).toNat]?
     executable := fun _ => true }
-example : Sequential.decodeAt crossingHole = .error (.inaccessibleInstruction 0x800000000000) := by rfl
+example : Sequential.decodeAt crossingHole = .error (.inaccessibleInstruction 0x800000000000) := by cbv
 
 private def stackAlias : State :=
   { codeState [0x48,0x8d,0x64,0x24,0xff] 0 with registers := fun _ => 0 }
 example : step false stackAlias =
-    .ok ⟨.next { stackAlias.writeRegister .rsp 0xffffffffffffffff with rip := 5 }, []⟩ := by rfl
+    .ok ⟨.next { stackAlias.writeRegister .rsp 0xffffffffffffffff with rip := 5 }, []⟩ := by cbv
 
 -- Disp32, register LEA and RIP-relative forms remain unsupported.
-example : Sequential.decodeAt (codeState [0x48,0x8b,0x87,0xff,0xff,0xff,0xff] 0) = .error .unsupportedEncoding := by rfl
+example : Sequential.decodeAt (codeState [0x48,0x8b,0x87,0xff,0xff,0xff,0xff] 0) = .error .unsupportedEncoding := by cbv
 example : Sequential.decodeAt (codeState [0x48,0x8d,0x87,0xff,0xff,0xff,0xff] 0) =
-    .error .unsupportedEncoding := by rfl
-example : Sequential.decodeAt (codeState [0x48,0x8d,0xc7] 0) = .error .unsupportedEncoding := by rfl
-example : Sequential.decodeAt (codeState [0x48,0x8d,0x05,0,0,0,0] 0) = .error .unsupportedEncoding := by rfl
+    .error .unsupportedEncoding := by cbv
+example : Sequential.decodeAt (codeState [0x48,0x8d,0xc7] 0) = .error .unsupportedEncoding := by cbv
+example : Sequential.decodeAt (codeState [0x48,0x8d,0x05,0,0,0,0] 0) = .error .unsupportedEncoding := by cbv
 
 -- The sibling decoder preserves the old identities used by historical clients.
 example : CallReturn.decodeAt (codeState [0x4d,0x8d,0x45,0xff] 0) =
-    .ok (.leaDisp8 .r8 (.plain .r13) 0xff) := by rfl
+    .ok (.leaDisp8 .r8 (.plain .r13) 0xff) := by cbv
 example (state : State) (af : Bool) :
     CallReturn.execute state (.leaDisp8 .rax (.plain .rdi) 0xff) af =
       execute state (.lea64 .rax (.baseDisp8 .rdi 0xff)) af := rfl

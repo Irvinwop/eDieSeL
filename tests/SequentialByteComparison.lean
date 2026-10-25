@@ -44,7 +44,7 @@ theorem subtraction_boundaries :
         observe (entry [0x80,0x3f,right] (data := byteInput left))) =
     [.ok (0x697,4099,[⟨.data,8192,1⟩]), .ok (0xe12,4099,[⟨.data,8192,1⟩]),
      .ok (0xe83,4099,[⟨.data,8192,1⟩]), .ok (0x646,4099,[⟨.data,8192,1⟩]),
-     .ok (0xe83,4099,[⟨.data,8192,1⟩]), .ok (0x616,4099,[⟨.data,8192,1⟩])] := by rfl
+     .ok (0xe83,4099,[⟨.data,8192,1⟩]), .ok (0x616,4099,[⟨.data,8192,1⟩])] := by decide +kernel
 
 /-- Only one byte is mapped, at the final canonical address. A wider load
 would cross the canonical boundary and fault. Neither write nor execute access
@@ -52,7 +52,7 @@ is needed for this DATA1 operand. -/
 theorem final_canonical_byte (af : Bool) :
     observe (entry [0x80,0x3f,1] (fun _ => 0x7fffffffffff)
       (fun address => if address = 0x7fffffffffff then some 0x80 else none)) af =
-    .ok (0xe12,4099,[⟨.data,0x7fffffffffff,1⟩]) := by rfl
+    .ok (0xe12,4099,[⟨.data,0x7fffffffffff,1⟩]) := by cases af <;> decide +kernel
 
 /-- Full-width address inputs and scale eight matter; only the high computed
 address is mapped. Both the SIB byte and following immediate must be consumed. -/
@@ -60,12 +60,12 @@ theorem high_scaled_address :
     observe (entry [0x80,0x3c,0xcf,0xff] (fun register =>
       if register = .rdi then 0x200000000 else 0x100000001)
       (fun address => if address = 0xa00000008 then some 0x7f else none)) =
-    .ok (0xe83,4100,[⟨.data,0xa00000008,1⟩]) := by rfl
+    .ok (0xe83,4100,[⟨.data,0xa00000008,1⟩]) := by decide +kernel
 
 theorem base_index_alias :
     observe (entry [0x80,0x3c,0x7f,0] (fun _ => 4096)
       (fun address => if address = 12288 then some 0xff else none)) =
-    .ok (0x686,4100,[⟨.data,12288,1⟩]) := by rfl
+    .ok (0x686,4100,[⟨.data,12288,1⟩]) := by decide +kernel
 
 /-- Fetch faults identify the first missing encoded byte. A readable immediate
 without execute permission cannot be silently taken from RAM. -/
@@ -73,18 +73,18 @@ theorem missing_encoded_bytes :
     ([[0x80], [0x80,0x3f], [0x80,0x3c], [0x80,0x3c,0x17]] : List (List Byte)).map
       (fun bytes => Sequential.decodeAt (entry bytes)) =
     [.error (.inaccessibleInstruction 4097), .error (.inaccessibleInstruction 4098),
-     .error (.inaccessibleInstruction 4098), .error (.inaccessibleInstruction 4099)] := by rfl
+     .error (.inaccessibleInstruction 4098), .error (.inaccessibleInstruction 4099)] := by decide +kernel
 
 theorem immediate_execute_permission :
     let initial := entry [0x80,0x3c,0x17,0]
     Sequential.decodeAt { initial with memory := { initial.memory with
       executable := fun address => address != 4099 } } =
-      .error (.inaccessibleInstruction 4099) := by rfl
+      .error (.inaccessibleInstruction 4099) := by decide +kernel
 
 theorem actual_data_faults :
     (observe (entry [0x80,0x3f,0]),
       observe (entry [0x80,0x3f,0] (fun _ => 0x800000000000) (fun _ => some 0))) =
-    (.error (.inaccessibleData 8192), .error (.inaccessibleData 0x800000000000)) := by rfl
+    (.error (.inaccessibleData 8192), .error (.inaccessibleData 0x800000000000)) := by decide +kernel
 
 /-- Unsupported families never become a weaker addressing or width contract.
 The old decoder continues to reject CMP8; the sequential profile rejects
@@ -97,12 +97,12 @@ theorem unsupported_forms :
         | .error .unsupportedEncoding => true | _ => false) = true ∧
     Sequential.decodeAt (entry [0x38,0x27]) = .error .unsupportedEncoding ∧
     X86.decodeAt (entry [0x80,0x3f,0]) = .error (.unsupportedOpcode 0x80) := by
-  exact ⟨rfl, rfl, rfl⟩
+  decide +kernel
 
 def nop9 : List Byte := [0x66,0x0f,0x1f,0x84,0,0,0,0,0]
 
 theorem nine_byte_nop (af : Bool) :
-    observe (entry nop9 (fun _ => 0x800000000000)) af = .ok (0x602,4105,[]) := by rfl
+    observe (entry nop9 (fun _ => 0x800000000000)) af = .ok (0x602,4105,[]) := by cases af <;> decide +kernel
 
 /-- Every truncation and every execute-permission hole, including offsets5..8,
 is rejected at that byte. This catches accidental five-byte transport/fetch. -/
@@ -114,7 +114,7 @@ theorem nop9_full_fetch :
       Sequential.decodeAt { initial with memory := { initial.memory with
         executable := fun address => address != 4096 + BitVec.ofNat 64 offset } }) =
       (List.range 9).map (fun offset => .error (.inaccessibleInstruction (4096 + BitVec.ofNat 64 offset))) := by
-  exact ⟨rfl, rfl⟩
+  decide +kernel
 
 /-- Nonzero NOP9 suffixes and the unlisted doubled prefix reject; removing
 the single 66 prefix gives the separately supported exact eight-byte NOP. -/
@@ -130,13 +130,13 @@ theorem nop9_current_code (state : State) (code : CodeAt state.memory state.rip 
     Sequential.decodeAt state = .ok (.nop .nine) := by
   apply decodeAt_transport
     (code_fetch_transport code (by decide) 0 (by decide) state rfl (by simp))
-  rfl
+  decide +kernel
 
 /-- CFG edges must target instruction starts, including after all nine bytes.
 The finite padding instruction does not grant an edge into its suffix. -/
 theorem nop9_cfg_edges :
     ((CFG.discover (nop9 ++ [0xc3])).isSome,
-      (CFG.discover ([0xeb,7] ++ nop9 ++ [0xc3])).isSome) = (true,false) := by decide
+      (CFG.discover ([0xeb,7] ++ nop9 ++ [0xc3])).isSome) = (true,false) := by decide +kernel
 
 /-- Exact frozen file slices (GCC VA402f60/35, Clang VA4014a0/34).
 These are discovery regressions only, with no functional scan certificate. -/
@@ -152,7 +152,7 @@ theorem unchanged_windows_discover :
     ((CFG.analyze gcc35).map (fun graph => graph.nodes.map (·.offset)),
       (CFG.analyze clang34).map (fun graph => graph.nodes.map (·.offset))) =
     (.ok [0,4,7,9,12,14,15,16,20,23,25,29,31,34],
-     .ok [0,2,5,7,16,20,22,25,28,30,33]) := by rfl
+     .ok [0,2,5,7,16,20,22,25,28,30,33]) := by decide +kernel
 
 end EDSL.Tests.SequentialByteComparison
 
