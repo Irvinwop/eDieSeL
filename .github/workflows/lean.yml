@@ -529,6 +529,18 @@ jobs:
           name: sequential-arithmetic64-evidence
           path: artifacts/sequential-arithmetic64/
           if-no-files-found: error
+      - name: Replay owned register and immediate SUB64 CPU observations through Lean
+        if: ${{ matrix.domain == 'sequential-cfg' }}
+        env:
+          EDSL_CLANG: clang-18
+        run: bash scripts/verify-sequential-sub64.sh
+      - name: Preserve owned subtraction observations and kernel checks
+        if: ${{ always() && matrix.domain == 'sequential-cfg' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: sequential-sub64-evidence
+          path: artifacts/sequential-sub64/
+          if-no-files-found: error
       - name: Replay owned memory-source ADD64 CPU observations through Lean
         if: ${{ matrix.domain == 'sequential-cfg' }}
         env:

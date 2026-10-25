@@ -30,6 +30,10 @@ SUB has empty operand reads, no store intent, locked event or syscall, and
 requires no undefined-flag choice. The Bool and full flag-vector execution
 APIs use the same state transformer.
 
+The [native conformance gate](sequential-sub64-native.md) adds 680 finite
+CPU/model comparisons, eight semantic mutation controls and a pre-execution
+ELF extraction control. These complement the universal model contracts below.
+
 ## Composing program proofs
 
 [`VCGen.Sub64`](../EDSL/X86/VCGen/Sub64.lean) provides register and immediate
