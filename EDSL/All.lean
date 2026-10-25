@@ -247,3 +247,6 @@ import EDSL.Corpus.V1.MultiplyBodies
 import EDSL.Corpus.V1.MultiplyRegistered
 import EDSL.Corpus.V1.SignumRegistered
 import EDSL.Grading.RegisteredArtifact
+import EDSL.WordMath.Triangular
+import EDSL.WordMath.Triangular32
+import EDSL.Arithmetic64.Triangular
