@@ -300,6 +300,12 @@ lean_lib And64Tests where
   moreLeanArgs := #["-DwarningAsError=true", "-DautoImplicit=false",
     "-DmaxHeartbeats=300000", "-DmaxRecDepth=128"]
 
+-- Exact ELF field reads through packed numeric regions.
+lean_lib PackedReadTests where
+  roots := #[`tests.PackedReadAudit]
+  moreLeanArgs := #["-DwarningAsError=true", "-DautoImplicit=false",
+    "-DmaxHeartbeats=300000", "-DmaxRecDepth=128"]
+
 -- Full-address LEA32 narrowing and low-byte immediate TEST contracts.
 lean_lib AddressByteTests where
   roots := #[`tests.Address32, `tests.TestImmediate8, `tests.AddressByteTransport,

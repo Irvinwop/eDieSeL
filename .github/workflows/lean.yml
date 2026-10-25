@@ -61,6 +61,10 @@ jobs:
         env:
           LEAN_NUM_THREADS: '1'
         run: flock /tmp/edsl-lean-build.lock lake env lean -j1 -DwarningAsError=true -DautoImplicit=false -DmaxHeartbeats=300000 -DmaxRecDepth=128 tests/And64Audit.lean
+      - name: Check packed ELF reader and audit
+        env:
+          LEAN_NUM_THREADS: '1'
+        run: flock /tmp/edsl-lean-build.lock lake build PackedReadTests
       - name: Check prepared and generated certificates
         run: |
           lake env lean -j1 -DwarningAsError=true -DautoImplicit=false -DmaxHeartbeats=300000 -DmaxRecDepth=128 EDSL/Grading/Export/PackedBytes.lean
