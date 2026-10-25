@@ -138,7 +138,30 @@ if [[ $edsl_native_only == false ]]; then
         exec 9>>/tmp/edsl-lean-build.lock
         flock 9
         edsl_lean_host
-        edsl_bounded dependencies 3221225472 120 "$edsl_lake" build DisplacedDataTests
+        # Query Lake's own module/import graph, then give each dependency its
+        # own unchanged bound. A cold aggregate build can outlive one proof unit.
+        edsl_bounded dependency-regressions 3221225472 120 \
+            env "EDSL_LAKE=$edsl_lake" node tests/lean-dependency-plan.cjs
+        edsl_bounded dependency-plan 3221225472 120 node scripts/plan-lean-dependencies.cjs \
+            "$edsl_lake" DisplacedDataTests "$edsl_out/dependencies"
+        edsl_dependency_index=0
+        while IFS= read -r edsl_module; do
+            edsl_lean_host
+            sha256sum --strict --quiet --check "$edsl_out/INPUTS.sha256"
+            sha256sum --strict --quiet --check "$edsl_out/dependencies/INPUTS.sha256"
+            edsl_phase=$(printf 'dependency-%03d' "$edsl_dependency_index")
+            edsl_bounded "$edsl_phase" 3221225472 120 \
+                "$edsl_lake" --rehash build "+$edsl_module:leanArts"
+            printf '%s\n' "$edsl_module" >> "$edsl_out/dependencies/passed.txt"
+            edsl_dependency_index=$((edsl_dependency_index + 1))
+        done < "$edsl_out/dependencies/modules.txt"
+        cmp -- "$edsl_out/dependencies/modules.txt" "$edsl_out/dependencies/passed.txt"
+        sha256sum --strict --quiet --check "$edsl_out/dependencies/INPUTS.sha256"
+        edsl_lean_host
+        # Lake must confirm the whole configured target is current. Existing
+        # object presence alone never establishes source/cache coherence.
+        edsl_bounded dependencies 3221225472 120 \
+            "$edsl_lake" --rehash --no-build build DisplacedDataTests
         edsl_lean=$("$edsl_lake" env which lean)
         "$edsl_lean" --version > "$edsl_out/lean-version.txt"
         [[ $(cat "$edsl_out/lean-version.txt") == 'Lean (version 4.35.0,'* ]]

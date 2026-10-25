@@ -154,7 +154,8 @@ function linked(out, selected) {
 }
 function sourceBindings() {
   const files = new Set(['lean-toolchain','lakefile.lean', 'scripts/verify-displaced-data.sh',
-    'scripts/prepare-displaced-data-replay.cjs','tests/displaced-data-replay.cjs',
+    'scripts/prepare-displaced-data-replay.cjs','scripts/plan-lean-dependencies.cjs',
+    'tests/displaced-data-replay.cjs','tests/lean-dependency-plan.cjs',
     ...['check.c','probe.S','PROBES.json'].map(n => fixture+n)]);
   const pending = ['tests.DisplacedDataNativeBase','EDSL.X86.Sequential.Machine',
     'EDSL.X86.Sequential.DisplacedData'];
