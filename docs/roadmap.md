@@ -31,19 +31,19 @@ decoding and native tests are separate evidence.
    composition and exact equality from length/value certificates are checked
    library APIs; generated full-file integration still needs independent replay.
 2. Use the [ranked feature queue](corpus-blockers.md#ranked-reusable-features) for
-   shared ISA work. [Register and immediate SUB64](sequential-sub64.md) now
-   have reusable arithmetic, flag, continuation and current-resource rules.
-   The [recorded production diagnostic](../corpus/measurements/sub64-v1/) accepts
-   the complete Clang triangular and binary-search CFGs. The
-   [Clang search body and resource proof](binary-search.md) now reuses shared
-   branch VCs and full-width midpoint rules; GCC and final-artifact/admission
-   checks remain open. This integration's
-   [ordinary signed-disp8 DATA addresses](displaced-data.md), alongside
-   [signed-byte AND64](and64-immediate.md), remove shared decoder barriers.
-   Source audit advances eight compiler frontiers across seven disp8-blocked
-   functions to their next instruction or independent contract; it adds no
-   checker run or certification. XMM and W=0 REX DATA4 now lead the remaining
-   ISA queue. Develop the exposed scalar/read-only and mutable-array contracts
+   shared ISA and contract work. [SUB64](sequential-sub64.md),
+   [signed-byte AND64](and64-immediate.md), [ordinary signed-disp8 DATA
+   addresses](displaced-data.md) and [W=0 REX DATA4 loads](rex-data32.md) have
+   checked instruction, frame and current-resource rules. The
+   [latest production diagnostic](../corpus/measurements/rex-data32-v1/) accepts
+   22/40 GCC and 20/40 Clang read-only CFG windows; these structural results add
+   no behavioral certificates. The [complete Clang search body and resource
+   proof](binary-search.md) reuses shared branch VCs and full-width midpoint
+   rules. Reuse those APIs for GCC and complete exact named-file, useful-call
+   and admission checks for both outputs. [Callable proof transport](call-contract-transport.md)
+   composes already verified contracts and preserves original resource handles;
+   useful target-domain evidence remains explicit. XMM leads the remaining ISA
+   queue. Develop the exposed scalar/read-only and mutable-array contracts
    through existing execution/resource APIs. Default size gates, later
    instructions and each independent invariant/resource contract still apply.
 3. Build XMM lane/memory rules, mutable-array ownership and DWORD lock protocols
