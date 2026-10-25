@@ -7,6 +7,8 @@ repeatedly normalizing every byte at each file offset. The ordinary Lean modules
 representation laws for that work.
 [PackedBytes.Balanced](../EDSL/Grading/Export/PackedBytes/Balanced.lean) adds a
 balanced append-tree view with a checked equivalence to ordinary decoding.
+[PackedBytes.Encoding](../EDSL/Grading/Export/PackedBytes/Encoding.lean)
+composes numeric certificates across different list and chunk representations.
 They are certificate-construction helpers;
 they add no trusted input declarations and do not change a grading contract.
 
@@ -45,6 +47,33 @@ It does not require a new proof for each program or file offset. Source compilat
 uses the pinned Lean version, warnings as errors, 300,000 heartbeats and recursion
 limit 128. Every theorem prints its transitive axiom dependencies; only the
 existing standard set is used.
+
+## Composing independently shaped lists
+
+The numeric API gives every region a shared specification:
+
+```lean
+rangeValue word offset count = (word / 256 ^ offset) % 256 ^ count
+```
+
+`encodeAppend` joins adjacent length and encoding certificates. It works with
+ordinary byte lists and keeps the length needed for the right-hand shift
+explicit. Each leaf can be checked locally; the generic append theorem joins
+those facts without a whole-list reflexivity proof.
+
+For a chunk collection, `EncodedRun word offset count F` certifies a context
+`F` for every outer-list tail. It records the additional flattened length and
+the numeric prefix plus the appropriately shifted tail. `oneRun`, `consRun`
+and `spliceRun` compose those contracts; `closeRun` supplies length and value
+facts after applying the context to an empty tail. Theorems accept arbitrary
+contexts, empty regions and nonuniform chunks.
+
+Finally, `eq_of_encoding` proves exact list equality from two independent
+length and encoding certificates. `closeRun_eq` specializes that bridge to a
+byte list and a closed chunk context. Separate length premises prevent a
+trailing zero byte from disappearing. These universal proofs are reusable for
+new files and list associations; their source checks do not establish that a
+particular generated packet fits the runtime limits.
 
 ## Serialization and exact input binding
 

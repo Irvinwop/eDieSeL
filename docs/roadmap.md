@@ -27,7 +27,9 @@ decoding and native tests are separate evidence.
    the [checked packed-byte algebra](packed-byte-certificates.md) under the
    unchanged packet, decimal, audit and cumulative kernel limits; retain the
    full-file expected contract. Complete file-binding certificates and a packed
-   declaration producer remain open.
+   declaration producer remain open. Generic numeric append, scoped chunk-context
+   composition and exact equality from length/value certificates are checked
+   library APIs; generated full-file integration still needs independent replay.
 2. Use the [ranked feature queue](corpus-blockers.md#ranked-reusable-features) for
    shared ISA work. Source audit identifies SUB64 at the first semantic frontier
    of seven distinct uncovered functions, AND64-immediate at five and ordinary
