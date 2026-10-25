@@ -6,11 +6,13 @@ import EDSL.X86.Sequential.CFGDiscovery
 import EDSL.X86.Sequential.CFGTransport
 import EDSL.X86.Sequential.Literals
 import EDSL.Audit
+import tests.Support.ExceptDecidable
 
 set_option autoImplicit false
 
 namespace EDSL.Tests.SequentialByteComparison
 open X86 X86.Sequential
+open scoped EDSL.Tests.Support
 
 private def entry (bytes : List Byte) (registers : Register → Word := fun _ => 8192)
     (data : Word → Option Byte := fun _ => none) : State where
@@ -114,13 +116,15 @@ theorem nop9_full_fetch :
       (List.range 9).map (fun offset => .error (.inaccessibleInstruction (4096 + BitVec.ofNat 64 offset))) := by
   exact ⟨rfl, rfl⟩
 
+/-- Nonzero NOP9 suffixes and the unlisted doubled prefix reject; removing
+the single 66 prefix gives the separately supported exact eight-byte NOP. -/
 theorem nop9_exact_suffix :
     ([2,3,4,5,6,7,8] : List Nat).all (fun offset =>
       match Sequential.decodeAt (entry (nop9.set offset 1)) with
       | .error .unsupportedEncoding => true | _ => false) = true ∧
     (Sequential.decodeAt (entry [0x66,0x66,0x0f,0x1f,0x84,0,0,0,0,0])).isOk = false ∧
-    (Sequential.decodeAt (entry [0x0f,0x1f,0x84,0,0,0,0,0])).isOk = false := by
-  exact ⟨rfl, rfl, rfl⟩
+    Sequential.decodeAt (entry [0x0f,0x1f,0x84,0,0,0,0,0]) = .ok (.nop .eight) := by
+  decide +kernel
 
 theorem nop9_current_code (state : State) (code : CodeAt state.memory state.rip nop9) :
     Sequential.decodeAt state = .ok (.nop .nine) := by
