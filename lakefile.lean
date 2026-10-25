@@ -316,7 +316,7 @@ lean_lib And64Tests where
 
 -- Exact ELF field reads through packed numeric regions.
 lean_lib PackedReadTests where
-  roots := #[`tests.PackedReadAudit]
+  roots := #[`tests.PackedReadConsumer, `tests.PackedReadAudit]
   moreLeanArgs := #["-DwarningAsError=true", "-DautoImplicit=false",
     "-DmaxHeartbeats=300000", "-DmaxRecDepth=128"]
 
