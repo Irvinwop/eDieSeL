@@ -89,6 +89,15 @@ example : nextView false
     (fun s reads => (s.registers .rax, s.flags, s.rip, reads)) =
     .ok (1, 0x613, 4098, [⟨.data, 8192, 4⟩]) := by cbv
 
+/-- ADD EAX,[RDI-4] consumes its displacement and reads only the signed target.
+Treating FC as +252 would fault because that address is not mapped. -/
+example : X86.Sequential.decodeAt (entry [3, 0x47, 0xfc]) =
+    .ok (.addMem32 .rax (.baseDisp8 .rdi 0xfc)) := by cbv
+example : nextView false
+    (entry [3, 0x47, 0xfc] (fun r => if r = .rdi then 8196 else 0xfffffffffffffffe) 0x602 addInput)
+    (fun s reads => (s.registers .rax, s.flags, s.rip, reads)) =
+    .ok (1, 0x613, 4099, [⟨.data, 8192, 4⟩]) := by cbv
+
 /-- A scale of four uses BOTH full 64-bit base/index values; only the resulting
 high address is mapped, so truncation or an incorrect scale would fault. -/
 def indexedInput (address : Word) : Option Byte :=
@@ -124,9 +133,10 @@ example : X86.Sequential.decodeAt (entry [0x31, 0xc1]) =
     .ok (.logicalReg32 .bxor .rcx .rax false) := by cbv
 
 /-- Deliberate decoding boundary: wrong register mode,
-address/operand overrides, extended REX, displacements, missing-index/base SIB. -/
+address/operand overrides, extended REX, disp32, missing-index/base SIB. -/
 example : X86.Sequential.decodeAt (entry [0x48, 0x85, 0x36]) = .error .unsupportedEncoding := by cbv
-example : X86.Sequential.decodeAt (entry [3, 0x47, 0xfc]) = .error .unsupportedEncoding := by cbv
+example : X86.Sequential.decodeAt (entry [3, 0x87, 0xfc, 0xff, 0xff, 0xff]) =
+    .error .unsupportedEncoding := by cbv
 example : X86.Sequential.decodeAt (entry [3, 4, 0x27]) = .error .unsupportedEncoding := by cbv
 example : X86.Sequential.decodeAt (entry [3, 4, 0x0d]) = .error .unsupportedEncoding := by cbv
 example : X86.Sequential.decodeAt (entry [0x67, 3, 7]) = .error (.unsupportedOpcode 0x67) := by cbv
