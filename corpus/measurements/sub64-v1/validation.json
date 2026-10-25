@@ -1,0 +1,80 @@
+{
+  "schema": "edsl.compiler-corpus.sub64-diagnostic-provenance.v1",
+  "date": "2026-10-25",
+  "scope": "unchanged production read-only CFG diagnostic; no end-to-end certification or native execution",
+  "profile": {
+    "maxBytes": 64,
+    "maxStaticNodes": 32,
+    "fullWindowScan": true,
+    "readOnly": true
+  },
+  "probe": {
+    "source": "corpus/Probe.lean",
+    "unchangedSource": true,
+    "compilerArtifactsPerReport": 40,
+    "cfgAccepted": {
+      "gcc": 19,
+      "clang": 19
+    },
+    "exitStatus": {
+      "gcc": 0,
+      "clang": 0,
+      "postflight": 0,
+      "overall": 0
+    }
+  },
+  "windowBinding": {
+    "windows": 80,
+    "fullELFBytesComparedToManifest": true,
+    "extractedBytesComparedAgainBeforePublication": true,
+    "unchangedFinalELFs": true,
+    "inventory": "WINDOWS.json"
+  },
+  "stabilityChecks": {
+    "preflightPassed": true,
+    "postflightExit": 0,
+    "inputs": true,
+    "windowData": true,
+    "dependencySources": true,
+    "dependencyObjects": true
+  },
+  "sourceInventory": {
+    "file": "checker-sources.sha256",
+    "availableDependencySources": 95,
+    "probeSources": 1,
+    "repositoryRelativePaths": true,
+    "matchedRecordedAndPublishedSourceBytes": true
+  },
+  "executionOptions": [
+    "-j1",
+    "-DwarningAsError=true",
+    "-DautoImplicit=false",
+    "-DmaxHeartbeats=300000",
+    "-DmaxRecDepth=128"
+  ],
+  "evidenceDigests": {
+    "gcc.json": "253f7da60f22ec0984793f8a71917b446cda2338101b571a853619f48d15dd13",
+    "clang.json": "84d1cfc557f812af9b4f0cb9725dc5bb126488e4475544f2590d3eba9b7a1a20",
+    "WINDOWS.json": "e683c235f0e92a56f81fed4783621c117b9f3ec1f93f2d1bc43cc360115ab8e1",
+    "INPUTS.sha256": "15f52a07d7f1deeb44419164f5dba289e308a7dc1c2245310c3e453575642229",
+    "DATA.sha256": "11190142bd375556921d7166714d48984544320239e3370c6874b4658242792f",
+    "ACTION.sha256": "a97421aeee46b5c490bca944d1bbbc854bfec54ebee78ff5de99a8736b163737"
+  },
+  "dependencyReceiptDigests": {
+    "sourceManifestSHA256": "f1ca42e86e56230d4510f45daccee907d4c9926a023b3e14d7a3c34d9ce7db0a",
+    "objectManifestSHA256": "cab92ff6e5b55af75f45382737241b91928387f2c375e10f6825b2f68e13a39d"
+  },
+  "certification": {
+    "attemptedByThisDiagnostic": false,
+    "certifiedByThisDiagnostic": 0,
+    "existingDistinctFunctions": 20,
+    "functionDenominator": 40,
+    "existingCompilerArtifacts": 40,
+    "compilerArtifactDenominator": 80,
+    "existingDistinctConcurrentFunctions": 3
+  },
+  "largerProfileProbeRun": false,
+  "siblingCallReturnProbeRun": false,
+  "nativeExecutionRun": false,
+  "freshReplayEstablishedByThisDiagnostic": false
+}

@@ -10,21 +10,29 @@ lists their contracts. The 20 remaining identities are the work queue below.
 
 ## How to read the queue
 
-This is a **source audit dated 2026-10-25**, not a new CFG or certification run.
+This queue combines the **2026-10-25 source audit** with the new
+[SUB64 production CFG diagnostic](../corpus/measurements/sub64-v1/). The
+unchanged default read-only checker accepted **19/40 GCC and 19/40 Clang
+windows**. Its reports certify no functions; they do not replace the existing
+20/40 certificate score. All 80 manifest windows were independently compared
+to the unchanged complete frozen ELFs. The diagnostic's source hashes and
+input seals are published with its reports.
+
 The exact bytes, lengths and symbol-relative hexadecimal offsets come from the
 [GCC](../corpus/v1/gcc/manifest.json) and
-[Clang](../corpus/v1/clang/manifest.json) manifests, cross-checked against their
-complete frozen ELFs. Instruction gaps were checked against the current
-[sequential decoder](../EDSL/X86/Sequential/Decode.lean) and
-[instruction model](../EDSL/X86/Sequential/Model.lean). The queue names the first
-missing decoding or contract capability in address order, after the size gate;
-removing it can expose another gap in the same function.
+[Clang](../corpus/v1/clang/manifest.json) manifests. Remaining gaps were audited
+against the [sequential decoder](../EDSL/X86/Sequential/Decode.lean),
+[instruction model](../EDSL/X86/Sequential/Model.lean) and explicitly named
+sibling routes. The queue records the first missing decoding or contract
+capability in address order after the size gate; removing it can expose
+another gap in the same function.
 
-**A** means a current source-audit prediction, with no new checker execution.
-**H** marks a retained historical checker/test result and is qualified in the
-row. **D** means the current demonstrated integration frontier. Confidence in
-an opcode's absence is higher than confidence in the effort needed to certify
-the whole function. None of these labels grants corpus credit.
+**P** means an actual result in the new default-profile production probe.
+**A** means a source-audit prediction, including every after-size instruction
+frontier for a window longer than 64 bytes; no larger-profile or sibling-route
+execution is implied. **H** marks a retained historical checker/test result and
+is qualified in the row. **D** means the current demonstrated integration
+frontier. None of these labels grants corpus credit.
 
 A **†** on a byte length means the unchanged default CFG profile rejects the
 window at its **64-byte size gate before decoding**. That is the first outcome
@@ -43,29 +51,30 @@ integration blocker.
 | ID and function | Bytes GCC / Clang | GCC: first missing capability after the size gate | Clang: first missing capability after the size gate | Remaining contract work and evidence |
 | --- | ---: | --- | --- | --- |
 | 13 `c_gcd_u32` | 37 / 31 | `DIV32` (`F7 /6`), `+0x14` | Exact NOP8, `+0x08`; then the same `DIV32` at `+0x14` | **A.** Euclidean invariant, nonzero divisor, quotient range/no divide fault, termination and independent gcd result. |
-| 14 `c_factorial_mod64` | 54 / 38 | Register `SUB64` with imm8, `+0x23` | `DEC32` (`FF /1`), `+0x19` | **A.** GCC also needs register `TEST8` at `+0x27`. Reuse implemented vector IMUL semantics; prove product invariant, early-zero exit and all-uint32 termination. |
-| 15 `c_triangular_mod64` | 60 / 37 | Exact NOP7, `+0x21`; then `SUB64` imm8 at `+0x2d` | Register `SUB64`, `+0x1e` | **A.** GCC uses a two-at-a-time loop; Clang uses a closed formula. Both must meet the same natural triangular-number contract modulo 2^64. |
+| 14 `c_factorial_mod64` | 54 / 38 | Register `TEST8` (`84 /r`), `+0x27` | `DEC32` (`FF /1`), `+0x19` | **P.** SUB64 is implemented. Reuse the vector IMUL semantics; prove product invariant, early-zero exit and all-uint32 termination. |
+| 15 `c_triangular_mod64` | 60 / 37 | Exact NOP7, `+0x21` | Independent triangular-number contract and resource adapter; no missing instruction identified | **P.** The complete Clang read-only CFG is accepted with 14 nodes. GCC uses a two-at-a-time loop; Clang uses a closed formula. Both must meet the same natural triangular-number contract modulo 2^64. |
 | 16 `c_pow_mod64` | 41 / 51 | Count-one `SHR32` (`D1 /5`), `+0x1e` | The same encoding, `+0x23` | **A.** Immediate `C1` SHR32 and full64 `D1` SHR already exist; this low32 encoding does not. Reuse IMUL/CMOV; prove exponentiation invariant and decreasing exponent. |
-| 17 `c_strlen_bytes` | 35 / 28 | Stack `SUB64` imm8, `+0x09`; reachable `strlen@plt` call at `+0x11` then needs a justified external-call contract | DATA1 compare with SIB+disp8, `+0x10` | **A.** Unbounded first-NUL snapshot/extent and termination; GCC additionally needs actual reachable libc/PLT binding and private-call-stack composition. A source symbol name is no external proof. |
+| 17 `c_strlen_bytes` | 35 / 28 | Sequential route stops on reachable `CALL` (`E8`), `+0x11`; the sibling CallReturn decoder already supports that instruction | DATA1 compare with SIB+disp8, `+0x10` | **P/A.** Unbounded first-NUL snapshot/extent and termination; GCC needs reachable `strlen@plt` target/dependency binding and private-call-stack composition through the existing sibling route. A source symbol name is no external proof. |
 | 22 `c_sum_u32` | 35 / 124† | Independent modular-fold invariant and current-buffer/caller adapter; no missing instruction identified | `AND64` imm8, `+0x17`; then XMM operations | **A/H.** GCC's complete read-only CFG was accepted by the [comparison/padding measurement](../corpus/measurements/cmp32-endbr-nop-v1/); that is not a current end-to-end certificate. Clang needs lane-wise sum/reduction, exact widened-read authority and scalar-tail composition. |
-| 23 `c_max_u32` | 74† / 305† | Register `SUB64`, `+0x17` | Near conditional branch (`0F 82 rel32`), `+0x06` | **A.** GCC later needs displaced DATA4 loads. Clang also needs AND64 immediates, XMM unsigned-max reduction and a RIP-relative constant read. Prove nonempty membership/maximality, bounds and termination. |
+| 23 `c_max_u32` | 74† / 305† | DATA4 load with disp8 (`8B 4A 04`), `+0x37` | Near conditional branch (`0F 82 rel32`), `+0x06` | **P/A.** Both default probes stop only at the size gate; listed later gaps are source-audited. Clang also needs AND64 immediates, XMM unsigned-max reduction and a RIP-relative constant read. Prove nonempty membership/maximality, bounds and termination. |
 | 24 `c_count_zero_u32` | 43 / 161† | DATA4 compare with imm8, `+0x10` | `AND64` imm8, `+0x17` | **A.** Both later need carry-consuming `ADC64` for the scalar count; GCC also has NOP7. Clang adds XMM comparisons/reduction and a RIP-relative constant. Prove cardinality and exact read extents. |
-| 26 `c_reverse_u32` | 48 / 144† | Register `SUB64` imm8, `+0x20` | Near conditional branch (`0F 82 rel32`), `+0x04` | **A.** Mutable-array permutation/frame invariant. GCC later needs displaced stores; Clang adds full64 AND-immediate/MOV-immediate/NOT, stack save/restore and extended DATA4 addressing. |
+| 26 `c_reverse_u32` | 48 / 144† | DATA4 store with disp8 (`89 4F FC`), `+0x24` | Near conditional branch (`0F 82 rel32`), `+0x04` | **P/A.** GCC reaches the displaced store; Clang stops at the size gate. Prove a mutable-array permutation/frame invariant. Clang later needs full64 AND-immediate/MOV-immediate/NOT, stack save/restore and extended DATA4 addressing. |
 | 27 `c_fill_u32` | 48 / 92† | DATA4 store with disp8, `+0x26` | `AND64` imm8, `+0x12` | **A.** Effect-aware writable-array invariant, complete outside-byte frame and unrolled/tail progress; Clang also needs XMM broadcast/stores and exact widened-write authority. |
 | 28 `c_copy_u32` | 25 / 15 | `SHL64` immediate, `+0x09` | The same family, `+0x05` | **A.** Both tail-jump via `E9 rel32` to `memcpy@plt`. Prove exact external target/dependency closure, length scaling, disjointness, source preservation and destination frame; a shift rule alone cannot certify either output. |
 | 29 `c_dot_mod64` | 55 / 168† | W=0 REX DATA4 load into R9D, `+0x13` | `AND64` imm8, `+0x17` | **A.** GCC's register IMUL and REX.W ADD already exist. Clang needs XMM widening-product/reduction and later extended DATA4 loads. Prove two-input modular dot-product invariant and complete read authority. |
 | 30 `c_prefix_sum_u32` | 31 / 111† | DATA4 store with disp8, `+0x16` | `AND64` imm8, `+0x16` | **A.** Mutable prefix-fold invariant preserving the initial sequence, exact stores, outside-byte frame and unrolled-tail progress. Clang later needs displaced DATA4 accesses and exact NOP14. |
 | 31 `c_struct_copy` | 21 / 15 | XMM `MOVDQU` load, `+0x04` | XMM `MOVUPS` load, `+0x00` | **A.** XMM state and 128-bit load/store semantics, object layout, disjoint source/destination authority and complete outside-byte frame. All 32 bytes remain in the contract. |
 | 32 `c_struct_sum` | 20 / 28 | DATA8 load with disp8, `+0x04` | XMM `MOVDQU` load, `+0x00` | **A.** GCC later needs displaced DATA8 additions; Clang adds `PADDQ`/`PSHUFD`/XMM-to-GPR transfer. Prove the same four-field modular sum and read-only frame. |
-| 33 `c_binary_search_u32` | 67† / 58 | Register `SUB64`, `+0x1c` | Register `SUB64`, `+0x21` | **A.** GCC later needs extended DATA4 loads/comparisons. Both need a sorted-interval exclusion invariant, midpoint bounds, shrinking interval and iff-absent result. |
+| 33 `c_binary_search_u32` | 67† / 58 | W=0 REX DATA4 load into R8D (`44 8B 04 87`), `+0x25` | Sorted-interval result/resource contract; no missing instruction identified | **P/A.** GCC stops at the size gate; its listed load is source-audited. The complete Clang read-only CFG is accepted with 21 nodes. Both need a sorted-interval exclusion invariant, midpoint bounds, shrinking interval and iff-absent result. |
 | 37 `c_spinlock_acquire` | 25 / 12 | Exact NOP7, `+0x09` | Protocol/ownership composition for the decoded DWORD XCHG loop | **A/H.** [Structural discovery](structural-cfg.md#evidence-and-limits) already covers the complete Clang graph, including actual XCHG; the read-only route rejects that effect. Both need invariant transfer, interleaved linearization, per-prefix safety and explicitly conditional progress. |
 | 38 `c_spinlock_release` | 11 / 7 | DATA4 immediate store (`C7 /0`), `+0x04` | The same family, `+0x00` | **A.** Current C7 support is register-only REX.W. Prove ordinary FIFO store publication, preceding critical-section ordering and relinquishment/transfer of lock authority. Return need not publish the store. |
-| 39 `c_futex_wait_loop` | 105† / 126† | Stack `SUB64` imm8, `+0x0b`, even when using the existing CallReturn PUSH/POP decoder | Stack `SUB64` imm8, `+0x04`, on that same sibling route | **A.** The sequential-only route rejects the initial PUSH earlier. Further DATA/stack forms and `syscall@plt`/`__errno_location@plt` closure, Linux errno/TLS, wait/recheck/interference and error contracts remain. Existing restricted futex clients do not certify these bytes. |
+| 39 `c_futex_wait_loop` | 105† / 126† | Sequential-only PUSH, `+0x04`; on the existing sibling CallReturn route, DATA4 load with disp8 (`8B 45 00`), `+0x10` | Sequential-only PUSH, `+0x00`; on that sibling route, W=0 REX DATA4 load from R14 (`41 8B 06`), `+0x20` | **P/A.** Both default probes stop only at the size gate; no larger-profile/sibling run is claimed. SUB64 is implemented. GCC later has immediate PUSH (`6A`); Clang has an immediate stack store. Both still need `syscall@plt`/`__errno_location@plt` closure, Linux errno/TLS and wait/recheck/interference/error contracts. Existing restricted futex clients do not certify these bytes. |
 | 40 `c_counter_worker` | 49 / 86† | Complete-file proof-packet admission, installed Counted64 route and corpus registration | The same integration gates; the complete 86-byte graph already uses an explicit 128-byte profile | **D.** [Complete model certificates](counted-certificates.md) and loaded overlapping completion exist for both compilers. The current frozen packet attempt was refused by the cumulative kernel budget before final acceptance. No accepted Counted64 packet or installed route is established. |
 
 The first instruction gap is deliberately encoding-specific. ENDBR64 under the
 recorded CET-off target, NEG32, BSWAP64, register IMUL64, CMOV32/64, immediate
-`C1` SHR/SAR32, and `D1` SHR64 are already implemented. Their old baseline
+`C1` SHR/SAR32, `D1` SHR64, and register/sign-extended-imm8 SUB64 are already
+implemented. Their old baseline
 failures must not re-enter this queue as present limitations. Likewise,
 CallReturn already has direct relative CALL and register PUSH/POP; general
 PLT/libc/TLS closure does not follow from those instruction rules.
@@ -73,39 +82,45 @@ PLT/libc/TLS closure does not follow from those instruction rules.
 ## Ranked reusable features
 
 The counts below are **distinct function identities**, taking the union of the
-two compiler columns, after each complete-window size gate. They count a next
+two compiler columns, after each complete-window size gate. They count a listed
 frontier the feature would remove, **not predicted end-to-end certifications**.
-Rows overlap and their counts must not be added. The nine identities
-other than row 40 marked † above also need an explicit suitable profile before
-those frontiers are reachable on a diagnostic path.
+Rows overlap and their counts must not be added. The nine identities other
+than row 40 marked † also require explicit suitable profiles. Row 39's DATA
+frontiers and their counts are conditional on the named existing CallReturn
+route: Sequential alone still rejects PUSH earlier, and no sibling-route probe
+was run. A decoded sibling instruction supplies no external-call or OS contract.
 
 | Rank by first-frontier count | Reusable feature | Distinct IDs whose listed frontier it addresses | What success would mean |
 | --- | --- | --- | --- |
-| 1 | Register and sign-extended imm8 `SUB64`, with complete flags | **7:** 14, 15, 17, 23, 26, 33, 39 | Removes an early arithmetic gap; 17/39 still require external/OS composition. |
+| 1 | Reuse decoded disp8 addresses for ordinary DATA1/4/8 operations | **7:** 17, 23, 26, 27, 30, 32, 39 | Removes the listed compare/load/store gaps, with 39 conditional on CallReturn; existing LEA address support supplies no memory authority. |
 | 2 | Register `AND64` with sign-extended imm8 | **5:** 22, 24, 27, 29, 30 | Reaches Clang vector or unrolled bodies; establishes none of their loop or SIMD contracts. |
-| 3 | Reuse decoded disp8 addresses for ordinary DATA1/4/8 operations | **4:** 17, 27, 30, 32 | Removes the listed load/compare/store gap; LEA's existing address support alone supplies no memory permissions. |
-| 4 | Exact frozen NOP7/NOP8 encodings | **3:** 13, 15, 37 | Removes a padding-only decoding gap; DIV, arithmetic and lock ownership remain. |
+| 3= | Exact frozen NOP7/NOP8 encodings | **3:** 13, 15, 37 | Removes a padding-only decoding gap; DIV, triangular mathematics and lock ownership remain. |
+| 3= | W=0 REX DATA4 register/address dispatch | **3:** 29, 33, 39 | Removes the listed extended loads; 39 uses the sibling route. Also relevant later to 23 and 26. |
 | 5= | Near conditional branches, with exact rel32 successors | **2:** 23, 26 | Structural progress for the large Clang bodies, which still need SIMD or mutable effects. |
 | 5= | XMM state, 128-bit moves and lane operations | **2:** 31, 32 | Starts complete struct contracts. Later XMM families also occur in 22, 23, 24, 27, 29: **7 distinct functions in total**, but they are not all first frontiers. |
-| 7= | W=0 REX DATA4 register/address dispatch | **1:** 29 | Removes the first extended load; relevant later to 23, 26, 33 too. |
+| 7= | Register `TEST8` (`84 /r`) | **1:** 14 | Removes GCC's newly exposed byte-test gap; Clang DEC32 and factorial mathematics remain. |
 | 7= | Unsigned `DIV32`, including divide-fault conditions | **1:** 13 | Enables the gcd loop body after Clang padding is supported. |
-| 7= | `DEC32` (`FF /1`) | **1:** 14 | Removes Clang's decrement gap; GCC TEST8/SUB64 and factorial mathematics remain. |
+| 7= | `DEC32` (`FF /1`) | **1:** 14 | Removes Clang's decrement gap; GCC TEST8 and factorial mathematics remain. |
 | 7= | Count-one `SHR32` (`D1 /5`) | **1:** 16 | Reuses shift mathematics for a missing encoding; power invariant/termination remain. |
 | 7= | Immediate `SHL64` | **1:** 28 | Reaches a tail jump and external memcpy obligation. |
-| 7= | DATA4 compare with sign-extended imm8 | **1:** 24 | Reaches the scalar carry-consuming ADC64 count, whose own rule and cardinality invariant remain. |
+| 7= | DATA4 compare with sign-extended imm8 | **1:** 24 | Reaches the scalar carry-consuming ADC64 count, whose rule and cardinality invariant remain. |
 | 7= | Ordinary DATA4 immediate store (`C7 /0`) | **1:** 38 | Enables release-store decoding, with publication and ownership work still required. |
 | 7= | Independent modular-fold/current-buffer adapter | **1:** 22 | Advances GCC beyond its accepted CFG; Clang SIMD obligations prevent function credit. |
+| 7= | Independent triangular-number contract/current-resource adapter | **1:** 15 | Advances Clang beyond its accepted CFG; GCC still needs NOP7 and its loop proof. |
+| 7= | Sorted-interval binary-search contract/current-resource adapter | **1:** 33 | Advances Clang beyond its accepted CFG; GCC still needs a larger profile and extended loads. |
+| 7= | Reachable libc/PLT contract via existing CallReturn rules | **1:** 17 | Justifies GCC's actual strlen call target, dependency bytes and private stack; Clang's DATA1 gap remains. |
 | 7= | DWORD lock-invariant/interleaving adapter | **1:** 37 | Advances the decoded Clang loop beyond structure, with GCC padding still open. Shared protocol work also supports 38. |
 | 7= | Bounded full-file Counted64 packet export/admission | **1:** 40 | Closest existing model proof to a new numerator; both compiler packets, isolated installed acceptance, negative controls and corpus registration must pass first. |
 
-Next work should combine the highest shared-feature counts with the distance to
-a complete independent contract. Finish the demonstrated row-40 packet gate;
-then prefer shared SUB64, AND64-immediate and DATA-address rules over more
-per-program proof copies. Small exact-padding additions can accompany those
-rules. Keep separate tracks for XMM lanes, mutable-array ownership and
-interleaved lock protocols. After each milestone, remove newly covered IDs,
-record newly exposed first blockers and update the ranking from the unchanged
-40-function denominator.
+Next work should combine shared-feature counts with the distance to a complete
+independent contract. Finish the demonstrated row-40 packet gate, then prefer
+reusable DATA-address, AND64-immediate and exact-padding rules. SUB64 is complete
+for its documented subset and no longer belongs in the missing-feature rank.
+Use the accepted Clang triangular and binary-search CFGs to develop reusable
+arithmetic/interval contracts alongside their GCC blockers. Keep separate tracks
+for XMM lanes, mutable-array ownership and interleaved lock protocols. After each
+milestone, remove newly covered IDs, record newly exposed first blockers and
+update the ranking from the unchanged 40-function denominator.
 
 ## Artifact representation and OS boundaries
 

@@ -33,8 +33,9 @@ decoding and native tests are separate evidence.
 2. Use the [ranked feature queue](corpus-blockers.md#ranked-reusable-features) for
    shared ISA work. [Register and immediate SUB64](sequential-sub64.md) now
    have reusable arithmetic, flag, continuation and current-resource rules.
-   Refresh the original seven affected functions to expose their next gaps.
-   AND64-immediate and ordinary DATA displacement forms remain shared work.
+   The [new production diagnostic](../corpus/measurements/sub64-v1/) accepts
+   the complete Clang triangular and binary-search CFGs. DATA displacement
+   forms now lead the shared-feature queue, followed by AND64-immediate.
    Default size gates, later instructions and each independent invariant/resource
    contract still apply; instruction support alone earns no certification.
 3. Build XMM lane/memory rules, mutable-array ownership and DWORD lock protocols
