@@ -7,12 +7,14 @@ import EDSL.X86.Sequential.CFGDiscovery
 import EDSL.X86.Sequential.CFGTransport
 import EDSL.X86.Sequential.Return
 import EDSL.Audit
+import tests.Support.ExceptDecidable
 
 set_option autoImplicit false
 set_option warningAsError true
 
 namespace EDSL.Tests.SequentialByteOrderISA
 open X86 X86.Sequential
+open scoped EDSL.Tests.Support
 
 private def entry (bytes : List Byte) (registers : Register → Word := fun _ => 8192)
     (data : Word → Option Byte := fun _ => none) : State where
@@ -204,13 +206,23 @@ missing-base/index encodings cannot be accepted with a weaker interpretation. -/
 theorem unsupported_forms :
     ([[0x0f,0xb6,0xc4], [0x0f,0xb6,0xc5], [0x0f,0xb6,0xc6], [0x0f,0xb6,0xc7],
       [0x38,0xc4], [0x38,0xe0], [0x3a,0xf8],
-      [0x48,0x0f,0xb6,0xc0], [0x4f,0x0f,0xb6,0], [0x48,0x38,0xc0], [0x48,0x29,0xc0],
+      [0x48,0x0f,0xb6,0xc0], [0x4f,0x0f,0xb6,0], [0x48,0x38,0xc0],
       [0x66,0x0f,0xb6,0], [0x67,0x0f,0xb6,0], [0x40,0x40,0x0f,0xb6,0],
       [0x0f,0xb6,0x40,0], [0x44,0x0f,0xb6,0x84,0,0,0,0,0],
       [0x0f,0xb6,5,0,0,0,0], [0x41,0x0f,0xb6,5,0,0,0,0],
       [0x0f,0xb6,4,0x20], [0x41,0x0f,0xb6,4,5],
       [0x29,7], [0x2b,7], [0x44,0x29,7], [0x44,0x38,7], [0x66,0x3a,7]] : List (List Byte)).all
-      (fun bytes => (Sequential.decodeAt (entry bytes)).isOk = false) = true := by rfl
+      (fun bytes => (Sequential.decodeAt (entry bytes)).isOk = false) = true := by decide +kernel
+
+/-- The independently supported REX.W SUB keeps its full64 destination and
+all defined status bits. The nonzero high half distinguishes it from SUB32;
+this former decode-negative must not be routed through a byte/low32 rule. -/
+theorem supported_full64_sub_width (af : Bool) :
+    Sequential.decodeAt (entry [0x48,0x29,0xc0]) = .ok (.subReg64 .rax .rax) ∧
+    observe (entry [0x48,0x29,0xc8] (fun register => match register with
+      | .rax => 0x100000001 | .rcx => 1 | _ => 0xdeadbeef)) [.rax,.rcx] af =
+      .ok ([0x100000000,1],0x606,4099,[]) := by
+  cases af <;> decide +kernel
 
 /-- The shared byte-memory extension admits CMP AL,[RDI]. Its original
 negative encoding now has a positive behavior check: low8 subtraction in the
@@ -285,6 +297,8 @@ theorem cfg_rejects_changed_padding_and_edges :
     (CFG.analyze (List.replicate 33 0x90 ++ [0xc3])).isOk = false ∧
     (CFG.analyze (List.replicate 65 0x90)).isOk = false := by
   exact ⟨by decide, by decide, by decide, by decide +kernel, by decide⟩
+
+#print axioms supported_full64_sub_width
 
 end EDSL.Tests.SequentialByteOrderISA
 
