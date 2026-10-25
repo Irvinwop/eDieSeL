@@ -51,14 +51,20 @@ encodings, extra prefixes and incomplete encodings are rejected.
 | `.three` | `0f 1f 00` | 3 |
 | `.four` | `0f 1f 40 00` | 4 |
 | `.five` | `0f 1f 44 00 00` | 5 |
+| `.six` | `66 0f 1f 44 00 00` | 6 |
+| `.seven` | `0f 1f 80 00 00 00 00` | 7 |
+| `.eight` | `0f 1f 84 00 00 00 00 00` | 8 |
 | `.nine` | `66 0f 1f 84 00 00 00 00 00` | 9 |
+
+The exact thirteen- and fifteen-byte forms are listed in
+[byte comparison and padding](byte-compare-padding.md).
 
 All preserve flags, GPRs and memory. Apparent NOP address operands are never
 evaluated and cause no operand memory operation. Every instruction byte must
 still be readable and executable, including SIB and displacement bytes. Other
-NOP operands, displacements and aliases, lengths 6–8 and padding longer than
-nine bytes remain unsupported. Instruction-length and successful-fetch
-transport now cover the supported maximum of nine bytes. The
+NOP operands, nonzero displacements and unlisted prefix aliases remain
+unsupported. Instruction-length and successful-fetch transport retain the
+supported maximum of fifteen bytes. The
 64-byte/32-instruction CFG bounds remain unchanged.
 
 The legacy decoder and executor are unchanged and retain successful embedding

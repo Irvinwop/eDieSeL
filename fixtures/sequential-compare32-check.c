@@ -54,7 +54,8 @@ struct contract {
     REGISTERS(X,cmp3b,compare) PLAIN(X,cmp3b,compare) RM_REX(X,cmp3b,compare) \
     REGISTERS(X,test85,intersection) PLAIN(X,test85,intersection) MR_REX(X,test85,intersection) \
     X(endbr,preserve,0,0) X(nop1,preserve,0,0) X(nop2,preserve,0,0) \
-    X(nop3,preserve,0,0) X(nop4,preserve,0,0) X(nop5,preserve,0,0)
+    X(nop3,preserve,0,0) X(nop4,preserve,0,0) X(nop5,preserve,0,0) \
+    X(nop7,preserve,0,0) X(nop8,preserve,0,0)
 #define MUTANTS(X) \
     X(mutant_cmp_width,compare,0,1) X(mutant_cmp_direction,compare,0,1) \
     X(mutant_cmp_register,compare,0,1) X(mutant_cmp_write,compare,0,1) \

@@ -9,6 +9,8 @@ import EDSL.Audit
 namespace EDSL.Tests.SequentialCompare32
 open X86 X86.Sequential
 
+deriving instance DecidableEq for Except
+
 private def entry (bytes : List Byte) (left right : Word) : State where
   registers := fun register => if register = .rdi then left else
     if register = .rsi then right else 0xfedcba9876543210
@@ -39,7 +41,7 @@ theorem cmp_boundary_conditions :
     [.ok [true, false, true, false, false, true],
      .ok [false, false, true, false, true, true],
      .ok [true, false, false, true, true, true],
-     .ok [false, true, false, false, false, true]] := by rfl
+     .ok [false, true, false, false, false, true]] := by decide +kernel
 
 /-- The direction bit changes the subtraction; ignoring it reverses both
 unsigned and signed order on these non-equal operands. -/
@@ -48,7 +50,7 @@ theorem cmp_opcode_direction :
       conditions [0x3b, 0xf7] 1 2) =
     (.ok [true, false, true, false, false, true],
      .ok [true, false, true, false, false, true],
-     .ok [false, false, false, true, false, false]) := by rfl
+     .ok [false, false, false, true, false, false]) := by decide +kernel
 
 /-- Literal ModRM/REX operands distinguish R from B and retain X as ignored.
 The last entries include RSP/RBP and high register aliases. -/
@@ -63,7 +65,7 @@ theorem register_banks :
      .ok (.cmp32 .r8 .rbx true), .ok (.cmp32 .rax .r11 true),
      .ok (.cmp32 .r8 .r11 true), .ok (.cmp32 .rax .r11 true),
      .ok (.cmp32 .r8 .r11 true), .ok (.cmp32 .r11 .r8 true),
-     .ok (.test32 .rsp .rbp false), .ok (.test32 .r15 .r15 true)] := by rfl
+     .ok (.test32 .rsp .rbp false), .ok (.test32 .r15 .r15 true)] := by decide +kernel
 
 /-- A 64-bit AND would be nonzero here. AF is unconstrained at BOTH choices;
 all GPRs and nonarithmetic flag bits survive the actual decoded step. -/
@@ -77,7 +79,7 @@ theorem test32_low_half_and_frame (af : Bool) :
       | _ => none) =
     .ok (some (0x8000000000000000, 0xffffffffffffffff, 0xfedcba9876543210,
       4098, false, true, af, true, false, false, 0xfffffffffffff72a, [])) := by
-  cases af <;> rfl
+  cases af <;> cbv
 
 /-- Unsupported byte/word/immediate and memory addressing/direction forms,
 including mod=01 displacement, and repeated prefixes are rejected.
@@ -86,27 +88,27 @@ theorem reject_other_forms :
     ([ [0x39,0x40,0x00], [0x3b,0x06], [0x85,0x3f], [0x41,0x85,0x07],
        [0x40,0x40,0x85,0xff], [0x66,0x85,0xff], [0xf0,0x39,0xf7],
        [0x38,0xf7], [0x3d,0,0,0,0] ] : List (List Byte)).all
-      (fun bytes => !(Sequential.decodeAt (entry bytes 0 0)).isOk) = true := by decide
+      (fun bytes => !(Sequential.decodeAt (entry bytes 0 0)).isOk) = true := by decide +kernel
 
 theorem truncated_fetches :
     ([ [0x39], [0x3b], [0x85], [0x47], [0x47,0x85] ] : List (List Byte)).map
       (fun bytes => Sequential.decodeAt (entry bytes 0 0)) =
     [.error (.inaccessibleInstruction 4097), .error (.inaccessibleInstruction 4097),
      .error (.inaccessibleInstruction 4097), .error (.inaccessibleInstruction 4097),
-     .error (.inaccessibleInstruction 4098)] := by rfl
+     .error (.inaccessibleInstruction 4098)] := by decide +kernel
 
 theorem old_profile_and_full_width_unchanged :
     (X86.decodeAt (entry [0x39,0xf7] 0 0),
       Sequential.decodeAt (entry [0x48,0x39,0xf7] 0 0),
       Sequential.decodeAt (entry [0x48,0x85,0xf7] 0 0)) =
     (.error (.unsupportedOpcode 0x39), .ok (.cmp64 .rdi .rsi),
-      .ok (.test64 .rdi .rsi)) := by rfl
+      .ok (.test64 .rdi .rsi)) := by decide +kernel
 
 /-- The production CFG validates a whole partition including both static
 branch edges. A target into CMP's operand byte is still rejected. -/
 theorem cfg_composition :
     ((CFG.discover [0xf3,0x0f,0x1e,0xfa,0x85,0xff,0x7e,2,0x39,0xf7,0xc3]).isSome,
-      (CFG.discover [0x85,0xff,0x7e,1,0x39,0xf7,0xc3]).isSome) = (true, false) := by decide
+      (CFG.discover [0x85,0xff,0x7e,1,0x39,0xf7,0xc3]).isSome) = (true, false) := by decide +kernel
 
 end EDSL.Tests.SequentialCompare32
 

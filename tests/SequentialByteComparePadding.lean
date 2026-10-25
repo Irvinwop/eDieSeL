@@ -56,7 +56,8 @@ theorem flag_vectors (choice : Bool) :
      .ok (0xdeadbeef00000646,4098,[⟨.data,8192,1⟩]),
      .ok (0xdeadbeef00000e83,4098,[⟨.data,8192,1⟩]),
      .ok (0xdeadbeef00000616,4098,[⟨.data,8192,1⟩]),
-     .ok (0xdeadbeef00000602,4098,[⟨.data,8192,1⟩])] := by rfl
+     .ok (0xdeadbeef00000602,4098,[⟨.data,8192,1⟩])] := by
+  cases choice <;> decide +kernel
 
 /-- The other frozen form must use R8B minus the memory byte, never reverse
 38 /r flags or turn the SIB into a register. Only a single data byte exists. -/
@@ -64,7 +65,8 @@ theorem frozen_rex_flags (choice : Bool) :
     observe (entry [0x44,0x3a,4,6] (fun r => match r with
       | .r8 => 0x123456789abcde7f | .rsi => 0x100000001 | .rax => 0x200000002
       | _ => 0xfedcba9876543280) (single 0x300000003 0xff)) choice =
-      .ok (0xdeadbeef00000e83,4100,[⟨.data,0x300000003,1⟩]) := by rfl
+      .ok (0xdeadbeef00000e83,4100,[⟨.data,0x300000003,1⟩]) := by
+  cases choice <;> decide +kernel
 
 /-- Every left bank, all REX bit combinations, scales, real RSP bases and R12
 indices are independently named. Unprefixed 4..7 are tested as rejections below. -/
@@ -107,7 +109,8 @@ theorem decoded_banks_and_addresses :
      .ok (.cmpRegMem8 .rax (.indexed .rsp .rax 0) false),
      .ok (.cmpRegMem8 .rax (.indexed .rax .rax 1) false),
      .ok (.cmpRegMem8 .rax (.indexed .rax .rax 2) false),
-     .ok (.cmpRegMem8 .rax (.indexed .rax .rax 3) false)] := by rfl
+     .ok (.cmpRegMem8 .rax (.indexed .rax .rax 3) false)] := by
+  decide +kernel
 
 /-- Actual execution uses the old full64 address when all operands alias, RSP
 is the left byte, and REX.B/X choose the same high register as base and index. -/
@@ -122,7 +125,7 @@ theorem aliases_and_final_data_byte (choice : Bool) :
     observe (entry [0x3a,0x06] (fun _ => 0x7fffffffffff)
       (single 0x7fffffffffff 0xff)) choice =
       .ok (0xdeadbeef00000646,4098,[⟨.data,0x7fffffffffff,1⟩]) := by
-  exact ⟨rfl,rfl,rfl,rfl⟩
+  cases choice <;> decide +kernel
 
 /-- Plain bases and SIB indices cover every accepted bank code. RBP/R13
 plain and RSP index are absent from this mod00 subset, rather than remapped. -/
@@ -156,7 +159,8 @@ theorem decoded_base_index_banks :
      .ok (.cmpRegMem8 .rax (.indexed .rax .r12 0) true),
      .ok (.cmpRegMem8 .rax (.indexed .rax .r13 0) true),
      .ok (.cmpRegMem8 .rax (.indexed .rax .r14 0) true),
-     .ok (.cmpRegMem8 .rax (.indexed .rax .r15 0) true)] := by exact ⟨rfl,rfl⟩
+     .ok (.cmpRegMem8 .rax (.indexed .rax .r15 0) true)] := by
+  decide +kernel
 
 /-- Every general register and every Memory field are framed by the real step,
 without a finite projection which could hide an unwanted GPR/permission write. -/
@@ -165,7 +169,8 @@ theorem full_context (choice : Bool) :
       (fun r => if r = .rsi then 8192 else if r = .rax then 1 else 0x123456789abcde80)
       (single 8193 1)
     Sequential.step choice before = .ok ⟨.next { before with
-      rip := 4100, flags := 0xdeadbeef00000e12 },[⟨.data,8193,1⟩]⟩ := by rfl
+      rip := 4100, flags := 0xdeadbeef00000e12 },[⟨.data,8193,1⟩]⟩ := by
+  cases choice <;> cbv
 
 private theorem padding_code : CodeAt (entry padding).memory 4096 padding :=
   ELF.checkCode_sound _ _ _ (by decide +kernel)
@@ -190,7 +195,8 @@ theorem old_nop_family (choice : Bool) :
     [.ok (0xdeadbeef00000ed7,4097,[]),.ok (0xdeadbeef00000ed7,4098,[]),
      .ok (0xdeadbeef00000ed7,4099,[]),.ok (0xdeadbeef00000ed7,4100,[]),
      .ok (0xdeadbeef00000ed7,4101,[]),.ok (0xdeadbeef00000ed7,4102,[]),
-     .ok (0xdeadbeef00000ed7,4105,[])] := by rfl
+     .ok (0xdeadbeef00000ed7,4105,[])] := by
+  cases choice <;> decide +kernel
 
 /-- Complete original unprefixed low-bank MOV32 immediates through the shared
 legacy semantics. Literal high-bit and mixed-endian values distinguish zero
@@ -239,7 +245,7 @@ theorem padding_mutations :
     (List.range 15).all (fun index => rejects (padding.set index (padding[index]! ^^^ 1))) = true ∧
     ([0x66 :: padding,0x2e :: padding,0xf0 :: padding,0x40 :: padding,
       [0x66,0x66,0x90],[0x66,0x2e,0x0f,0x1f,0x84,0,0,0,0,0],
-      [0x0f,0x1f,0x80,0,0,0,0],[0x66,0x0f,0x1f,0x84,0,0,0,0,1]] :
+      [0x0f,0x1f,0x81,0,0,0,0],[0x66,0x0f,0x1f,0x84,0,0,0,0,1]] :
         List (List Byte)).all rejects = true := by decide +kernel
 
 theorem cmp_rejections :
@@ -261,7 +267,7 @@ theorem mutations_are_real (choice : Bool) :
     Sequential.decodeAt (entry [0x3a,0xc6]) = .error .unsupportedEncoding ∧
     Sequential.decodeAt (entry [0x40,0x3a,0xc6]) = .ok (.cmpReg8 .rax .rsi true) ∧
     Sequential.decodeAt (entry [0x44,0x3a,0x0e]) = .ok (.cmpRegMem8 .r9 (.base .rsi) true) := by
-  exact ⟨rfl,rfl,rfl,rfl⟩
+  cases choice <;> decide +kernel
 
 /-- Read permission is independent of execute/write permission. Missing and
 noncanonical DATA fail through the same production primitive at the real EA. -/
@@ -312,7 +318,16 @@ theorem sibling_and_literals (choice : Bool) :
     Literals.instruction (.cmpRegMem8 .r8 (.indexed .rsi .rax 0) true) =
       "(.cmpRegMem8 .r8 (.indexed .rsi .rax 0) true)" ∧
     Literals.instruction (.nop .fifteen) = "(.nop .fifteen)" := by
-  exact ⟨rfl,rfl,rfl,rfl,rfl⟩
+  have decoded : Sequential.decodeAt (entry padding) = .ok (.nop .fifteen) := by
+    decide +kernel
+  refine ⟨CallReturn.decodeAt_sequential_lift decoded, ?_, ?_, ?_, ?_⟩
+  · exact (CallReturn.rawStep_eq_execute choice
+      (CallReturn.decodeAt_sequential_lift decoded)).trans
+      ((CallReturn.execute_liftSequential _ (.nop .fifteen) choice).trans
+        (execute_nop _ .fifteen choice))
+  · decide +kernel
+  · decide +kernel
+  · decide +kernel
 
 -- Original full symbol bytes read from the frozen manifests and objdump.
 -- These are only whole-window decoding/checking tests, without function claims.
@@ -342,7 +357,7 @@ theorem default_still_rejects_clang : CFG.analyze clang = .error .byteLimit ∧
       | .ok graph => CFG.check clang graph
       | .error _ => true) = false := by
   constructor
-  · rfl
+  · decide +kernel
   · decide +kernel
 
 /-- Explicit independent partition. The padding must be ONE instruction at17,
@@ -362,7 +377,8 @@ def clangGraph : CFG.Graph := CFG.annotate [
   ⟨62,.movImm8 .rax 1 false,false,0⟩,⟨64,.legacy .ret,false,0⟩,
   ⟨65,.xorSelf32 .rax,false,0⟩,⟨67,.legacy .ret,false,0⟩]
 
-theorem clang_partition : CFG.analyzeWith roomy clang = .ok clangGraph := by rfl
+theorem clang_partition : CFG.analyzeWith roomy clang = .ok clangGraph := by
+  decide +kernel
 
 theorem clang_checked : CFG.Valid clang clangGraph roomy := CFG.analyzeWith_sound clang_partition
 

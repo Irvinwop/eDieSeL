@@ -13,7 +13,7 @@ namespace EDSL.X86.Sequential
 
 def NopEncoding.length : NopEncoding → Nat
   | .one => 1 | .two => 2 | .three => 3 | .four => 4 | .five => 5 | .six => 6
-  | .nine => 9 | .thirteen => 13 | .fifteen => 15
+  | .seven => 7 | .eight => 8 | .nine => 9 | .thirteen => 13 | .fifteen => 15
 
 def NopEncoding.bytes : NopEncoding → List Byte
   | .one => [0x90]
@@ -22,6 +22,8 @@ def NopEncoding.bytes : NopEncoding → List Byte
   | .four => [0x0f, 0x1f, 0x40, 0x00]
   | .five => [0x0f, 0x1f, 0x44, 0x00, 0x00]
   | .six => [0x66, 0x0f, 0x1f, 0x44, 0x00, 0x00]
+  | .seven => [0x0f, 0x1f, 0x80, 0x00, 0x00, 0x00, 0x00]
+  | .eight => [0x0f, 0x1f, 0x84, 0x00, 0x00, 0x00, 0x00, 0x00]
   | .nine => [0x66, 0x0f, 0x1f, 0x84, 0x00, 0x00, 0x00, 0x00, 0x00]
   | .thirteen => [0x66, 0x66, 0x66, 0x66, 0x2e, 0x0f, 0x1f, 0x84,
       0x00, 0x00, 0x00, 0x00, 0x00]
@@ -390,6 +392,12 @@ def decodePaddingAt (state : State) (opcode : Byte) : Except Error Instruction :
       if sib ≠ 0x00 then throw .unsupportedEncoding
       let displacement ← fetchByte state.memory (state.rip + 4)
       if displacement = 0x00 then return .nop .five else throw .unsupportedEncoding
+    else if modrm = 0x80 then
+      fetchExactAt state 3 [0, 0, 0, 0]
+      return .nop .seven
+    else if modrm = 0x84 then
+      fetchExactAt state 3 [0, 0, 0, 0, 0]
+      return .nop .eight
     else throw .unsupportedEncoding
   else throw .unsupportedEncoding
 

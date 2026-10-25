@@ -526,6 +526,8 @@ private theorem decodePaddingAt_refines {source destination : State} (opcode : B
   have t2 := transport 2 (by decide)
   have t3 := transport 3 (by decide)
   have t4 := transport 4 (by decide)
+  have exactSeven := fetchExactAt_refines [0, 0, 0, 0] transport 3 (by decide)
+  have exactEight := fetchExactAt_refines [0, 0, 0, 0, 0] transport 3 (by decide)
   have exactSix := fetchExactAt_refines [0, 0] transport 4 (by decide)
   have exactNine := fetchExactAt_refines [0, 0, 0, 0, 0] transport 4 (by decide)
   have repeatedLead := fetchExactAt_refines [0x66, 0x66] transport 2 (by decide)
@@ -568,6 +570,8 @@ private theorem decodePaddingAt_refines {source destination : State} (opcode : B
         | exact t2
         | exact t3
         | exact t4
+        | exact exactSeven
+        | exact exactEight
         | with_reducible exact SuccessRefines.refl _
         | apply SuccessRefines.ite
         | apply SuccessRefines.bind

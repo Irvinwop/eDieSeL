@@ -310,7 +310,7 @@ lean_lib MixedCFGTests where
 -- Exact compiler padding, fetch boundaries and complete context frames.
 lean_lib PaddingTests where
   roots := #[`tests.CounterPadding13, `tests.SequentialByteComparePadding,
-    `tests.SequentialPadding, `tests.ByteComparePaddingAudit]
+    `tests.SequentialPadding, `tests.ByteComparePaddingAudit, `tests.ExactNopPadding]
   moreLeanArgs := #["-DwarningAsError=true", "-DautoImplicit=false",
     "-DmaxHeartbeats=300000", "-DmaxRecDepth=128"]
 

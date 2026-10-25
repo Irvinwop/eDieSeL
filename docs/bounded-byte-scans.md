@@ -97,7 +97,8 @@ memory/immediate form `80 /7 ib` with the existing unprefixed mod=00 base/SIB
 address subset, plus exact NOP9
 `66 0f 1f 84 00 00 00 00 00`. CMP reads one DATA byte and sets subtraction flags
 at width 8; NOP9 has no operand read. Additional prefix/address combinations
-and NOP lengths 6–8 remain unsupported. Later
+remain unsupported unless listed in the current ISA subset. Exact NOP6–NOP8
+support was added later through the same fetch/frame rules. The
 [first-match search proofs](first-match-searches.md) add memory/register CMP8
 and CMP32. All instruction bytes still require successful executable fetches.
 Unsupported

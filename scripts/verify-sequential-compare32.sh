@@ -79,8 +79,9 @@ done
 cat > "$output/scope.txt" <<'SCOPE'
 Finite owned Linux x86-64 native/model conformance for low32 register CMP/TEST,
 ENDBR64 under the CET/IBT/shadow-stack-disabled target profile, and the exact
-NOPs 90,6690,0f1f00,0f1f4000,0f1f440000. Multi-byte NOP support is assumed.
-One final linked ELF section contains 150 positive windows and eleven safe
+NOPs 90,6690,0f1f00,0f1f4000,0f1f440000,0f1f8000000000,
+0f1f840000000000. Multi-byte NOP support is assumed.
+One final linked ELF section contains 152 positive windows and eleven safe
 synthetic mutations. Every window directly jumps to capture after its bytes.
 Before any probe or Lean output, the extracted section (including capture
 jumps and mutations) must equal the actual linked executable section exactly.
@@ -95,7 +96,7 @@ ENDBR and NOP preserve every captured flag and register. Input flag requests
 alternate 0x202/0xed7; the oracle uses actual effective pre-instruction flags,
 not an assumption that arbitrary RFLAGS can be installed by user-mode POPFQ.
 
-There are 1,500 positive snapshots: 960 CMP (39/3b), 480 TEST (85), 60 ENDBR/NOP.
+There are 1,520 positive snapshots: 960 CMP (39/3b), 480 TEST (85), 80 ENDBR/NOP.
 For each of the three opcode forms, 48 windows include all sixteen registers
 on both sides, all sixteen self aliases, eight unprefixed pairs, and every
 non-W REX40..47, including ignored X and every R/B bank. Ten input profiles

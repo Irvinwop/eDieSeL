@@ -13,9 +13,12 @@ theorem readDataByte_readStackByte_success_iff (memory : Memory) (address : Word
   unfold readDataByte readStackByte
   split <;> cases memory.read address <;> simp
 
-private theorem throw_error (fault : Error) : (throw fault : Except Error α) = .error fault := rfl
+universe u v
 
-private theorem bind_success_iff (result : Except ε α) (next : α → Except ε β) (value : β) :
+private theorem throw_error {α : Type u} (fault : Error) : (throw fault : Except Error α) = .error fault := rfl
+
+private theorem bind_success_iff {ε : Type u} {α β : Type v}
+    (result : Except ε α) (next : α → Except ε β) (value : β) :
     (result >>= next) = .ok value ↔ ∃ input, result = .ok input ∧ next input = .ok value := by
   cases result <;> simp
 

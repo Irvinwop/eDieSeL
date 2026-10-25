@@ -54,6 +54,26 @@ zero extended from32 bits, all other registers/flags/Memory are preserved,
 and no operand memory read occurs. Prefixed forms remain unsupported by this
 completion. The original legacy decoder and its supported subset are unchanged.
 
+## Exact seven- and eight-byte NOPs
+
+`NopEncoding.seven` is exactly `0f 1f 80 00 00 00 00`;
+`NopEncoding.eight` is exactly `0f 1f 84 00 00 00 00 00`.
+The production decoder checks every byte, including the zero SIB in the
+eight-byte form and all four zero displacement bytes. Other operands, group
+selectors, SIB values, prefixes and nonzero displacements remain unsupported.
+Missing or nonexecutable instruction bytes retain their exact fetch faults.
+No apparent operand address is evaluated, read, or granted data authority.
+
+The generic `NopEncoding.decode_at`, `step_nop_context` and
+`stepWith_nop_context` in `Sequential.NopPadding` bind any supported exact NOP
+to arbitrary current `CodeAt` memory. They reuse the production decoder, fetch
+transport and executor; all GPRs, flags and Memory fields survive, with only
+RIP advanced by the exact length and an empty operand-read list. The existing
+`wp_nop_iff` consumes one modeled instruction and no read permission.
+`tests/ExactNopPadding.lean` uses separately specified literal byte windows,
+every truncation, missing-byte and execute-denial position, and malformed
+SIB/group/displacement/prefix cases. No corpus or native credit follows.
+
 ## Exact thirteen- and fifteen-byte NOPs
 
 `NopEncoding.thirteen` and its canonical `bytes` are exactly:
@@ -77,7 +97,7 @@ not fetch byte14 for NOP13 or byte16 for NOP15,
 split the sequence, strip prefixes, evaluate the apparent address or read DATA.
 Every GPR, every flag and the complete Memory remain unchanged. The ordinary
 fallthrough is RIP+13 or RIP+15 for every choice. Other supported NOPs remain the exact
-1..6 and9 byte forms; this is not a general prefix or hint-NOP grammar.
+1..9 byte forms; this is not a general prefix or hint-NOP grammar.
 Unlisted forms reject conservatively. `execute_nop_context` and `wp_nop_iff`
 share the existing execution and WP machinery. `step_nop13_context` binds the
 thirteen current bytes through `CodeAt`, preserving arbitrary registers, flags

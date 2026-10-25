@@ -81,8 +81,8 @@ file and requested name still pass the independent production checker. Shared
 [Clang lookup normalization](../EDSL/Corpus/V1/ClangLookup.lean) reuses the
 existing full-file proofs for subsequent functions.
 
-Certificate export and corpus/task registration remain open. GCC needs its
-exact NOP7 encoding and complete loop proof. The reusable
+Certificate export and corpus/task registration remain open. The exact GCC NOP7 encoding is supported; its complete loop proof remains
+open. The reusable
 [Bool-to-flags adapter](bool-policy-refinement.md) can transport a bounded Bool
 proof and its actual read policy without changing the callable contract.
 Source/compiler or physical CPU/OS correspondence, concurrency, timing and
