@@ -4,7 +4,10 @@ Large file certificates should share arithmetic and list proofs instead of
 repeatedly normalizing every byte at each file offset. The ordinary Lean modules
 [PackedBytes](../EDSL/Grading/Export/PackedBytes.lean) and
 [PackedBytes.Views](../EDSL/Grading/Export/PackedBytes/Views.lean) provide the
-representation laws for that work. They are certificate-construction helpers;
+representation laws for that work.
+[PackedBytes.Balanced](../EDSL/Grading/Export/PackedBytes/Balanced.lean) adds a
+balanced append-tree view with a checked equivalence to ordinary decoding.
+They are certificate-construction helpers;
 they add no trusted input declarations and do not change a grading contract.
 
 ## Representation
@@ -22,6 +25,13 @@ The checked laws cover:
 - Concatenation as addition and a shift by the left region's byte count.
 - Prefixes, suffixes and slices as bounded decoding with arithmetic shifts.
 - Splitting a region into adjacent parts, including empty and out-of-range slices.
+
+The balanced decoder splits regions larger than sixteen bytes while fuel
+remains. Fuel exhaustion falls back to ordinary decoding. Its generic equivalence
+proof holds for every fuel, byte count and value; fuel changes the tree shape,
+not the represented bytes. Length, round-trip, equality from an independently
+established encoding, and drop/take/slice/split laws follow from that equivalence.
+These laws do not establish a performance bound or authenticate an external file.
 
 For example, the reusable suffix law is
 
