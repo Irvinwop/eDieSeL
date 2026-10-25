@@ -255,3 +255,6 @@ import EDSL.PureCall.ResourcesFromBool
 import EDSL.Corpus.V1.TriangularClangBody
 import EDSL.Corpus.V1.TriangularClangResources
 import EDSL.Corpus.V1.TriangularClangReturn
+import EDSL.ELF.FunctionSelection
+import EDSL.Corpus.V1.ClangLookup
+import EDSL.Corpus.V1.TriangularClangArtifact

@@ -159,6 +159,14 @@ certificate constructor. `Corpus.Certificate` is indexed by the fixed
 `Grading.TaskID`; the scalar route requires proof that the supplied specification
 equals that registered contract. See [certificate composition](corpus-certificates.md)
 and [the registered scalar constructor](corpus-scalar-certificates.md).
+For complete independent flag choices, use `PureCall.ELFCertificateFor.ofCaller`
+with `.flags`. The [triangular certificate](../EDSL/Corpus/V1/TriangularClangArtifact.lean)
+shows this route with whole-file/name checking and an installed caller witness.
+[FunctionSelection.input](../EDSL/ELF/FunctionSelection.lean) packages row/section
+hints without importing an unrelated compiler client; it supplies no acceptance
+evidence. Reuse the file's metadata/layout and bounded lookup lemmas, then prove
+the unchanged production `FunctionInput.check` for the selected complete extent.
+
 Standalone certificates add no grading registration or frozen-corpus credit.
 Both routes share the existing ELF and current-resource providers.
 

@@ -67,9 +67,22 @@ admitted canonical caller address. The sequential model assumes stable
 ordinary RAM, 64-bit mode, CET/IBT/shadow stacks disabled and no asynchronous
 interference.
 
-This is a window-level proof. Full original named-ELF identity, present-caller
-nonvacuity, certificate export and corpus registration remain open. GCC needs
-its exact NOP7 encoding and complete loop proof. The reusable
+The [Clang artifact certificate](../EDSL/Corpus/V1/TriangularClangArtifact.lean)
+binds the whole original 44,240-byte ELF to the unique complete function name,
+37-byte symbol extent, section/LOAD mapping and executable code bytes. It proves
+freshness and code/stack separation for the standard caller, then supplies a
+useful installed call at the selected entry through the shared certificate API.
+Input 2 witnesses usefulness; it does not narrow the universal domain. No future
+execution or result is an admission premise.
+
+[FunctionSelection](../EDSL/ELF/FunctionSelection.lean) packages arbitrary row
+and section hints without importing execution or compiler clients. The complete
+file and requested name still pass the independent production checker. Shared
+[Clang lookup normalization](../EDSL/Corpus/V1/ClangLookup.lean) reuses the
+existing full-file proofs for subsequent functions.
+
+Certificate export and corpus/task registration remain open. GCC needs its
+exact NOP7 encoding and complete loop proof. The reusable
 [Bool-to-flags adapter](bool-policy-refinement.md) can transport a bounded Bool
 proof and its actual read policy without changing the callable contract.
 Source/compiler or physical CPU/OS correspondence, concurrency, timing and
