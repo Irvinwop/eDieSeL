@@ -82,10 +82,10 @@ theorem test32_low_half_and_frame (af : Bool) :
   cases af <;> cbv
 
 /-- Unsupported byte/word/immediate and memory addressing/direction forms,
-including mod=01 displacement, and repeated prefixes are rejected.
+including mod=10 displacement, and repeated prefixes are rejected.
 REX.W retains its previous TEST64/CMP64 interpretation. -/
 theorem reject_other_forms :
-    ([ [0x39,0x40,0x00], [0x3b,0x06], [0x85,0x3f], [0x41,0x85,0x07],
+    ([ [0x39,0x80,0,0,0,0], [0x3b,0x06], [0x85,0x3f], [0x41,0x85,0x07],
        [0x40,0x40,0x85,0xff], [0x66,0x85,0xff], [0xf0,0x39,0xf7],
        [0x38,0xf7], [0x3d,0,0,0,0] ] : List (List Byte)).all
       (fun bytes => !(Sequential.decodeAt (entry bytes 0 0)).isOk) = true := by decide +kernel

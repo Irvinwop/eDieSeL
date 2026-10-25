@@ -76,8 +76,8 @@ private def stackAlias : State :=
 example : step false stackAlias =
     .ok ⟨.next { stackAlias.writeRegister .rsp 0xffffffffffffffff with rip := 5 }, []⟩ := by rfl
 
--- No indirect extension of the admitted memory subset, widths or disp32.
-example : Sequential.decodeAt (codeState [0x48,0x8b,0x47,0xff] 0) = .error .unsupportedEncoding := by rfl
+-- Disp32, register LEA and RIP-relative forms remain unsupported.
+example : Sequential.decodeAt (codeState [0x48,0x8b,0x87,0xff,0xff,0xff,0xff] 0) = .error .unsupportedEncoding := by rfl
 example : Sequential.decodeAt (codeState [0x48,0x8d,0x87,0xff,0xff,0xff,0xff] 0) =
     .error .unsupportedEncoding := by rfl
 example : Sequential.decodeAt (codeState [0x48,0x8d,0xc7] 0) = .error .unsupportedEncoding := by rfl
