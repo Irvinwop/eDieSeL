@@ -61,7 +61,10 @@ ordinary byte lists and keeps the length needed for the right-hand shift
 explicit. [EncodingFacts.appendFacts](../EDSL/Grading/Export/PackedBytes/EncodingFacts.lean)
 accepts and returns a conjunction of the length and encoding facts. A producer
 can therefore pass one proof per child at each append, sharing the same
-certificate when either component is needed. The theorem retains both child
+certificate when either component is needed. `EncodingFacts.ofComponents`
+packages separate proofs into that pair while keeping their propositions in
+the generic helper type, shortening the generated leaf expressions.
+The append theorem retains both child
 lengths, including empty regions and trailing zero bytes. Each leaf can be
 checked locally; the generic append theorem joins those facts without a whole-list reflexivity proof.
 

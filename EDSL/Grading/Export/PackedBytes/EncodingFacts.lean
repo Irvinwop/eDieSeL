@@ -38,6 +38,16 @@ theorem appendFacts (word offset leftCount rightCount : Nat)
     (Encoding.encodeAppend word offset leftCount rightCount left right
       (And.left leftFacts) (And.right leftFacts) (And.right rightFacts))
 
+/-- Package independently checked component proofs without restating both
+propositions at every producer leaf. The count prevents trailing-zero loss. -/
+theorem ofComponents (word offset count : Nat) (value : List (BitVec 8))
+    (length : value.length = count)
+    (encoding : PackedBytes.natOfBytes value = Encoding.rangeValue word offset count) :
+    value.length = count ∧
+      PackedBytes.natOfBytes value = Encoding.rangeValue word offset count :=
+  ⟨length, encoding⟩
+
+#print axioms ofComponents
 #print axioms appendFacts
 
 end EDSLGrader.Export.PackedBytes.EncodingFacts
