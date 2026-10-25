@@ -250,3 +250,5 @@ import EDSL.Grading.RegisteredArtifact
 import EDSL.WordMath.Triangular
 import EDSL.WordMath.Triangular32
 import EDSL.Arithmetic64.Triangular
+import EDSL.Grading.PolicyRefinement
+import EDSL.PureCall.ResourcesFromBool

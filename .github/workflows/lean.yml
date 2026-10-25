@@ -69,6 +69,10 @@ jobs:
           lake env lean -j1 -DwarningAsError=true -DautoImplicit=false -DmaxHeartbeats=300000 -DmaxRecDepth=128 EDSL/WordMath/Triangular.lean
           lake env lean -j1 -DwarningAsError=true -DautoImplicit=false -DmaxHeartbeats=300000 -DmaxRecDepth=128 EDSL/WordMath/Triangular32.lean
           lake env lean -j1 -DwarningAsError=true -DautoImplicit=false -DmaxHeartbeats=300000 -DmaxRecDepth=128 EDSL/Arithmetic64/Triangular.lean
+      - name: Check reusable execution-policy refinement
+        run: |
+          lake env lean -j1 -DwarningAsError=true -DautoImplicit=false -DmaxHeartbeats=300000 -DmaxRecDepth=128 EDSL/Grading/PolicyRefinement.lean
+          lake env lean -j1 -DwarningAsError=true -DautoImplicit=false -DmaxHeartbeats=300000 -DmaxRecDepth=128 EDSL/PureCall/ResourcesFromBool.lean
       - name: ISA, ELF, OS contracts and rejection properties
         run: |
           lake env lean -DwarningAsError=true tests/X86.lean

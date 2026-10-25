@@ -53,7 +53,10 @@ heartbeats 300000 and recursion depth 128.
 These theorems do not certify either frozen triangular binary. The Clang
 routine has an accepted 14-node CFG; its vector execution and loaded-resource
 proof remain open. GCC needs its exact NOP7 encoding and a complete loop proof,
-with a compatible callable execution/resource adapter. Source/IR preservation,
+with a compatible callable execution/resource adapter. The reusable
+[Bool-to-flags adapter](bool-policy-refinement.md) can transport a bounded Bool
+proof and its actual read policy without changing the callable contract.
+Source/IR preservation,
 native CPU or OS correspondence, concurrency and performance minima are not
 established. The accepted corpus score remains 20/40 functions and 40/80
 compiler artifacts.
