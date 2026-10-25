@@ -240,6 +240,8 @@ private theorem rexW_rejects_stack {state : State} (rex : Byte) {opcode : Byte}
     outside (by decide : 0x8d < 256) (by decide),
     outside (by decide : 0x01 < 256) (by decide),
     outside (by decide : 0x03 < 256) (by decide),
+    outside (by decide : 0x29 < 256) (by decide),
+    outside (by decide : 0x2b < 256) (by decide),
     outside (by decide : 0x21 < 256) (by decide),
     outside (by decide : 0x23 < 256) (by decide),
     outside (by decide : 0x09 < 256) (by decide),
