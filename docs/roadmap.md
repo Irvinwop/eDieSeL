@@ -18,6 +18,28 @@ records the accepted source and full-gate evidence. Both compiler outputs must
 meet the independent contract before a function counts. Compilation, extraction,
 decoding and native tests are separate evidence.
 
+### Next deliverables
+
+1. Complete row 40's existing Counted64 model-certificate integration: bounded
+   full-file packet export, both frozen compiler acceptances, isolated installed
+   grading, negative controls and corpus registration. The existing model
+   certificates alone do not move 20/40. Evaluate packed byte regions with
+   the [checked packed-byte algebra](packed-byte-certificates.md) under the
+   unchanged packet, decimal, audit and cumulative kernel limits; retain the
+   full-file expected contract. Complete file-binding certificates and a packed
+   declaration producer remain open.
+2. Use the [ranked feature queue](corpus-blockers.md#ranked-reusable-features) for
+   shared ISA work. Source audit identifies SUB64 at the first semantic frontier
+   of seven distinct uncovered functions, AND64-immediate at five and ordinary
+   DATA displacement forms at four. These are potential next-stage gains, not
+   promised certifications; default size gates, later instructions and each
+   independent invariant/resource contract still apply.
+3. Build XMM lane/memory rules, mutable-array ownership and DWORD lock protocols
+   as reusable families. Select complete corpus contracts to exercise them,
+   reuse the shared VCG and current-resource adapters, and update first blockers
+   after each milestone. Keep source-audit predictions separate from actual
+   checker results and end-to-end acceptance.
+
 The implemented plain64 milestone covers `c_atomic_load_acquire64` and
 `c_atomic_store_release64` for both frozen compilers. One checked method family
 supplies the independent universal `Plain64.Claim`, whole-image resources,
@@ -119,9 +141,10 @@ annotation justification and repeated invocations remain separate obligations.
 Construction for arbitrary incoming managed queues remains open. Full C23/frontend semantics,
 source/compiler preservation, native/kernel correspondence and fairness remain
 separate capabilities.
-The [blocker report](corpus-blockers.md) identifies later instruction, memory
-and synchronization gaps. Keep the frozen inputs and denominator unchanged;
-new configurations require a new corpus version.
+The [current blocker queue](corpus-blockers.md#the-20-uncovered-functions) records
+every uncovered identity, both compiler frontiers, exact offsets, profile gates
+and evidence scope. Keep the frozen inputs and denominator unchanged; new
+configurations require a new corpus version.
 
 ## Next shared-memory verification layer
 
