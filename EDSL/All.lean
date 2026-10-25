@@ -9,6 +9,7 @@ import EDSL.ELF.PackedRead
 import EDSL.ELF.PackedMetadata
 import EDSL.X86.Memory128
 import EDSL.WordMath.BinarySearch
+import EDSL.BinarySearch.Clang.Resources
 import EDSL.X86.VCGen.Examples
 import EDSL.Semantics
 import EDSL.Concurrency.C23Atomic

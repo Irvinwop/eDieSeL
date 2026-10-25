@@ -268,6 +268,14 @@ requires rejection. The bundled `leanchecker` replays the stored proofs in a
 fresh kernel environment. These check the current declarations, not the adequacy of a future
 language, OS, or hardware model. The compiler integration command also needs
 Linux/x86-64, Clang, GCC and binutils; it uses only owned synthetic fixtures.
+The `BinarySearchTests` target separately checks the complete frozen Clang
+search body, branch refusal controls and `#audit_edsl_owners`. That command
+selects imported project declarations by actual defining module, including
+private and generated declarations, rejects project axioms and permits only
+the three standard dependencies listed above. It makes no assumption about
+a fixed declaration count. New search checks explicitly disable asynchronous
+elaboration and use the documented bounded proof profile.
+
 CI caches the pinned Lean toolchain and Lake build outputs. Compatible previous
 builds supply incremental inputs; Lake still checks source and dependency traces.
 Every run retains the contract tests, axiom audit, fresh kernel replay, and native

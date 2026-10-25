@@ -141,6 +141,14 @@ macros generate ordinary Lean proof terms. `vcgen_graph` proposes normalized
 finite CFG data; its validity requires separate kernel evidence. Mathematical contracts, current
 permission facts, invariants and ranks remain client obligations.
 
+`EDSL.X86.VCGen.Branch` and `BranchTactics` add reusable short-branch
+WP rules and `vcgen_branch_block`. They retain checked target canonicality,
+destinations, fuel and strict dynamic-rank descent while selecting the decoded
+branch before expanding register records. `Proposal` emits graph data for a
+separate `CFG.Valid` proof. The [complete Clang binary-search proof](binary-search.md)
+uses these helpers with full-width midpoint rules and the existing buffer-call
+resource adapter. Its final-artifact and packet-admission gates remain open.
+
 [The new-function guide](verify-a-function.md) and its small modular-doubling
 example show how to reuse the scalar-call bridge without adding a decoder,
 evaluator, resource manager, registry task or executable driver.

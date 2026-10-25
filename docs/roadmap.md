@@ -34,7 +34,10 @@ decoding and native tests are separate evidence.
    shared ISA work. [Register and immediate SUB64](sequential-sub64.md) now
    have reusable arithmetic, flag, continuation and current-resource rules.
    The [recorded production diagnostic](../corpus/measurements/sub64-v1/) accepts
-   the complete Clang triangular and binary-search CFGs. This integration's
+   the complete Clang triangular and binary-search CFGs. The
+   [Clang search body and resource proof](binary-search.md) now reuses shared
+   branch VCs and full-width midpoint rules; GCC and final-artifact/admission
+   checks remain open. This integration's
    [ordinary signed-disp8 DATA addresses](displaced-data.md), alongside
    [signed-byte AND64](and64-immediate.md), remove shared decoder barriers.
    Source audit advances eight compiler frontiers across seven disp8-blocked

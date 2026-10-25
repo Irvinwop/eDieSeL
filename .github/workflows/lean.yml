@@ -79,6 +79,13 @@ jobs:
         run: |
           flock /tmp/edsl-lean-build.lock lake build RexData32Tests
           flock /tmp/edsl-lean-build.lock lake env lean -j1 -DwarningAsError=true -DautoImplicit=false -DmaxHeartbeats=300000 -DmaxRecDepth=128 tests/RexData32Audit.lean
+      - name: Check generated binary-search blocks and defining-module audit
+        env:
+          LEAN_NUM_THREADS: '1'
+        run: |
+          flock /tmp/edsl-lean-build.lock lake build BinarySearchTests
+          flock /tmp/edsl-lean-build.lock lake env lean -j1 -DwarningAsError=true -DautoImplicit=false -DmaxHeartbeats=300000 -DmaxRecDepth=128 -DElab.async=false tests/BinarySearchAudit.lean
+          flock /tmp/edsl-lean-build.lock bash scripts/check-owner-audit.sh
       - name: Check prepared and generated certificates
         run: |
           lake env lean -j1 -DwarningAsError=true -DautoImplicit=false -DmaxHeartbeats=300000 -DmaxRecDepth=128 EDSL/Grading/Export/PackedBytes.lean

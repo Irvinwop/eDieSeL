@@ -90,6 +90,7 @@ These examples reuse the library under their stated profiles:
   [rotation](rotate.md).
 - Read-only loops: [byte scans](bounded-byte-scans.md),
   [first-match searches](first-match-searches.md),
+  [binary search](binary-search.md),
   [paired byte comparison](paired-byte-comparison.md),
   [byte equality](byte-equality.md), [sum32](sum32.md),
   [pair32](pair32.md), [array sum64](array-sum64.md) and

@@ -83,6 +83,7 @@ Earlier measurement files retain their historical counts. See
 | Proof packets | Fixed independent tasks, exact raw/full-ELF binding and fresh kernel-checked helper declarations | [Proof-packet interface](grading.md); task/ISA profiles remain restricted |
 | Packed ELF field reads | Exact original reader and field-contract equivalence to bounded numeric extraction, including truncation and zero widths | [Reader bridge](packed-elf-reader.md); synthetic integration only, whole-file quotation and admission remain open |
 | Packed-byte algebra | Checked little-endian round trips, concatenation, length and shift-based region slices | [Representation laws](packed-byte-certificates.md); complete-file packing certificates and Counted64 packet admission remain open |
+| Binary search | Full-width midpoint/interval rules, complete frozen Clang body and current-resource contract through reusable branch VCs | [Search proof](binary-search.md); GCC, named-ELF custody and packet admission remain open; no added corpus credit |
 | Triangular contracts | Universal arithmetic/Spec, complete GCC loop and Clang vector body/current-resource/return/read-trace proofs, and whole-file named-ELF/caller certificates with useful installed calls | [Contracts and machine proofs](triangular-arithmetic.md); task registration and export/grader acceptance remain open |
 | Cost results | Exact modeled instruction/read totals and selected lower bounds | [Cost model](cost-model.md); no CPU-time or unrestricted optimum claim |
 
