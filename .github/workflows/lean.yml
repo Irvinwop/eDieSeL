@@ -36,8 +36,9 @@ jobs:
         with:
           path: ~/.elan/toolchains
           key: lean-toolchain-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain') }}
-      - name: Cache Lake build outputs
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      - name: Restore Lake build outputs
+        id: lake-build-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .lake/build
           key: lake-build-v2-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain') }}-${{ hashFiles('lakefile.lean', 'lake-manifest.json') }}-${{ github.sha }}
@@ -281,6 +282,15 @@ jobs:
         run: bash scripts/check-sequential-byte-order-native.sh
       - name: Replay stored proofs through a fresh kernel environment
         run: lake env leanchecker --fresh EDSL.All
+
+      # Keep completed modules when a later check fails. Lake still validates
+      # input traces, and every proof check and audit above remains mandatory.
+      - name: Save Lake build outputs
+        if: ${{ always() && !cancelled() && steps.lake-build-cache.outputs.cache-hit != 'true' && steps.lake-build-cache.outputs.cache-primary-key != '' }}
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .lake/build
+          key: ${{ steps.lake-build-cache.outputs.cache-primary-key }}
 
   managed-fetch-add64:
     runs-on: ubuntu-24.04
