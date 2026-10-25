@@ -6,6 +6,7 @@ SPDX-License-Identifier: Apache-2.0
 -- New verification clients should import EDSL or a specific module instead.
 import EDSL
 import EDSL.ELF.PackedRead
+import EDSL.ELF.PackedMetadata
 import EDSL.WordMath.BinarySearch
 import EDSL.X86.VCGen.Examples
 import EDSL.Semantics

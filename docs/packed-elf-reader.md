@@ -41,7 +41,21 @@ zero-width boundaries. Changed values, reversed byte order and narrowed field
 widths are rejected by both the original and numeric consumers. The fixture
 is deliberately not a valid ELF mapping.
 
-Run `lake build PackedReadTests` for the integration and transitive axiom audit.
+`EDSL.ELF.PackedMetadata` lifts these field and slice laws to complete ELF
+metadata. Supply `PackedMetadata.Arithmetic count word header metadata` to prove
+all section bounds and field rows, each symbol table's shape and field rows,
+and every byte of the linked string tables and section-name table. The
+`accepted` theorem establishes the original `FunctionSymbol.checkMetadata`
+result; `checked` returns its `CheckedMetadata` contract.
+
+The evidence is ordinary Lean arithmetic and shape proofs. A new ELF reuses
+these theorems instead of repeating byte-reader and string-slice arguments.
+The complete file count and all original metadata obligations remain explicit.
+The module imports only the reader, metadata definitions and proof audit; it
+has no dependency on corpus clients or certificate admission.
+
+Run `lake build EDSL.ELF.PackedMetadata PackedReadTests` for the metadata
+bridge, reader integration and transitive axiom audit.
 Whole-file expected-expression quotation and installed compiler-packet
 integration remain open. No corpus coverage or full-file performance result
 is claimed by this module.
