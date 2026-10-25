@@ -160,6 +160,13 @@ admission and final-file constructors handle the common obligations. Select a
 compiler's semantic theorem before packet export so unrelated annotation
 proofs do not enlarge its packet. Required proof dependencies stay checked.
 
+[Callable proof transport](call-contract-transport.md) composes an existing
+behavior proof with another independent contract for the same bytes. It keeps
+argument bindings, complete snapshots and original resource handles. The
+companion ELF constructors reuse checked complete-file selection and current
+caller/input resources; useful target-domain evidence and trusted task selection
+remain explicit.
+
 ## Current demonstrations
 
 One shared example interface covers identity, modular addition, bitwise XOR,

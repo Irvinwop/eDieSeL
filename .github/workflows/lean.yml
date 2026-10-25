@@ -86,6 +86,12 @@ jobs:
           flock /tmp/edsl-lean-build.lock lake build BinarySearchTests
           flock /tmp/edsl-lean-build.lock lake env lean -j1 -DwarningAsError=true -DautoImplicit=false -DmaxHeartbeats=300000 -DmaxRecDepth=128 -DElab.async=false tests/BinarySearchAudit.lean
           flock /tmp/edsl-lean-build.lock bash scripts/check-owner-audit.sh
+      - name: Check callable contract and complete ELF transport
+        env:
+          LEAN_NUM_THREADS: '1'
+        run: |
+          flock /tmp/edsl-lean-build.lock lake build CallContractTransportTests
+          flock /tmp/edsl-lean-build.lock lake env lean -j1 -DwarningAsError=true -DautoImplicit=false -DmaxHeartbeats=300000 -DmaxRecDepth=128 -DElab.async=false tests/CallContractTransport.lean
       - name: Check prepared and generated certificates
         run: |
           lake env lean -j1 -DwarningAsError=true -DautoImplicit=false -DmaxHeartbeats=300000 -DmaxRecDepth=128 EDSL/Grading/Export/PackedBytes.lean

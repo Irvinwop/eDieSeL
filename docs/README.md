@@ -33,6 +33,8 @@ An import checks code structure and artifact identity. The client still proves
 an independently stated result and supplies current resource premises.
 [Binary-first verification](binary-first.md) explains this division;
 [verification guide](verification.md) describes the required evidence.
+[Callable proof transport](call-contract-transport.md) shows how to reuse
+independent contracts, existing caller/input resources and complete ELF bindings.
 
 ## Find or extend the library
 

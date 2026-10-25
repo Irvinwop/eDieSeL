@@ -79,6 +79,11 @@ absence, out-of-range hits, the truncated sentinel, and data access on empty
 input. Shared branch controls reject noncanonical taken targets, missing
 destinations, exhausted interior fuel and a nondecreasing dynamic rank.
 
+The [contract-refinement bridge](call-contract-transport.md) also derives this
+any-match contract from an existing earliest-u32-match claim on sorted input.
+That proof reuse concerns the same verified bytes; the GCC counterpart still
+requires its own body and artifact evidence.
+
 ## Build and scope
 
 ```sh

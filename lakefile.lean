@@ -392,3 +392,9 @@ lean_lib BinarySearchTests where
   roots := #[`tests.BinarySearchAudit]
   moreLeanArgs := #["-j1", "-DwarningAsError=true", "-DautoImplicit=false",
     "-DmaxHeartbeats=300000", "-DmaxRecDepth=128", "-DElab.async=false"]
+
+-- Reuse independent buffer contracts and complete named-ELF resource proofs.
+lean_lib CallContractTransportTests where
+  roots := #[`tests.CallContractTransport]
+  moreLeanArgs := #["-j1", "-DwarningAsError=true", "-DautoImplicit=false",
+    "-DmaxHeartbeats=300000", "-DmaxRecDepth=128", "-DElab.async=false"]
