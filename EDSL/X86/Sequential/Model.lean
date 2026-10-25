@@ -218,6 +218,8 @@ inductive Instruction where
   /-- Register-only full-width AND/OR/XOR, with an independent undefined AF
   choice. This is an ordinary instruction, not a locked operation. -/
   | logicalReg64 (operation : LogicalOp) (destination source : Register)
+  /-- Register-only canonical 48/49 83 /4 ib; full64, signed imm8. -/
+  | andImm64 (destination : Register) (immediate : Byte)
   /-- Full-width register exchange using the ModRM encoding. -/
   | xchgReg64 (left right : Register)
   /-- Full-width exchange with RAX using the opcode-register encoding. -/

@@ -17,6 +17,8 @@ structure Rules (Ghost : Type) where
   ReadAllowed : Ghost → State → Read → Prop
   Effect : Ghost → State → SeqInstruction → Observation → Ghost → Prop
 
+variable {Ghost : Type}
+
 /-- Every local obligation is about current RAM and a real decoded instruction.
 Returning steps also produce a current evolved OS state. Termination remains
 the separate `AllExecutions` obligation of `SemanticClaim`. -/

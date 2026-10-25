@@ -73,7 +73,7 @@ inductive Fault where
   | creationFailed
   deriving DecidableEq, Repr
 
-@[simp] theorem throw_error (fault : Fault) : (throw fault : Except Fault α) = .error fault := rfl
+@[simp] theorem throw_error {α : Type _} (fault : Fault) : (throw fault : Except Fault α) = .error fault := rfl
 
 def replace (state : State) (identifier : Nat) (worker : Option Worker) : State :=
   { state with workers := fun query => if query = identifier then worker else state.workers query }

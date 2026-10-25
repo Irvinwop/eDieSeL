@@ -53,6 +53,14 @@ jobs:
       # Runtime checks, explicit audits and fresh production replay still run.
       - name: Build pinned Lean project
         run: lake build EDSL.All edsl-certify edsl-certify-process edsl-certify-counter edsl-certify-mutex-worker edsl-certify-futex edsl-certify-futex-client edsl-certify-futex-predicate edsl-certify-sum32 edsl-cfg-import edsl-grade edsl-grade-call-stack edsl-grade-call-memory64 edsl-grade-call-memory-loop64 edsl-proof-export EDSL.Grading.Export.BytePreparation EDSL.Grading.Export.ByteLength EDSL.Grading.Export.ByteEquality.Lemmas EDSL.Grading.Export.PackedBytes EDSL.Grading.Export.PackedBytes.Views EDSL.Grading.Export.PackedBytes.Balanced EDSL.Grading.Export.PackedBytes.Encoding EDSL.Grading.Export.PackedBytes.EncodingFacts edsl-certify-store-return32 edsl-certify-store-load64 edsl-certify-counted-store64 edsl-certify-counted-store64-clang GradingFixtures VerificationTests UnaryTests PopcountTests Sub64Tests AverageTests ParityTests PaddingTests RotationTests Low8Tests ByteEqualityTests CFGProfileTests EffectSimulationTests ChoiceTests AtomicAccess64Tests BoundedScanTests IndexSearchTests ByteComparisonTests WholeQWordTests ManagedQueue64Tests C23AtomicTests EDSL.Corpus.V1.CountedCertificates.GCCAdmission EDSL.Corpus.V1.CountedCertificates.ClangAdmission EDSL.Corpus.V1.CountedCertificates.GCCPreparation EDSL.Corpus.V1.CountedCertificates.ClangPreparation EDSL.Corpus.V1.CountedCertificates.GCCCertificate EDSL.Corpus.V1.CountedCertificates.ClangCertificate
+      - name: Build full64 AND immediate proofs and regressions
+        env:
+          LEAN_NUM_THREADS: '1'
+        run: flock /tmp/edsl-lean-build.lock lake build And64Tests
+      - name: Audit full64 AND immediate proofs
+        env:
+          LEAN_NUM_THREADS: '1'
+        run: flock /tmp/edsl-lean-build.lock lake env lean -j1 -DwarningAsError=true -DautoImplicit=false -DmaxHeartbeats=300000 -DmaxRecDepth=128 tests/And64Audit.lean
       - name: Check prepared and generated certificates
         run: |
           lake env lean -j1 -DwarningAsError=true -DautoImplicit=false -DmaxHeartbeats=300000 -DmaxRecDepth=128 EDSL/Grading/Export/PackedBytes.lean
@@ -532,6 +540,16 @@ jobs:
           EDSL_GCC: gcc-13
           EDSL_CLANG: clang-18
         run: bash scripts/verify-sum32.sh
+      - name: Replay owned full64 AND immediate CPU observations through Lean
+        if: ${{ matrix.domain == 'sequential-cfg' }}
+        run: bash scripts/verify-and64-immediate.sh
+      - name: Preserve full64 AND immediate observations and kernel checks
+        if: ${{ always() && matrix.domain == 'sequential-cfg' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: and64-immediate-evidence
+          path: artifacts/and64-immediate/
+          if-no-files-found: error
       - name: Replay owned CMP32, TEST32 and padding CPU observations through Lean
         if: ${{ matrix.domain == 'sequential-cfg' }}
         env:

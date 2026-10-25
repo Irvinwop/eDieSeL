@@ -15,41 +15,52 @@ theorem register_ok (state : State) (config : Config) (after : State)
       atomicAddressable config.lockAddress = true ∧ NoReaders state.shared config ∧
       loadDWord (toMemory state.shared.resources.space) config.lockAddress = .ok 0 ∧
       Closed state.shared config ∧ after = { state with mutex := some ⟨config, none⟩ } := by
+  unfold register at success
   cases present : state.mutex with
-  | some record => simp [register, present] at success
+  | some record => simp [present] at success
   | none =>
+    simp only [present, Option.isSome, Bool.false_eq_true, ↓reduceIte, pure_ok] at success
     by_cases sameId : config.lockTicket.identifier = config.dataTicket.identifier
-    · simp [register, present, sameId] at success
-    · cases lockAuth : Ownership.authorize state.shared.resources config.owner config.lockTicket with
-      | error fault => simp [register, present, sameId, lockAuth, Except.mapError] at success
+    · simp [sameId] at success
+    · simp only [sameId, ↓reduceIte] at success
+      cases lockAuth : Ownership.authorize state.shared.resources config.owner config.lockTicket with
+      | error fault => simp [lockAuth, Except.mapError] at success
       | ok lock =>
+        simp only [lockAuth, Except.mapError, ok_bind] at success
         cases dataAuth : Ownership.authorize state.shared.resources config.owner config.dataTicket with
-        | error fault => simp [register, present, sameId, lockAuth, dataAuth, Except.mapError] at success
+        | error fault => simp [dataAuth] at success
         | ok data =>
+          simp only [dataAuth, ok_bind] at success
           by_cases lockFits : Ownership.containsWord lock config.lockAddress = true
-          · by_cases dataFits : Ownership.containsWord data config.dataAddress = true
-            · by_cases supported : atomicAddressable config.lockAddress = true
-              · by_cases lockWritable : canStoreDWord (toMemory state.shared.resources.space) config.lockAddress = true
-                · by_cases dataWritable : canStoreDWord (toMemory state.shared.resources.space) config.dataAddress = true
-                  · by_cases lockLoans : Borrowing.allowed state.shared (.store config.owner config.lockTicket config.lockAddress 0) = true
-                    · simp only [BitVec.ofNat_eq_ofNat] at lockLoans
+          · simp only [lockFits, Bool.not_true, Bool.false_eq_true, ↓reduceIte] at success
+            by_cases dataFits : Ownership.containsWord data config.dataAddress = true
+            · simp only [dataFits, Bool.not_true, Bool.false_eq_true, ↓reduceIte] at success
+              by_cases supported : atomicAddressable config.lockAddress = true
+              · simp only [supported, Bool.not_true, Bool.false_eq_true, ↓reduceIte] at success
+                by_cases lockWritable : canStoreDWord (toMemory state.shared.resources.space) config.lockAddress = true
+                · simp only [lockWritable, Bool.not_true, Bool.false_eq_true, ↓reduceIte] at success
+                  by_cases dataWritable : canStoreDWord (toMemory state.shared.resources.space) config.dataAddress = true
+                  · simp only [dataWritable, Bool.not_true, Bool.false_eq_true, ↓reduceIte] at success
+                    simp only [BitVec.ofNat_eq_ofNat] at success
+                    by_cases lockLoans : Borrowing.allowed state.shared (.store config.owner config.lockTicket config.lockAddress 0) = true
+                    · change Borrowing.allowed state.shared (.store config.owner config.lockTicket config.lockAddress (0#32)) = true at lockLoans
+                      simp only [lockLoans, Bool.not_true, Bool.false_eq_true, ↓reduceIte] at success
                       by_cases dataLoans : Borrowing.allowed state.shared (.store config.owner config.dataTicket config.dataAddress 0) = true
-                      · simp only [BitVec.ofNat_eq_ofNat] at dataLoans
+                      · change Borrowing.allowed state.shared (.store config.owner config.dataTicket config.dataAddress (0#32)) = true at dataLoans
+                        simp only [dataLoans, Bool.not_true, Bool.false_eq_true, ↓reduceIte] at success
                         cases lockRead : loadDWord (toMemory state.shared.resources.space) config.lockAddress with
-                        | error fault =>
-                          simp [register, present, sameId, lockAuth, dataAuth, lockFits, dataFits,
-                            supported, lockWritable, dataWritable, lockLoans, dataLoans, lockRead, Except.mapError] at success
+                        | error fault => simp [lockRead] at success
                         | ok old =>
+                          simp only [lockRead, ok_bind] at success
                           by_cases zero : old = 0
-                          · simp only [BitVec.ofNat_eq_ofNat] at zero
+                          · change old = (0#32) at zero
+                            simp only [zero, ne_eq, not_true_eq_false, ↓reduceIte] at success
                             cases dataRead : loadDWord (toMemory state.shared.resources.space) config.dataAddress with
-                            | error fault =>
-                              simp [register, present, sameId, lockAuth, dataAuth, lockFits, dataFits,
-                                supported, lockWritable, dataWritable, lockLoans, dataLoans, lockRead, zero, dataRead, Except.mapError] at success
+                            | error fault => simp [dataRead] at success
                             | ok value =>
+                              simp only [dataRead, ok_bind] at success
                               by_cases invariant : config.invariant value = true
-                              · simp [register, present, sameId, lockAuth, dataAuth, lockFits, dataFits,
-                                  supported, lockWritable, dataWritable, lockLoans, dataLoans, lockRead, zero, dataRead, invariant, Except.mapError] at success
+                              · simp [invariant] at success
                                 obtain ⟨lockAt, lockOwner, lockEpoch⟩ := Ownership.authorize_ok _ _ _ _ lockAuth
                                 obtain ⟨dataAt, dataOwner, dataEpoch⟩ := Ownership.authorize_ok _ _ _ _ dataAuth
                                 refine ⟨rfl, sameId, ⟨lock, lockAt, lockOwner, lockEpoch, lockFits, lockWritable⟩,
@@ -62,25 +73,18 @@ theorem register_ok (state : State) (config : Config) (after : State)
                                   simpa [Ownership.Mutation.target, eq_comm] using excluded
                                 · have excluded := Borrowing.allowed_sound _ _ valid dataLoans identifier loan live
                                   simpa [Ownership.Mutation.target, eq_comm] using excluded
-                              · simp [register, present, sameId, lockAuth, dataAuth, lockFits, dataFits,
-                                  supported, lockWritable, dataWritable, lockLoans, dataLoans, lockRead, zero, dataRead, invariant, Except.mapError] at success
-                          · simp only [BitVec.ofNat_eq_ofNat] at zero
-                            simp [register, present, sameId, lockAuth, dataAuth, lockFits, dataFits,
-                              supported, lockWritable, dataWritable, lockLoans, dataLoans, lockRead, zero, Except.mapError] at success
-                      · simp only [BitVec.ofNat_eq_ofNat] at dataLoans
-                        simp [register, present, sameId, lockAuth, dataAuth, lockFits, dataFits,
-                          supported, lockWritable, dataWritable, lockLoans, dataLoans, Except.mapError] at success
-                    · simp only [BitVec.ofNat_eq_ofNat] at lockLoans
-                      simp [register, present, sameId, lockAuth, dataAuth, lockFits, dataFits,
-                        supported, lockWritable, dataWritable, lockLoans, Except.mapError] at success
-                  · simp [register, present, sameId, lockAuth, dataAuth, lockFits, dataFits,
-                      supported, lockWritable, dataWritable, Except.mapError] at success
-                · simp [register, present, sameId, lockAuth, dataAuth, lockFits, dataFits,
-                    supported, lockWritable, Except.mapError] at success
-              · simp [register, present, sameId, lockAuth, dataAuth, lockFits, dataFits,
-                  supported, Except.mapError] at success
-            · simp [register, present, sameId, lockAuth, dataAuth, dataFits, Except.mapError] at success
-          · simp [register, present, sameId, lockAuth, dataAuth, lockFits, Except.mapError] at success
+                              · simp [invariant] at success
+                          · change old ≠ (0#32) at zero
+                            simp [zero] at success
+                      · change ¬ Borrowing.allowed state.shared (.store config.owner config.dataTicket config.dataAddress (0#32)) = true at dataLoans
+                        simp [dataLoans] at success
+                    · change ¬ Borrowing.allowed state.shared (.store config.owner config.lockTicket config.lockAddress (0#32)) = true at lockLoans
+                      simp [lockLoans] at success
+                  · simp [dataWritable] at success
+                · simp [lockWritable] at success
+              · simp [supported] at success
+            · simp [dataFits] at success
+          · simp [lockFits] at success
 
 theorem register_wellFormed (state : State) (config : Config) (after : State)
     (valid : WellFormed state) (success : register state config = .ok after) : WellFormed after := by

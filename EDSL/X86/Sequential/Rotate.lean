@@ -324,6 +324,10 @@ theorem execute_choice_context (state : State) (instruction : Instruction) (flag
     cases selected
     exact ⟨_, _, rfl, rfl, rfl, rfl, rfl, logicalFlags64_choices ..,
       (logicalFlags64_bits ..).2.2.1, (logicalFlags64_bits ..).2.2.1⟩
+  case andImm64 destination immediate =>
+    cases selected
+    exact ⟨_, _, rfl, rfl, rfl, rfl, rfl, logicalFlags64_choices ..,
+      (logicalFlags64_bits ..).2.2.1, (logicalFlags64_bits ..).2.2.1⟩
   case logicalReg64 operation destination source =>
     cases selected
     exact ⟨_, _, rfl, rfl, rfl, rfl, rfl, logicalFlags64_choices ..,

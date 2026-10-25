@@ -17,6 +17,9 @@ import EDSL.PureCall.Candidate
 import EDSL.X86.Sequential.Low8
 import EDSL.X86.Sequential.ByteComparePadding
 import EDSL.X86.Sequential.NopPadding
+import EDSL.X86.Sequential.AndImmediate64Decode
+import EDSL.X86.Sequential.AndImmediate64Resources
+import EDSL.X86.VCGen.AndImmediate64
 import EDSL.Grading.ByteEquality
 import EDSL.ELF.FunctionCandidateSource
 import EDSL.ELF.FunctionSelection

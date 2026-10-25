@@ -69,7 +69,7 @@ inductive Fault where
   | missingGuard | staleGuard | wrongActor
   deriving DecidableEq, Repr
 
-@[simp] theorem throw_error (fault : Fault) : (throw fault : Except Fault α) = .error fault := rfl
+@[simp] theorem throw_error {α : Type _} (fault : Fault) : (throw fault : Except Fault α) = .error fault := rfl
 
 def registered (state : State) : Except Fault Registered :=
   match state.mutex with | none => .error .missingMutex | some record => .ok record

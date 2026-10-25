@@ -9,12 +9,14 @@ import EDSL.X86.Sequential.Literals
 import EDSL.X86.CallReturn.DecodeTransport
 import EDSL.X86.VCGen.Core
 import EDSL.Audit
+import tests.Support.ExceptDecidable
 
 set_option autoImplicit false
 set_option warningAsError true
 
 namespace EDSL.Tests.SequentialParityISA
 open X86 X86.Sequential
+open scoped EDSL.Tests.Support
 
 private def entry (code : List Byte) (registers : Register → Word := fun _ => 0)
     (flags : Word := 0xed7) : State where
@@ -74,7 +76,7 @@ theorem xor_self_aliases (af : Bool) :
         nextView af (entry [rex,0x33,modrm] (fun _ => 0xdeadbeef800000ff))
           (fun s reads => (s.registers destination,s.flags &&& ~~~(0x10 : Word),
             s.flags.getLsbD 4,s.rip,reads))) =
-    List.replicate 16 (.ok (0,0x646,af,4099,[])) := by cases af <;> rfl
+    List.replicate 16 (.ok (0,0x646,af,4099,[])) := by cases af <;> cbv
 
 theorem xor_low32_flags (af : Bool) :
     ([(0x800000ff,0xf,0x800000f0,0x686), (0x100000000,0,0,0x646),
@@ -146,6 +148,24 @@ theorem old_self_xor_api (af : Bool) :
         (fun s reads => (s.registers .rax,s.rip,reads))) =
     (.ok (.xorSelf32 .rax),.ok (0,4098,[])) := by rfl
 
+-- Factor the existing tuple assertion into independently kernel-checked components.
+private theorem lifted_part0 : CallReturn.decodeAt (entry [0x31,0xd0]) = .ok (.sequential (.logicalReg32 .bxor .rax .rdx false)) := by
+  exact CallReturn.decodeAt_sequential (state := entry [0x31,0xd0])
+    (instruction := .logicalReg32 .bxor .rax .rdx false) (by decide +kernel)
+private theorem lifted_part1 : CallReturn.decodeAt (entry [0x83,0xe2,1]) = .ok (.sequential (.logicalImm32 .band .rdx 1 false)) := by
+  exact CallReturn.decodeAt_sequential (state := entry [0x83,0xe2,1])
+    (instruction := .logicalImm32 .band .rdx 1 false) (by decide +kernel)
+private theorem lifted_part2 : CallReturn.decodeAt (entry [0x48,0x83,0xff,1]) = .ok (.sequential (.cmpImm64 .rdi 1)) := by
+  exact CallReturn.decodeAt_sequential (state := entry [0x48,0x83,0xff,1])
+    (instruction := .cmpImm64 .rdi 1) (by decide +kernel)
+private theorem lifted_part3 : CallReturn.decodeAt (entry [0x66,0x0f,0x1f,0x44,0,0]) = .ok (.sequential (.nop .six)) := by
+  exact CallReturn.decodeAt_sequential (state := entry [0x66,0x0f,0x1f,0x44,0,0])
+    (instruction := .nop .six) (by decide +kernel)
+private theorem rendering_part0 : Literals.instruction (.logicalReg32 .bxor .rax .rdx false) = "(.logicalReg32 .bxor .rax .rdx false)" := by decide +kernel
+private theorem rendering_part1 : Literals.instruction (.logicalImm32 .band .rdx 0x80 false) = "(.logicalImm32 .band .rdx 128 false)" := by decide +kernel
+private theorem rendering_part2 : Literals.instruction (.cmpImm64 .r15 0xff) = "(.cmpImm64 .r15 255)" := by decide +kernel
+private theorem rendering_part3 : Literals.instruction (.nop .six) = "(.nop .six)" := by decide +kernel
+
 theorem lifted_decoder_and_typed_rendering :
     (CallReturn.decodeAt (entry [0x31,0xd0]),
       CallReturn.decodeAt (entry [0x83,0xe2,1]),
@@ -158,7 +178,9 @@ theorem lifted_decoder_and_typed_rendering :
       .ok (.sequential (.logicalImm32 .band .rdx 1 false)),
       .ok (.sequential (.cmpImm64 .rdi 1)), .ok (.sequential (.nop .six)),
       "(.logicalReg32 .bxor .rax .rdx false)","(.logicalImm32 .band .rdx 128 false)",
-      "(.cmpImm64 .r15 255)","(.nop .six)") := by rfl
+      "(.cmpImm64 .r15 255)","(.nop .six)") := by
+  simp only [lifted_part0,lifted_part1,lifted_part2,lifted_part3,
+    rendering_part0,rendering_part1,rendering_part2,rendering_part3]
 
 private def rejects (bytes : List Byte) : Bool :=
   match Sequential.decodeAt (entry bytes) with
@@ -171,7 +193,7 @@ theorem unsupported_forms :
     ([[0x31,0x10],[0x33,0x10],[0x47,0x31,0x50,0],
       [0x66,0x31,0xd0],[0x40,0x40,0x31,0xd0],[0xf0,0x31,0xd0],
       [0x83,0x22,1],[0x83,0xd0,1],[0x83,0xc8,1],[0x83,0xf0,1],
-      [0x42,0x83,0xe0,1],[0x44,0x83,0xe0,1],[0x48,0x83,0xe0,1],
+      [0x42,0x83,0xe0,1],[0x44,0x83,0xe0,1],
       [0x41,0x81,0xe0,1,0,0,0],[0x40,0x25,1,0,0,0],
       [0x48,0x83,0x3f,1],[0x49,0x83,0x7c,0,1],
       [0x4a,0x83,0xff,1],[0x4c,0x83,0xff,1],
@@ -216,7 +238,7 @@ theorem nop6_complete_frame (registers : Register → Word) (flags : Word) (af :
   have decoded : Sequential.decodeAt
       (entry [0x66,0x0f,0x1f,0x44,0,0] registers flags) = .ok (.nop .six) :=
     decodeAt_transport (source := entry [0x66,0x0f,0x1f,0x44,0,0])
-      (fun _ _ _ fetched => fetched) (by rfl)
+      (fun _ _ _ fetched => fetched) (by cbv)
   rw [step_eq_execute af decoded]
   rfl
 
@@ -290,7 +312,7 @@ theorem gcc_cfg_admission :
       (16,.movReg32 .rdx .rdi,2,[18]),(18,.logicalImm32 .band .rdx 1 false,3,[21]),
       (21,.logicalReg32 .bxor .rax .rdx false,2,[23]),(23,.shrOne64 .rdi,3,[26]),
       (26,.legacy (.jnz 0xf4),2,[28,16]),(28,.legacy .ret,1,[]),
-      (29,.nop .three,3,[32]),(32,.legacy .ret,1,[])] := by rfl
+      (29,.nop .three,3,[32]),(32,.legacy .ret,1,[])] := by decide +kernel
 
 theorem clang_cfg_admission :
     (CFG.analyze clangBytes).map (fun graph => graph.nodes.map
@@ -300,7 +322,7 @@ theorem clang_cfg_admission :
       (16,.movReg32 .rdx .rdi,2,[18]),(18,.logicalImm32 .band .rdx 1 false,3,[21]),
       (21,.logicalReg32 .bxor .rax .rdx false,2,[23]),(23,.shrOne64 .rcx,3,[26]),
       (26,.cmpImm64 .rdi 1,4,[30]),(30,.movReg64 .rdi .rcx,3,[33]),
-      (33,.jcc .above 0xed,2,[35,16]),(35,.legacy .ret,1,[])] := by rfl
+      (33,.jcc .above 0xed,2,[35,16]),(35,.legacy .ret,1,[])] := by decide +kernel
 
 end EDSL.Tests.SequentialParityISA
 

@@ -63,7 +63,7 @@ def Instruction.length : Instruction → Nat
   | .shiftRightImm32 _ _ _ prefixed | .logicalImm32 _ _ _ prefixed | .addImm32 _ _ prefixed
   | .subImm32 _ _ prefixed | .cmpImm32 _ _ prefixed => if prefixed then 4 else 3
   | .inc32 _ prefixed => if prefixed then 3 else 2
-  | .imulReg64 _ _ | .cmpImm64 _ _ | .addImm64 _ _ | .subImm64 _ _ | .cmovReg64 _ _ _ => 4
+  | .imulReg64 _ _ | .cmpImm64 _ _ | .addImm64 _ _ | .subImm64 _ _ | .andImm64 _ _ | .cmovReg64 _ _ _ => 4
 
 def Instruction.isNew : Instruction → Bool
   | .legacy _ => false
@@ -563,7 +563,7 @@ def decodeSubReg64At (state : State) (operation rex : Byte) : Except Error Instr
     else .subReg64 (rexModRMReg rex modrm) (rexModRMRM rex modrm)
 
 /-- Shared register-only REX.W 83 imm8 group. Existing ADD remains exactly
-48 /0 and CMP exactly 48/49 /7. SUB adds exactly 48/49 /5. Group selectors
+48 /0 and CMP exactly 48/49 /7. SUB adds exactly 48/49 /5; AND exactly 48/49 /4. Group selectors
 use raw ModRM bits; unsupported memory/prefix/group forms reject before the
 immediate fetch. All admitted forms fetch the actual immediate at offset3. -/
 def decodeGroup1Imm64At (state : State) (rex : Byte) : Except Error Instruction := do
@@ -574,6 +574,8 @@ def decodeGroup1Imm64At (state : State) (rex : Byte) : Except Error Instruction 
     return .cmpImm64 (rexModRMRM rex modrm) (← fetchByte state.memory (state.rip + 3))
   else if modrm.toNat / 8 % 8 = 5 then
     return .subImm64 (rexModRMRM rex modrm) (← fetchByte state.memory (state.rip + 3))
+  else if modrm.toNat / 8 % 8 = 4 then
+    return .andImm64 (rexModRMRM rex modrm) (← fetchByte state.memory (state.rip + 3))
   else if rex = 0x48 ∧ modrm.toNat / 8 % 8 = 0 then
     return .addImm64 (modRMRM modrm) (← fetchByte state.memory (state.rip + 3))
   else throw .unsupportedEncoding
@@ -702,7 +704,8 @@ destination; R/X aliases, other count sources, widths and memory forms reject.
 MOV64, LEA64, ADD64, register AND/OR/XOR64, register CMOV64 and register XCHG64 admit
 one REX.W prefix 48..4F, including R/B and the SIB index extension X. Register
 ADD, AND/OR/XOR and CMOV ignore X. Logical instructions admit both opcode
-directions with mod=3 only; memory operands and immediate forms are unsupported.
+directions with mod=3 only. AND imm8 has its separate canonical 48/49 group route;
+memory operands and other full64 logical immediates remain unsupported.
 Opcode 03 additionally admits a mod=00 memory source;
 opcode 01 memory destinations remain unsupported. CMOV accepts the sixteen
 0F 40..4F condition codes, with R extending its destination and B its source.
@@ -836,7 +839,7 @@ theorem Instruction.length_pos (instruction : Instruction) : 0 < instruction.len
   | storeMem64 address destination =>
     cases address <;> simp [Instruction.length, Address.suffixBytes]
   | xorSelf32 _ | movReg32 _ _ | movReg64 _ _ | cmovReg64 _ _ _ | addReg64 _ _ | subReg64 _ _ | logicalReg64 _ _ _ | xchgReg64 _ _ | xchgRax64 _
-  | imulReg64 _ _ | test64 _ _ | cmp64 _ _ | cmpImm64 _ _ | addImm64 _ _ | subImm64 _ _ | movSignImm32 _ _
+  | imulReg64 _ _ | test64 _ _ | cmp64 _ _ | cmpImm64 _ _ | addImm64 _ _ | subImm64 _ _ | andImm64 _ _ | movSignImm32 _ _
   | inc64 _ | dec64 _ | bswapReg64 _ | shrOne64 _ | rolCL64 _ | je _ | jcc _ _ | jmp _ => simp [Instruction.length]
 
 theorem Instruction.length_le_fifteen (instruction : Instruction) : instruction.length ≤ 15 := by
@@ -859,7 +862,7 @@ theorem Instruction.length_le_fifteen (instruction : Instruction) : instruction.
   | storeMem64 address destination =>
     cases address <;> simp [Instruction.length, Address.suffixBytes]
   | xorSelf32 _ | movReg32 _ _ | movReg64 _ _ | cmovReg64 _ _ _ | addReg64 _ _ | subReg64 _ _ | logicalReg64 _ _ _ | xchgReg64 _ _ | xchgRax64 _
-  | imulReg64 _ _ | test64 _ _ | cmp64 _ _ | cmpImm64 _ _ | addImm64 _ _ | subImm64 _ _ | movSignImm32 _ _
+  | imulReg64 _ _ | test64 _ _ | cmp64 _ _ | cmpImm64 _ _ | addImm64 _ _ | subImm64 _ _ | andImm64 _ _ | movSignImm32 _ _
   | inc64 _ | dec64 _ | bswapReg64 _ | shrOne64 _ | rolCL64 _ | je _ | jcc _ _ | jmp _ => simp [Instruction.length]
 
 /-- Admission of a NEW instruction never admits it in the old sequential/TSO

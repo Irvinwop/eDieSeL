@@ -265,17 +265,17 @@ theorem and_complete_context (registers : Register → Word) (flags : Word)
   rw [Sequential.logicalFlags64_preserves] <;> rfl
 
 /-- None of the six register opcodes may fall through to a memory form.
-Immediate and repeated/interposed prefixes remain outside this full64 subset. -/
+Imm32 and repeated/interposed prefixes remain outside this full64 subset. -/
 theorem unsupported_forms :
     ([[0x48,0x21,0x08], [0x48,0x23,0x48,0], [0x48,0x09,0x88,0,0,0,0],
       [0x48,0x0b,0x08], [0x48,0x31,0x48,0], [0x48,0x33,0x88,0,0,0,0],
-      [0x48,0x81,0xe0,1,0,0,0], [0x48,0x83,0xe0,1],
+      [0x48,0x81,0xe0,1,0,0,0],
       [0x48,0x83,0xc8,1], [0x48,0x83,0xf0,1],
       [0x48,0x25,1,0,0,0], [0x48,0x0d,1,0,0,0], [0x48,0x35,1,0,0,0],
       [0x48,0x48,0x21,0xc8], [0x48,0x66,0x09,0xc8],
       [0x48,0xf0,0x31,0xc8]] : List (List Byte)).map
       (fun bytes => Sequential.decodeAt (entry bytes)) =
-    List.replicate 16 (.error .unsupportedEncoding) := by
+    List.replicate 15 (.error .unsupportedEncoding) := by
   decide +kernel
 
 /-- W=0 OR selects the existing low32 semantics; unsupported prefixes never

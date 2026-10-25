@@ -43,7 +43,7 @@ def CallerOnly : Instruction → Prop
   | .movReg32 _ _ | .movReg64 _ _ | .movSignImm32 _ _
   | .setcc _ _ _ | .movImm8 _ _ _ | .cmovReg64 _ _ _ | .cmovReg32 _ _ _ _
   | .lea64 _ _ | .lea32 _ _ _ | .addReg64 _ _ | .subReg64 _ _ | .logicalReg64 _ _ _
-  | .xchgReg64 _ _ | .xchgRax64 _ | .addImm64 _ _ | .subImm64 _ _ | .addImm32 _ _ _
+  | .xchgReg64 _ _ | .xchgRax64 _ | .addImm64 _ _ | .subImm64 _ _ | .andImm64 _ _ | .addImm32 _ _ _
   | .inc32 _ _ | .inc64 _ | .dec64 _ | .je _ | .jcc _ _ | .jmp _ => True
   | .imulReg64 _ _ | .shiftRightImm32 _ _ _ _
   | .movzxMem8 _ _ _ | .cmpMemImm8 _ _ | .cmpMemReg8 _ _

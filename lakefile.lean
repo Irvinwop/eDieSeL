@@ -294,6 +294,12 @@ lean_lib Sub64Tests where
   moreLeanArgs := #["-DwarningAsError=true", "-DautoImplicit=false",
     "-DmaxHeartbeats=300000", "-DmaxRecDepth=128"]
 
+-- Signed-byte full64 AND, exact CFG clients and owned native replay observations.
+lean_lib And64Tests where
+  roots := #[`tests.And64Audit]
+  moreLeanArgs := #["-DwarningAsError=true", "-DautoImplicit=false",
+    "-DmaxHeartbeats=300000", "-DmaxRecDepth=128"]
+
 -- Full-address LEA32 narrowing and low-byte immediate TEST contracts.
 lean_lib AddressByteTests where
   roots := #[`tests.Address32, `tests.TestImmediate8, `tests.AddressByteTransport,

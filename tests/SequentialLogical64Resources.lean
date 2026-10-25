@@ -53,7 +53,7 @@ theorem or_rsp_preserves_original_authority {call : Call} {shared : Shared} {bef
         Borrowing.mutate shared (.store64 (Threads.principal call.worker) call.ticket
           call.targetPointer value) = .ok (evolved,none)) := by
   have instruction := decoded current codeBytes 0 (by decide) (by simpa using entry)
-    (instruction := .logicalReg64 .bor .rsp .rcx) rfl
+    (instruction := .logicalReg64 .bor .rsp .rcx) (by cbv)
   obtain ⟨after,executed,result,others,memory,flags,pc⟩ :=
     execute_logicalReg64_context before .bor .rsp .rcx af
   have currentAfter : Current call shared after := current.sameMemory memory

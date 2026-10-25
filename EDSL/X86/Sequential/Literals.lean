@@ -77,6 +77,8 @@ def instruction : Instruction → String
   | .cmpReg8 left right prefixed => s!"(.cmpReg8 {register left} {register right} {prefixed})"
   | .subReg64 destination source =>
     s!"(.subReg64 {register destination} {register source})"
+  | .andImm64 destination immediate =>
+    s!"(.andImm64 {register destination} {immediate.toNat})"
   | .subImm64 destination immediate =>
     s!"(.subImm64 {register destination} {immediate.toNat})"
   | .subReg32 destination source prefixed =>

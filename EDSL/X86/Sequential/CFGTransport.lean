@@ -130,9 +130,9 @@ theorem execute_next_target {initial final : State} {instruction : Instruction} 
   | test64 left right | cmp64 left right
   | subImm32 destination immediate prefixed | cmpImm32 destination immediate prefixed
   | addImm32 destination immediate prefixed | inc32 destination prefixed
-  | addImm64 destination immediate | inc64 destination | dec64 destination =>
+  | andImm64 destination immediate | addImm64 destination immediate | inc64 destination | dec64 destination =>
     cases success; cases next
-    simp [Targets, Instruction.length]
+    simp [Targets, Instruction.length, logical64State]
   | addMem32 destination address | loadMem32 destination address =>
     cases loaded : loadDWord initial.memory (address.eval initial) <;>
       simp [execute, loaded] at success
@@ -183,7 +183,7 @@ theorem execute_next_memory {initial final : State} {instruction : Instruction} 
   | addImm32 _ _ _ | inc32 _ _
   | negReg32 _ _ | bswapReg64 _ | shrOne64 _ | rolCL64 _
   | movzxMem8 _ _ _ | movzxReg8 _ _ _ | cmpReg8 _ _ _ | subReg32 _ _ _
-  | xorSelf32 _ | movReg32 _ _ | movReg64 _ _ | setcc _ _ _ | movImm8 _ _ _ | movSignImm32 _ _ | cmovReg32 _ _ _ _ | cmovReg64 _ _ _ | lea64 _ _ | addReg64 _ _ | subReg64 _ _ | logicalReg64 _ _ _ | xchgReg64 _ _ | xchgRax64 _ | loadMem32 _ _ | loadMem64 _ _ | test32 _ _ _ | cmp32 _ _ _ | cmpMemImm8 _ _ | cmpRegMem8 _ _ _ | cmpMemReg8 _ _ | cmpMemReg32 _ _ | endbr64IbtDisabled | nop _ | test64 _ _ | cmp64 _ _ | addMem32 _ _ | addMem64 _ _ | addImm64 _ _ | subImm64 _ _
+  | xorSelf32 _ | movReg32 _ _ | movReg64 _ _ | setcc _ _ _ | movImm8 _ _ _ | movSignImm32 _ _ | cmovReg32 _ _ _ _ | cmovReg64 _ _ _ | lea64 _ _ | addReg64 _ _ | subReg64 _ _ | logicalReg64 _ _ _ | xchgReg64 _ _ | xchgRax64 _ | loadMem32 _ _ | loadMem64 _ _ | test32 _ _ _ | cmp32 _ _ _ | cmpMemImm8 _ _ | cmpRegMem8 _ _ _ | cmpMemReg8 _ _ | cmpMemReg32 _ _ | endbr64IbtDisabled | nop _ | test64 _ _ | cmp64 _ _ | addMem32 _ _ | addMem64 _ _ | addImm64 _ _ | subImm64 _ _ | andImm64 _ _
   | inc64 _ | dec64 _ | je _ | jcc _ _ | jmp _ =>
     exact execute_new_memory rfl rfl rfl success next
   | storeMem32 _ _ | storeMem64 _ _ => simp [readOnly] at allowed
@@ -242,7 +242,7 @@ theorem execute_result {initial : State} {instruction : Instruction} {af : Bool}
   | addImm32 _ _ _ | inc32 _ _
   | negReg32 _ _ | bswapReg64 _ | shrOne64 _ | rolCL64 _
   | movzxMem8 _ _ _ | movzxReg8 _ _ _ | cmpReg8 _ _ _ | subReg32 _ _ _
-  | xorSelf32 _ | movReg32 _ _ | movReg64 _ _ | setcc _ _ _ | movImm8 _ _ _ | movSignImm32 _ _ | cmovReg32 _ _ _ _ | cmovReg64 _ _ _ | lea64 _ _ | addReg64 _ _ | subReg64 _ _ | logicalReg64 _ _ _ | xchgReg64 _ _ | xchgRax64 _ | loadMem32 _ _ | loadMem64 _ _ | test32 _ _ _ | cmp32 _ _ _ | cmpMemImm8 _ _ | cmpRegMem8 _ _ _ | cmpMemReg8 _ _ | cmpMemReg32 _ _ | endbr64IbtDisabled | nop _ | test64 _ _ | cmp64 _ _ | addMem32 _ _ | addMem64 _ _ | addImm64 _ _ | subImm64 _ _
+  | xorSelf32 _ | movReg32 _ _ | movReg64 _ _ | setcc _ _ _ | movImm8 _ _ _ | movSignImm32 _ _ | cmovReg32 _ _ _ _ | cmovReg64 _ _ _ | lea64 _ _ | addReg64 _ _ | subReg64 _ _ | logicalReg64 _ _ _ | xchgReg64 _ _ | xchgRax64 _ | loadMem32 _ _ | loadMem64 _ _ | test32 _ _ _ | cmp32 _ _ _ | cmpMemImm8 _ _ | cmpRegMem8 _ _ _ | cmpMemReg8 _ _ | cmpMemReg32 _ _ | endbr64IbtDisabled | nop _ | test64 _ _ | cmp64 _ _ | addMem32 _ _ | addMem64 _ _ | addImm64 _ _ | subImm64 _ _ | andImm64 _ _
   | inc64 _ | dec64 _ | je _ | jcc _ _ | jmp _ =>
     obtain ⟨final, next⟩ := execute_new_next rfl success
     exact ⟨final, Or.inl next⟩
@@ -294,7 +294,7 @@ theorem targets_translate (node : Node) (base : Word) :
   | negReg32 _ _ | bswapReg64 _ | shrOne64 _ | rolCL64 _
   | movzxMem8 _ _ _ | movzxReg8 _ _ _ | cmpReg8 _ _ _ | subReg32 _ _ _
   | xorSelf32 _ | movReg32 _ _ | movReg64 _ _ | setcc _ _ _ | movImm8 _ _ _ | movSignImm32 _ _ | cmovReg32 _ _ _ _ | cmovReg64 _ _ _ | lea64 _ _ | addReg64 _ _ | subReg64 _ _ | logicalReg64 _ _ _ | xchgReg64 _ _ | xchgRax64 _ | loadMem32 _ _ | storeMem32 _ _ | loadMem64 _ _ | storeMem64 _ _
-  | test32 _ _ _ | cmp32 _ _ _ | cmpMemImm8 _ _ | cmpRegMem8 _ _ _ | cmpMemReg8 _ _ | cmpMemReg32 _ _ | endbr64IbtDisabled | nop _ | test64 _ _ | cmp64 _ _ | addMem32 _ _ | addMem64 _ _ | addImm64 _ _ | subImm64 _ _
+  | test32 _ _ _ | cmp32 _ _ _ | cmpMemImm8 _ _ | cmpRegMem8 _ _ _ | cmpMemReg8 _ _ | cmpMemReg32 _ _ | endbr64IbtDisabled | nop _ | test64 _ _ | cmp64 _ _ | addMem32 _ _ | addMem64 _ _ | addImm64 _ _ | subImm64 _ _ | andImm64 _ _
   | inc64 _ | dec64 _ | je _ | jcc _ _ | jmp _ =>
       simp [Targets, Node.successors, instruction, BitVec.ofNat_add, BitVec.add_assoc]
 
