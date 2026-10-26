@@ -2,6 +2,7 @@
 Copyright 2026 Irvinwop
 SPDX-License-Identifier: Apache-2.0
 -/
+import EDSL.Source.Certificates
 -- Full proof catalogue for project audits and fresh kernel replay.
 -- New verification clients should import EDSL or a specific module instead.
 import EDSL

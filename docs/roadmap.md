@@ -1,335 +1,187 @@
-# Roadmap and acceptance gates
+# Roadmap
 
-eDieSeL aims to verify programs, kernels, operating systems and security
-properties against independent contracts over their exact final machine code.
-The implemented foundation is a restricted x86-64 userspace verifier in Lean 4.
-General source-language semantics, native kernel verification and physical CPU
-refinement remain future work. See [implementation status](implementation-status.md)
-for present support and [coverage](coverage.md) for the relevant APIs.
+The primary objective is source-first verification: one shared executable Lean
+semantics for GNU C23 and GNU++26, proofs of source definedness and contracts,
+explicit OS semantics, and a source-proved bootstrap chain rooted in exactly one
+binary seed. Existing binary-first results are retained as legacy evidence and
+regressions. Their corpus score is not the main progress measure.
 
-## Current scaling priority
+## Current foundation
 
-Expand reusable verification against the unchanged
-[40-function GCC/Clang corpus](compiler-corpus.md). Current conditional coverage
-is **20/40 functions and 40/80 artifacts**, including **three distinct concurrent
-functions**; **20 functions / 40 artifacts** remain. The
-[signed signum measurement](../corpus/measurements/signed-signum32-v1/)
-records the accepted source and full-gate evidence. Both compiler outputs must
-meet the independent contract before a function counts. Compilation, extraction,
-decoding and native tests are separate evidence.
+The initial `EDSL.Source` implementation is a finite pure expression/return
+fragment with typed `int`/`unsigned int` values, addition/division, and explicit
+defined/UB/unsupported outcomes. Its unsigned-addition client proves an
+independent bounded-carry equation for every typed input. `Certificate` combines
+the execution/contract theorem with an inhabited domain; domain and contract
+independence still need review. See the [API](source-core-api.md) and
+[implementation status](implementation-status.md) for exact limits. There is
+no source-text frontend, memory/effect model or bootstrap stage yet.
 
-### Next deliverables
+## 1. Establish the GNU C23 semantics foundation
 
-1. Complete row 40's existing Counted64 model-certificate integration: bounded
-   full-file packet export, both frozen compiler acceptances, isolated installed
-   grading, negative controls and corpus registration. The existing model
-   certificates alone do not move 20/40. Evaluate packed byte regions with
-   the [checked packed-byte algebra](packed-byte-certificates.md) under the
-   unchanged packet, decimal, audit and cumulative kernel limits; retain the
-   full-file expected contract. Complete file-binding certificates and a packed
-   declaration producer remain open. Generic numeric append, scoped chunk-context
-   composition and exact equality from length/value certificates are checked
-   library APIs; generated full-file integration still needs independent replay.
-2. Use the [ranked feature queue](corpus-blockers.md#ranked-reusable-features) for
-   shared ISA and contract work. [SUB64](sequential-sub64.md),
-   [signed-byte AND64](and64-immediate.md), [ordinary signed-disp8 DATA
-   addresses](displaced-data.md) and [W=0 REX DATA4 loads](rex-data32.md) have
-   checked instruction, frame and current-resource rules. The
-   [latest production diagnostic](../corpus/measurements/rex-data32-v1/) accepts
-   22/40 GCC and 20/40 Clang read-only CFG windows; these structural results add
-   no behavioral certificates. The [complete GCC/Clang search body and resource
-   proofs](binary-search.md) reuse shared branch VCs and full-width midpoint
-   rules. GCC uses an explicit complete-window profile without changing defaults.
-   Clang also has an exact named-file certificate and useful same-manager call.
-   Complete GCC artifact integration and both registration/admission gates.
-   [Callable proof transport](call-contract-transport.md)
-   composes already verified contracts and preserves original resource handles;
-   useful target-domain evidence remains explicit. XMM leads the remaining ISA
-   queue. Develop the exposed scalar/read-only and mutable-array contracts
-   through existing execution/resource APIs. Default size gates, later
-   instructions and each independent invariant/resource contract still apply.
-3. Build XMM lane/memory rules, mutable-array ownership and DWORD lock protocols
-   as reusable families. The [sixteen-byte RAM primitives](memory128.md) now
-   provide checked functional loads, stores and outside-byte frames. XMM state,
-   instruction decoding, lane operations and interleaving rules remain open. Select complete corpus contracts to exercise them,
-   reuse the shared VCG and current-resource adapters, and update first blockers
-   after each milestone. Keep source-audit predictions separate from actual
-   checker results and end-to-end acceptance.
+Start with a small, executable, typed source fragment. Record its language
+profile and implemented rules before extending it. GNU++26 shares the same
+semantic machinery; genuine dialect differences are explicit rules or profile
+choices, rather than a second interpreter or per-program evaluator.
 
-The implemented plain64 milestone covers `c_atomic_load_acquire64` and
-`c_atomic_store_release64` for both frozen compilers. One checked method family
-supplies the independent universal `Plain64.Claim`, whole-image resources,
-overlapping high-word homogeneous witnesses and a mixed selected-writer witness
-with `writer RET < publication < reader access`. The CLI projects each named row
-from its same-file cohort certificate, retaining all these gates. Plain uses
-`managed-tso64-plain64-cohort-v1`; fetch-add retains
-`managed-tso64-closed-batch-v1`. Acquire/release are declared interface
-annotations; closed legal histories require initialized resources and empty
-initial and final queues. Present-only admission remains separate from static
-code shapes and scalar ABI obligations.
-[Call contracts, finite publication and order weakening](atomic-call-contracts.md)
-provide reusable foundations;
-the existing trace verifier checks each supplied finite graph with the full
-legality checker. The universal no-acquire theorem below is a separate API.
-The [shared load/store method family](managed-plain-methods.md) supplies body
-progress, interference closure, mixed-cohort completion from an actual prefix,
-indexed access/RET origins, finite call-cohort extraction and whole scanner/call
-correspondence without per-compiler execution proofs. Completion fixes each
-worker's AF choices and exact remaining issue count, skips already-returned
-workers and preserves prior replies. Actual drain closure is a separate phase;
-RET need not publish a store. Full-cell frames preserve all bytes, mappedness
-and permissions outside target qwords and actual incoming FIFO footprints.
+The first foundation must distinguish defined results, undefined behavior and
+unsupported constructs. It must expose actual execution through the shared
+semantics. A bare behavior relation, sample output or successful compilation
+cannot establish language support.
 
-Published-position monotonicity, per-worker FIFO issue/publication order
-and [pending selection rank bounds](checked-atomic-traces.md#pending-writers-and-fifo-order)
-are shared across arbitrary traces. General own-pending/published view monotonicity
-and same-thread mixed store/RMW publication order are proved for the finite
-execution model. Actual access authority and source-writer ranks connect those
-views to identity-based RF writer rows. Reusable
-[publication coverage](checked-atomic-traces.md#publication-coverage) bounds
-every actual target view of the writing thread at its instruction's successor
-cut. Access authority extends the bound to earlier cuts; the load corollary
-retains the exact source writer identity, including across different cells.
-These execution-level APIs allow nonempty initial mixed FIFOs.
-`AtomicTrace.verify` retains its empty initial-queue boundary.
-[Exact-source load transfer](checked-atomic-traces.md#exact-source-view-transfer)
-propagates these numerical views through actual published reads and own
-forwarding, including other-cell views and current handle aliases.
-[Exact writer successor views and operational coherence](checked-atomic-traces.md#writer-successor-views-and-operational-coherence)
-and [generic read sides](checked-atomic-traces.md#read-sides-of-loads-and-rmws)
-give same-cell write/read and read/read source-rank bounds and strict read/write
-rank order across cells, including RMW reads. Actual RMW sources are same-cell
-publication predecessors, with global rank gaps allowed. These operational
-coherence and predecessor results start the publication map empty; writer
-successor views accept arbitrary incoming metadata.
+Extend in this dependency order:
 
-[Structural well-formedness](checked-atomic-traces.md#structural-graph-well-formedness)
-follows from `Built` alone. An actual scan with initial resource invariants,
-sequenced queues, final quiescence and complete structural mapping forms
-`Graph.Executed`, which supplies [universal all-row sequencing coherence](checked-atomic-traces.md#universal-graph-sequencing),
-no-future sequencing and RMW predecessors. Initial quiescence is not a premise:
-ordinary incoming entries and views outside graph access events remain permitted.
-Every managed publication must still have an in-run event. This mapping excludes
-incoming managed entries and gives their drains no invented instruction origins.
-Actual initial registry/RAM enumeration remains separate from structural `Built`.
+1. Integer types, target widths, values, arithmetic and conversions, including
+   promotions, usual arithmetic conversions and signed-overflow rules.
+2. Expressions, value categories, evaluation order, sequencing and side effects.
+3. Objects, byte representations, initialization, storage duration, lifetimes,
+   pointer provenance, alignment, bounds and permitted aliasing.
+4. Statements, control flow, function calls, recursion, translation units,
+   preprocessing and checked source-to-embedded-program correspondence.
+5. Volatile accesses, atomics, synchronization and first-class external effects,
+   only after their memory/resource/environment state and failure rules exist.
+6. GNU extensions required by selected real sources, with their compiler options
+   and implementation choices pinned.
 
-[Universal finite-fragment legality](checked-atomic-traces.md#universal-no-acquire-legality)
-is proved for every `Executed` context with `orders.noAcquire run.events = true`,
-including `Orders.relaxed`. Absence of acquiring annotations excludes
-synchronizes-with (SW), so happens-before (HB) reduces to sequencing.
-This uses execution constraints and structural mapping
-without a graph-legality checker. The Boolean checks declared annotations, not
-machine bytes; a false result leaves HB obligations open. Acquiring semantics
-are never silently lowered. `verify` retains its full-checker behavior, and
-these graph theorems alone add no corpus credit.
+Unsupported syntax or behavior remains unsupported. Constraint violations,
+unspecified choices, implementation-defined choices, undefined behavior and
+C++ erroneous behavior need their proper classifications. A timeout is an
+engineering outcome, not a language behavior.
 
-[Actual action clocks](checked-atomic-traces.md#happens-before-order-for-acquiring-annotations)
-now prove HB acyclicity and no-future RF for arbitrary declared annotations on
-mapped runs. Generic read transfer covers loads and RMWs, and release-member
-source-prefix induction is available. [Actual view transport](checked-atomic-traces.md#universal-acquiring-fragment-legality)
-through release sequences, synchronization and HB paths derives all four HB
-coherence conditions and `executed.legal` for arbitrary declared annotations.
-[Initialized graph construction](checked-atomic-traces.md#graph-construction-from-actual-execution)
-now derives every builder requirement, `Graph.build` success, `Executed` and
-finite-fragment legality from raw actual scan evidence. `Graph.Captured` requires
-well-formed initialized resources, empty initial and final queues, an actual scan
-at an arbitrary offset with an empty incoming publication map, and actual
-registry/RAM enumeration. It assumes no graph table, writer/rank/value oracle
-or legality-checker success. The executable verifier retains its full checker;
-totality of that separate checker is not established.
-The shared [load/store history composition](managed-plain-methods.md#construct-the-complete-atomic-history)
-now derives the complete call batch and legal graph together. Represented scalar
-ABI return frames and exact named ELF/code-shape bindings are also available.
-The independent Plain64 `Pre` now binds current full64 arguments, executable
-images, original protected callers and selected cell authority without future
-execution or method-cutpoint assumptions. A separate static-shape bridge derives
-the complete initial invocation family. `PlainCallClaim64.claim` now composes
-every independent safety, behavior, closed-output, enabledness, chosen-completion,
-actual-closure and boundedness obligation. `ClosedPost` preserves the complete
-actual machine-event list and source identities alongside the same calls'
-constructed History, target-only full-cell frame and final collection.
-Exact-file resources now support constructed overlapping homogeneous executions
-and mixed writer-return/publication/reader executions with an actual persistent
-source and exact RF edge. The same shared proof serves both frozen compilers;
-CLI registration retains the original universal, homogeneous and mixed gates,
-with accepted evidence in the managed plain64 measurement. Source/interface
-annotation justification and repeated invocations remain separate obligations.
-Construction for arbitrary incoming managed queues remains open. Full C23/frontend semantics,
-source/compiler preservation, native/kernel correspondence and fairness remain
-separate capabilities.
-The [current blocker queue](corpus-blockers.md#the-20-uncovered-functions) records
-every uncovered identity, both compiler frontiers, exact offsets, profile gates
-and evidence scope. Keep the frozen inputs and denominator unchanged; new
-configurations require a new corpus version.
+Acceptance: each supported feature has executable rules, an identified language
+reference, independent positive/negative evidence and checked shared lemmas.
+Complete GNU C23 support must not be inferred from an arithmetic fragment.
 
-## Next shared-memory verification layer
+## 2. Prove source definedness and independent contracts
 
-The next capability is a reusable checker for branching shared-memory routines,
-exercised by the frozen spinlock acquire/release and counter-worker functions.
-[Structural CFG certificates](structural-cfg.md) authenticate byte partitions,
-decoding and control-flow annotations independently of effect policy. They do
-not supply execution or protocol correctness.
+Every target program uses the shared semantics. A reusable verification
+judgement must require proved defined executions on the admitted input domain,
+and a separately stated result/effect contract. It must reject vacuous success
+from missing rules or unsupported constructs.
 
-The remaining work is to connect those structural certificates to production
-issue/drain transitions and current ownership. This includes typed DWORD lock
-authority, actual exchange events, ordinary release stores with delayed FIFO
-publication, and individually interleaved counter increments. Existing fixed
-method families remain useful components; their shapes do not certify these
-branching functions.
+Input domains describe independently meaningful inputs. They cannot contain an
+assumption that the program has no UB or already satisfies its result. Safety
+obligations such as bounds, initialization, lifetime, alignment, arithmetic
+range and synchronization must be discharged by program proofs.
 
-Acquire needs every-prefix safety and a separate conditional progress contract:
-fair thread selection alone does not guarantee a successful test-and-set attempt.
-Release must transfer the protected invariant and retain pending publication
-obligations after return. Counter loops must preserve exact per-invocation event
-counts, including every unrolled increment. Larger functions need an explicit
-structural profile and compatible managed-rule bounds; truncation is not an
-admission strategy. Source-order and physical CPU/kernel refinement remain
-separate obligations. These planned contracts add no current corpus credit.
+Build reusable source verification-condition generation and reflection, with a
+soundness theorem checked once. Clients provide their mathematics, invariants
+and termination arguments. They do not introduce their own interpreter.
 
-## Design commitments
+Start with integer routines, then loops and small memory routines as the memory
+semantics becomes available. Include independently specified counterexamples
+that expose real semantic mistakes, such as signed overflow and invalid memory
+access. Keep partial correctness, termination, deadlock freedom and scheduling
+progress distinct. The current finite `NoUB` requires defined completion;
+separate general UB freedom, coverage and erroneous behavior before extending
+the syntax with loops or effects.
 
-- Implement semantics, eDSLs and proof infrastructure in Lean 4, using the
-  `EDSL` library namespace.
-- Treat compiler, assembler and linker output as untrusted. Prove the desired
-  behavior directly over final bytes; source/IR preservation is an optional
-  additional guarantee.
-- Include OS resources, ownership, effects and synchronization in contracts.
-  State physical platform and native runtime assumptions explicitly.
-- Fail explicitly on unsupported operations or guarantees. Independent
-  specifications, admitted-state witnesses and audited proofs define success.
-- Keep security findings and their evidence private. A failed proof, timeout
-  or unsupported input does not establish a defect.
+Acceptance: each supported source example has an actual definedness theorem,
+contract theorem, nonvacuous inputs and audited kernel-checked dependencies.
+A proof about an embedded term must not be advertised as a proof about an
+unconnected source-text file.
 
-## Dependency graph
+## 3. Extend the shared foundation to GNU++26
 
-| Remaining capability | Required foundations | Evidence needed to close the gap |
-| --- | --- | --- |
-| More compiler-output functions | Exact ISA rules, shared VCG, independent specifications and resource adapters | Both frozen compiler windows certified with useful admitted inputs |
-| Writable loops and richer calls | Current ownership, actual memory effects, stack/alias frames and loop invariants | All admitted executions satisfy result, safety and return-resource contracts |
-| More concurrent methods | Current actor authority, real event origins and allowed interference | Independent object histories, real-time order and explicit progress scope |
-| Graph construction with broader incoming queues | Initialized empty-queue construction, exact incoming-entry identities and pre-run issue origins | Define a boundary graph representation and derive complete writer/publication and same-object/value RF correspondence without inventing in-run issues |
-| Native memory-order correspondence | Existing FIFO/locked-operation models plus a defined target relation | Refinement to the selected published machine model; separate source-order proofs |
-| Whole-program OS behavior | Loader/ABI closure, resource identities, failure and asynchronous effects | Composition over all reachable code and declared external contracts |
-| Concrete kernel/runtime components | Exact deployed builds, privileged ISA, interrupts and shared invariants | Implementation proofs discharging the same contracts used by clients |
-| Broader security properties | Explicit observations, attacker/environment model and component composition | Named safety or relational theorems with feasible assumptions |
+Reuse scalar values, objects, memory, effects and source verification machinery.
+Add the C++ rules required by pinned bootstrap sources: references, object
+construction/destruction, lifetime, classes, casts, overload resolution,
+templates and constant evaluation, exceptions and runtime/library behavior.
+Track newer C++26 features and erroneous behavior explicitly.
 
-Exact code, independent semantics and current access authority underpin every
-track. Source/LLVM frontends are optional dependencies of source-preservation
-claims. Cost proofs can grow alongside functional verification.
+Acceptance: C and C++ constructs with shared meaning use the same rules;
+differences are covered by explicit dialect-sensitive cases. No unsupported
+C++ feature is erased during elaboration.
 
-## Remaining capabilities
+## 4. Make OS and input semantics first-class
 
-### Reusable binary verification
+Model processes, threads, scheduler choices, memory mappings, allocation,
+capabilities, I/O, files, synchronization, atomics and the selected memory model.
+Inputs and environment transitions are part of executions. Kernel and userspace
+profiles may need different GNU extensions and compiler flags; record those
+choices instead of silently importing ordinary ISO C assumptions.
 
-Extend the [VC generator](reusable-checker.md), sparse cutpoints and shared
-[scalar](pure-call.md)/buffer resource adapters according to measured blockers.
-Factor repeated instruction reasoning without hiding program-specific invariants,
-termination ranks or mathematics. The initial read-only CFG profile remains
-bounded; static graph admission alone proves no functional result.
+Existing managed resources and concurrency models are reusable components.
+They become source-level evidence only after an explicit connection to source
+steps is proved. An abstract syscall or scheduler contract remains an external
+assumption until its implementation is proved in the same system.
 
-Broader writable effects, indirect control flow, recursion and interprocedural
-automation require explicit new rules. General invariant inference, automatic
-resource-witness construction and an unregistered general-purpose certifier
-remain tooling work. Existing spec-indexed [ELF certificates](elf-certificates.md)
-provide a library interface, not that complete importer/CLI.
+Acceptance: source proofs expose the environment contracts they use, quantify
+covered scheduling/input choices and preserve current resource obligations.
+Replace interface assumptions with source proofs one implementation at a time.
+A kernel or distribution is verified only to the extent of its checked closure.
 
-### Memory, ownership and concurrency
+## 5. Specify and verify one minimal binary seed
 
-Extend allocation/loan composition, region splitting, mutable borrowing and
-language-object/provenance relations. Native allocator failure/cleanup and
-thread creation, publication, context switching and join remain external
-contracts. Proof-level IDs do not authenticate native actors or enforce access.
+Choose one small seed implementation, exact artifact and hardware boundary.
+Specify its loader, memory, entry, input and output contracts. Reuse the legacy
+machine models where they actually discharge these obligations.
 
-Shared qword histories identify actual store issues and the newest publication
-or RMW supplying a managed load, with explicit initial RAM/queue boundaries.
-Grow beyond finite complete-call histories and the managed closed cohort:
-pending calls, richer peers, other-cell event projection and mixed effects need
-separate composition proofs. Compound uninterrupted equivalence does not prove
-linearizability under interleaving. A callable spinlock with ordinary-store
-release needs ownership transfer and FIFO publication; an XCHG-release proof
-cannot supply that guarantee.
+The seed is the single program-level binary proof in the primary bootstrap
+chain. Hardware-model correspondence is an explicit separate boundary. No seed
+has yet been selected or proved for this chain; existing unrelated binary
+certificates do not automatically constitute it.
 
-Reuse the plain-method cohort rules for current load/store sites: derive entry
-invocations from the independent catalog and actual-state `Pre`, construct a
-finite completion from any actual successful prefix, then add drain closure
-only when the contract needs final publication. Preserve already observed load
-replies independently of later RAM. The full-cell frame must include the actual
-incoming FIFO entries as well as target qwords; empty initial queues supply the
-target-only corollary. The full independent Plain64 Claim composes these
-obligations without a program-specific execution proof. Useful exact-file
-populations and homogeneous/mixed executions remain necessary for corpus credit;
-the [shared constructors](managed-plain-methods.md#reuse-the-witnesses-for-another-checked-image)
-supply them for the supported family.
+Acceptance: one fixed binary theorem with complete dependency and environment
+accounting, suitable to execute the first verified source stage.
 
-The [managed-word trace refinement](word-tso-refinement.md) covers an independent
-uniform64 memory fragment. Extend it to a justified correspondence with the
-complete selected published x86-TSO model before claiming that broader result.
-The [checked atomic-trace API](checked-atomic-traces.md) extracts complete
-managed accesses, writer identities and publication-based graphs for finite
-successful runs with declared interface orders. Universal mapped-run legality
-now includes acquiring interfaces through actual release-sequence/SW/HB view
-transport and all four HB coherence constraints. `Graph.Captured` authenticates
-the initial registry/RAM manifest and derives complete graph construction and
-legality for actual scans with empty initial/final queues. Preserve those
-boundaries and complete publication coverage when composing method contracts;
-justify source-to-interface annotations independently. Broader incoming-queue
-construction and legality-checker totality remain open. Add compare/exchange
-and fences only with justified mappings.
-Extend private futex protocols beyond the current policies to blocking
-acquisition, multiple waiters, interruption,
-timeouts, cancellation and process sharing. Separate safety, enabledness,
-constructive completion and eventual progress assumptions.
+## 6. Prove and compose bootstrap stages
 
-### Processes, operating systems and kernels
+For every stage, prove its source implementation free of UB and prove its
+compiler/interpreter contract. A compiler contract includes semantic
+preservation for the supported input language and target. Proving that the
+compiler's own source executes safely is necessary and insufficient on its own.
 
-Extend restricted ELF loading with justified relocation/linking, startup state,
-TLS and reachable runtime dependencies. Add descriptor lifetimes, retries,
-signals, IPC, filesystem/network effects and devices as required by workloads;
-include resource exhaustion and partial failure.
+Then prove chain induction: the already justified stage builds or executes the
+next verified source stage, preserving the next stage's specification. Pin
+source inputs, generated files, target choices and all runtime dependencies.
+Assemblers, linkers, libraries and build-time generators must either be included
+in that verified closure or remain explicit outstanding boundaries.
 
-Use the [OS implementation plan](os-implementation.md) to prove selected concrete
-runtime or kernel paths. Privileged instructions, translation, interrupts,
-preemption, devices and boot invariants are additional semantic work. Component
-proofs must compose under the same memory/resource model and discharge named
-client assumptions before broader OS claims follow.
+The [bootstrap dependency plan](bootstrap.md) details the single root, chain
+induction, malformed-input/failure domains and complete build/runtime closure.
+It does not select or claim a proved sequence of compilers.
 
-### Security-property verification
+Acceptance: each stage has source safety, functional/preservation evidence and
+a composition theorem connected to the preceding stage. Ordinary self-hosting,
+reproducible builds or a three-stage bootstrap do not substitute for these proofs.
 
-Build on current access-authority, memory-frame, lifetime and synchronization
-proofs to specify isolation, information flow and other security behavior.
-Noninterference, attacker-controlled interaction and speculative or timing
-observations each need an explicit model and theorem. Current conditional
-resource proofs establish no whole-kernel or distribution security result.
-Checked violations need feasible states and justified properties; use the
-[findings workflow](findings.md) to distinguish them from analysis failures.
+## 7. Reach a pinned GCC build and larger systems
 
-### Optional source/IR guarantees and additional targets
+Select a GCC revision/configuration after the earlier stages expose a realistic
+feature inventory. Modern GCC requires C++ in its host bootstrap; C-only support
+will not close this step. Include the required language/library/build closure,
+including arithmetic libraries, runtime interfaces and generated sources.
+GCC's [official prerequisites](https://gcc.gnu.org/install/prerequisites.html)
+are the starting inventory, not a proof that those dependencies are verified.
 
-Pin the GNU C23, GNU C++26 and LLVM subsets before adding parsing, elaboration
-and preservation proofs. LLVM UB/poison, source object lifetimes, atomics and
-C++ runtime features are separate obligations. Compiler-produced fixtures do
-not establish a source eDSL or frontend. Other ISAs and OS adapters need their
-own semantics, ABI/resource profiles and evidence; external theorems require an
-explicit checked bridge. See the [research map](research-map.md).
+Prove the compiler source's safety and its semantic-preservation contract,
+build it through the justified chain, and compose its output guarantees with
+source-level program proofs. Apply the same source/resource framework to
+applications, kernel components and eventually their full dependency closures.
 
-### Cost and trust reduction
+## Progress and trust
 
-Extend exact instruction/read accounting and restricted lower bounds with a
-fixed candidate class and an attaining witness. Retired instructions, scheduler
-actions, memory use and elapsed time are different measures. Bounded search
-establishes no unrestricted optimum; ISA counts establish no CPU timing bound.
-See the [cost model](cost-model.md).
+Track these separately:
 
-Reduce trust through concrete loader/runtime proofs and checked evidence from
-external proof search. Retain exact artifact binding, toolchain pinning,
-transitive axiom auditing and fresh kernel replay as distinct obligations.
-Changes to semantics or candidate classes require revisiting dependent claims.
+| Measure | Required evidence |
+| --- | --- |
+| Language features | Executable rules, scope/reference and checked semantic lemmas |
+| Source programs | Definedness plus independent contracts under stated inputs/effects |
+| OS components | Explicit interfaces and completed source-level discharges |
+| Seed | One selected artifact and its binary/hardware-boundary evidence |
+| Bootstrap stages | Source safety, preservation and chain composition |
 
-## Completion reports
+None of the complete GNU semantics, source-verified GCC, selected seed or closed
+bootstrap chain is implemented yet. The legacy 20/40 binary-corpus score remains
+historical evidence only. [Implementation status](implementation-status.md)
+must distinguish plans, implemented definitions, checked proofs and accepted CI.
 
-A completed capability needs named theorems and exact hypotheses, supported and
-rejected constructs, final-artifact binding, useful admitted states, remaining
-environmental assumptions and reproducible validation. Report universal proofs,
-finite native observations and historical measurements separately. The
-[trust boundary](trust.md) defines what each evidence category establishes;
-[validation](validation.md) collects maintained commands.
+Final terms are checked by Lean's kernel and audited for project axioms and
+holes. `decide +kernel` is allowed. `native_decide` is a development oracle only
+in ignored scratch; it and `ofReduceBool` are excluded from final/audited source.
+Use GitHub-hosted CI for authoritative heavy proof checking and fresh replay,
+with cached builds and independent shards. Packet sizes, heartbeats, action
+counts and timeouts are documented engineering limits that may be raised when
+needed; they do not make an unchecked result a proof. Keep pursuing large Nat
+encodings and small sound reflective checkers to make kernel work scale.

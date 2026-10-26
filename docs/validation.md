@@ -1,6 +1,31 @@
 # Build and validation
 
-Run from the repository root. For the reusable API and new-function checks:
+Run from the repository root with the pinned Lean toolchain.
+
+## Source foundation
+
+```sh
+lake build SourceSemanticsTests
+```
+
+This scoped target builds the shared source-core examples and certificates,
+prints the principal theorem dependencies, and runs the owner audit on the
+imported source closure. It covers the all-input bounded-carry addition
+contract, rejection of signed overflow and zero division, signed division
+toward zero, unsupported expressions and empty admission. The source fragment
+and stronger finite-completion meaning of `NoUB` are documented in the
+[source core API](source-core-api.md). This command does not parse or certify
+a C/C++ source file.
+
+Final proofs may use `decide +kernel`. Development oracles belong only in
+ignored scratch; final/audited source excludes `native_decide`, `ofReduceBool`,
+proof holes and project axioms. Authoritative heavy checks and fresh replay
+belong in GitHub-hosted CI. Resource budgets are engineering limits, separate
+from the theorem and kernel trust boundaries.
+
+## Legacy binary checks
+
+For the reusable binary API and new-function checks:
 
 ```sh
 lake build EDSL VerificationTests UnaryTests PopcountTests AverageTests

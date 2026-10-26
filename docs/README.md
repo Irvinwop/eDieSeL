@@ -2,7 +2,33 @@
 
 # eDieSeL documentation
 
-eDieSeL is a Lean 4 library for proving behavior and resource properties of
+The primary route is [source-first verification](source-semantics.md): shared
+GNU C23/GNU++26 semantics, proved absence of undefined behavior, source contracts,
+explicit OS semantics and a bootstrap chain rooted in one binary seed. Start
+with the [roadmap](roadmap.md), [implementation status](implementation-status.md)
+and [trust boundaries](trust.md). The complete language foundation and compiler
+chain are under development.
+
+## Source verification
+
+| Task | Start here |
+| --- | --- |
+| Understand the implemented fragment | [Source semantics](source-semantics.md), [source core API](source-core-api.md) |
+| State a safety and correctness claim | [Verification obligations](verification.md) |
+| Check the current examples | [Build and validation](validation.md#source-foundation) |
+| Understand the compiler chain | [Bootstrap dependency plan](bootstrap.md), [roadmap](roadmap.md) |
+| Check scope and assumptions | [Implementation status](implementation-status.md), [trust ledger](trust.md) |
+
+Source contracts concern embedded terms until a source-text correspondence
+proof connects them to a file. Complete GNU semantics and a verified compiler
+chain remain future work.
+
+## Legacy binary-verification guides
+
+The guides below document the retained implemented binary route. Their corpus
+score is legacy evidence, not the primary source-first progress metric.
+
+The retained Lean library proves behavior and resource properties of
 machine-code programs. Its current reusable entry point covers restricted
 sequential x86-64 functions; additional call, memory, process and concurrency
 profiles have their own contracts. The broader goal includes verification of
@@ -19,7 +45,7 @@ coverage of **20/40 functions and 40/80 artifacts**, including **three distinct
 concurrent functions**; **20 functions / 40 artifacts** remain. Fetch-add and
 plain load/store retain their separate managed models.
 
-## Verify a program
+## Verify a machine-code program
 
 | Task | Start here |
 | --- | --- |

@@ -398,3 +398,8 @@ lean_lib CallContractTransportTests where
   roots := #[`tests.CallContractTransport]
   moreLeanArgs := #["-j1", "-DwarningAsError=true", "-DautoImplicit=false",
     "-DmaxHeartbeats=300000", "-DmaxRecDepth=128", "-DElab.async=false"]
+
+-- Shared source semantics, proved definedness/contracts and full owner audit.
+lean_lib SourceSemanticsTests where
+  roots := #[`tests.SourceSemantics]
+  moreLeanArgs := #["-j1", "-DwarningAsError=true", "-DautoImplicit=false"]

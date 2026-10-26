@@ -10,9 +10,20 @@
   parts of the program model across every language/backend.
 - Keep implementation status accurate. Design documents do not establish an
   implemented API or supported backend.
-- Prioritize direct verification of exact final machine code against independent
-  contracts. Source/IR semantics provide optional preservation guarantees and
-  proof hints, not mandatory frontends for every binary-verification input.
+- The primary route is source-first. Use one shared executable Lean semantics
+  for GNU C23 and GNU++26. Prove each target program free of undefined behavior
+  and prove its source contract; never assume source definedness.
+- Keep OS, scheduler, memory model, synchronization and inputs explicit until
+  their implementation sources are proved in the same system.
+- Close compilation through exactly one verified binary seed and source proofs
+  of successive bootstrap stages, including each compiler preservation contract.
+  Existing binary-first clients are legacy; machine-code proofs serve the seed
+  and hardware-model boundary rather than new per-program verification.
+- Final proofs may use decide +kernel. Keep native_decide development oracles
+  in ignored scratch only; native_decide, ofReduceBool, proof holes and unchecked
+  solver facts are forbidden in final proofs and audited modules.
+- Use GitHub-hosted CI for authoritative heavy proof checking and replay. Treat
+  resource budgets as documented engineering limits, separately from trust.
 - The repository is public. Never commit real security findings, their metadata,
   traces, or reproducers, and do not put them in CI logs/artifacts. Use ignored
   local storage. Synthetic negative fixtures owned by this project are allowed.

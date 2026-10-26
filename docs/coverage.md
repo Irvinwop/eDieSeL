@@ -1,5 +1,11 @@
 # Implemented coverage and remaining trust
 
+> This page records the retained legacy binary-verification architecture and
+> scope. The primary path is now [shared source semantics](source-semantics.md),
+> proved source definedness/contracts and the [single-seed bootstrap roadmap](roadmap.md).
+> Legacy coverage numbers do not measure progress on that path.
+
+
 This is the capability index for eDieSeL's implemented verification profiles.
 Use [implementation status](implementation-status.md) for the current
 **20/40-function, 40/80-artifact** validated conditional frozen-corpus total,

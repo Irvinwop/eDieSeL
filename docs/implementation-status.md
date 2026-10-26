@@ -1,8 +1,39 @@
 # Implementation status
 
-eDieSeL is a Lean 4 project for direct verification of final machine code.
-It currently provides restricted x86-64 userspace semantics, reusable proof
-infrastructure and conditional artifact certificates. Kernel and whole-OS
+## Primary source-first path
+
+The active dependency order is shared GNU C23/GNU++26 source semantics, proved
+absence of undefined behavior and source contracts, explicit OS behavior, one
+binary seed, and source-proved compiler bootstrap stages.
+
+| Component | Current status |
+| --- | --- |
+| Executable source foundation | Finite typed expression/return eDSL: `int`/`unsigned int`, addition and division, explicit defined/UB/unsupported outcomes |
+| Source definedness/contracts | Shared `Verifies` and completion-style `NoUB`; `Certificate` requires an inhabited input domain; unsigned-addition contract for all typed inputs |
+| Source text and general C/C++ | No source-text parser, preprocessing correspondence or general verifier |
+| Source-connected OS semantics | Existing resource/concurrency components require source-step integration |
+| Single bootstrap seed | Not selected or proved for the source-first chain |
+| Source-proved bootstrap/GCC | Not implemented |
+
+The [source core API](source-core-api.md) lists exact declarations and scope.
+The arithmetic fragment has no conversions, lvalues, pointers, memory, loops,
+calls or effects. Its target records integer value ranges, not an ABI or a
+compiler/hardware correspondence. Boundary examples expose signed overflow,
+zero division, truncating signed division and unsupported nested expressions.
+
+These are implementation boundaries, not assumed program properties. A target
+needs actual safety and contract proofs. See [source semantics](source-semantics.md)
+and the [dependency roadmap](roadmap.md).
+
+## Retained legacy implementation
+
+The tables and corpus counts below describe the existing binary-verification
+library. Its 20/40 measurement is a legacy regression score and does not measure
+source-language coverage, UB proofs or bootstrap completion.
+
+The retained binary-verification library provides restricted x86-64 userspace
+semantics, reusable proof infrastructure and conditional artifact certificates.
+Kernel and whole-OS
 verification are project goals; no native kernel or physical CPU refinement is
 implemented.
 
@@ -197,8 +228,8 @@ security analysis, noninterference or whole-OS safety.
   page tables, interrupts, devices and concrete kernel component proofs.
 - Whole-program resource/failure composition and explicit attacker/observation
   models for broader security properties.
-- GNU C23/GNU C++26/LLVM eDSLs, source/IR preservation, other architectures and
-  OS adapters.
+- Extensions of the shared GNU C23/GNU++26 source core, a separate LLVM IR
+  domain, source/IR preservation, other architectures and OS adapters.
 
 The [roadmap](roadmap.md) orders these dependencies. The
 [coverage index](coverage.md) links exact APIs, target limitations and failure

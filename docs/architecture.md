@@ -1,16 +1,22 @@
 <a id="lean-4-architecture"></a>
 
-# eDieSeL architecture
+# Legacy binary-verification architecture
 
-eDieSeL implements semantics, proof rules and validators in Lean 4. The current
-library verifies restricted x86-64 functions against independent contracts and
+> This page records the retained legacy binary-verification architecture and
+> scope. The primary path is now [shared source semantics](source-semantics.md),
+> proved source definedness/contracts and the [single-seed bootstrap roadmap](roadmap.md).
+> Legacy coverage numbers do not measure progress on that path.
+
+
+eDieSeL implements semantics, proof rules and validators in Lean 4. The retained
+binary library verifies restricted x86-64 functions against independent contracts and
 binds proofs to raw bytes or selected functions in complete ELF files. Separate
 profiles model writable calls, process boundaries and managed concurrency.
 See [coverage](coverage.md) for their exact scope.
 
 ## The proof boundary
 
-The primary route is [direct binary verification](binary-first.md): treat the
+The retained binary route uses [direct binary verification](binary-first.md): treat the
 compiler, assembler and linker as producers of candidate bytes, then prove a
 property of those bytes. The specification describes the required mathematics,
 memory effects and resources independently of the candidate and its checker.
@@ -24,7 +30,7 @@ flowchart TD
     Q[Independent contract] --> V
     P[Current resources and platform assumptions] --> V
     H[Untrusted proof hints and search] --> V
-    S[Future optional source / IR semantics] -. preservation proof .-> V
+    S[Source / IR hints or separately proved correspondence] -. preservation proof .-> V
     V --> T[Artifact-specific theorem under stated assumptions]
 ```
 

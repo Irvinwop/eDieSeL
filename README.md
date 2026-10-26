@@ -2,99 +2,96 @@
 
 [![Lean proofs](https://github.com/Irvinwop/eDieSeL/actions/workflows/lean.yml/badge.svg)](https://github.com/Irvinwop/eDieSeL/actions/workflows/lean.yml)
 
-**Prove program behavior in Lean 4, from exact machine code to memory and OS resources.**
+**Source-first program verification in Lean 4.**
 
-eDieSeL is a formal verification library for reasoning about what programs do
-and which resources they may access. It combines executable machine semantics,
-independent behavioral contracts, and proofs checked by Lean's kernel. The
-long-term aim is verification of applications, kernels, and operating-system
-components, including functional correctness and security properties.
+eDieSeL is building a shared executable semantics for GNU C23 and GNU++26.
+The intended workflow proves a program free of undefined behavior and proves
+its contract in that semantics. Memory, inputs, threads, synchronization and OS
+services belong to the execution model. Their implementation assumptions stay
+explicit until the corresponding sources have been verified.
 
-The current implementation targets selected x86-64 programs and explicit OS
-resource models. Whole-kernel verification and complete C, C++, or LLVM
-frontends are future work. See the [capability overview](docs/implementation-status.md)
-and [trust model](docs/trust.md) for the supported boundaries.
+The planned compiler trust chain starts with exactly one small, verified binary
+seed. Each
+subsequent bootstrap stage needs source-level safety and correctness proofs,
+including the compiler's semantic-preservation contract. The eventual target is
+a verified chain capable of building GCC and the programs it compiles.
+
+The initial `EDSL.Source` API is a finite expression/return fragment: typed
+`int` and `unsigned int`, addition and division, explicit UB/unsupported
+outcomes, and an unsigned-addition contract proved for every typed input.
+Its [API guide](docs/source-core-api.md) records the exact scope. It has no
+source-text parser, memory operations or OS effects.
+
+This source-language foundation is under development. Complete GNU semantics,
+source parsing, a verified bootstrap compiler and source-verified kernels are
+not implemented. The repository also retains substantial **legacy binary
+verification** infrastructure and proofs; those results keep their original
+scope and assumptions.
 
 ## Start here
 
-- **[Verify a function](docs/verify-a-function.md)** — a complete worked example,
-  from an independent specification to a reusable proof and resource contract.
-- **[Verify an ELF function](docs/named-elf-import.md)** — import a named function
-  and bind its proof to the exact executable bytes.
-- **[Browse the documentation](docs/README.md)** — guides for memory ownership,
-  concurrency, language semantics, and extending the library.
-
-Install [elan](https://github.com/leanprover/elan), then build the worked example:
+- [Source verification](docs/source-semantics.md): the shared semantics,
+  definedness obligations and initial scope.
+- [Roadmap](docs/roadmap.md): dependency order and acceptance criteria.
+- [Implementation status](docs/implementation-status.md): implemented components
+  and remaining gaps.
+- [Trust model](docs/trust.md): kernel checking, environmental assumptions and
+  bootstrap obligations.
+- [Documentation index](docs/README.md): source work and retained legacy guides.
 
 ```sh
 git clone https://github.com/Irvinwop/eDieSeL.git
 cd eDieSeL
-lake build EDSL.Examples.Verification.Double
+lake build SourceSemanticsTests
 ```
 
-The example proves a small machine-code function computes unsigned modular
-doubling, while preserving its caller's memory and ABI obligations. Its
-mathematical result is specified separately from the instructions:
-
-```lean
-result value output := output.toNat = (2 * value.toNat) % 2^64
-```
+This builds the source-core examples and dependency audit. `lake build` builds
+the broader library, including the retained binary infrastructure.
 
 Lean is pinned to **4.35.0**, with warnings treated as errors and no third-party
-Lean packages. The Lean namespace remains `EDSL`; existing `edsl-*` commands
-retain their names. [Build and validation instructions](docs/validation.md)
-cover the full library, theorem audit, and fresh kernel replay.
+Lean packages. Heavy proof checking and replay belong in GitHub-hosted CI;
+[validation](docs/validation.md) describes the checks. Every advertised theorem
+must have checked proof evidence.
 
-## How verification works
+## Verification obligations
 
-1. Supply exact program bytes and a mathematical contract.
-2. Check decoding and control flow against those bytes.
-3. Prove generated verification conditions; loops also need invariants and
-   termination arguments.
-4. Apply shared ABI and OS-resource rules, then bind the result to the selected
-   function in the complete executable.
+1. Represent the source in the shared semantics with its dialect, types and
+   implementation choices recorded.
+2. State an independent contract and the allowed inputs and environment.
+3. Prove defined execution: no undefined behavior, unsupported construct or
+   missing semantic rule can satisfy this obligation.
+4. Prove the contract for every covered source execution. State termination
+   and progress guarantees separately when needed.
+5. Preserve those results through source-proved bootstrap stages rooted in the
+   single verified seed.
 
-New programs reuse the checker and resource adapters. Program-specific work
-focuses on the contract, mathematics, and loop invariants. An unsupported
-instruction or OS effect requires a shared semantic extension before that
-program can be certified.
+A program's proof of definedness is an output of verification. It is never a
+replacement for proving safety. OS interfaces, compiler behavior and hardware
+correspondence also require explicit evidence.
 
-## Current capabilities
+## Legacy results
 
-| Area | Implemented scope |
-| --- | --- |
-| Machine code | A restricted x86-64 instruction set, checked control-flow graphs, reusable verification-condition generation, and sparse loop proofs |
-| Memory and calls | Byte and word access, caller/return contracts, ownership, borrowing, lifetimes, and preservation of memory permissions |
-| Concurrency | Selected atomic, mutex, store-buffer, and futex protocols under explicit managed models |
-| Executable binding | Checked ELF layouts and named-function selection, with certificates tied to exact final bytes |
-| Languages | Lean models and design work for GNU C23, GNU C++26, LLVM IR, and assembly; complete source frontends and compiler-preservation proofs remain incomplete |
-
-The fixed GCC/Clang `-O2` evaluation corpus has validated conditional
-certificates for **20/40 functions and 40/80 compiler artifacts**, including
-**three distinct concurrent functions**: fetch-add, acquire-load and release-store
-under their recorded managed models. **20 functions / 40 artifacts** remain.
-See the [corpus results](docs/compiler-corpus.md) and
-[signed signum measurement](corpus/measurements/signed-signum32-v1/)
-for the accepted source, proof scope and environmental assumptions.
-
-A certificate records the machine and resource assumptions under which its
-contract holds. Connecting these models to native Linux, physical CPUs, and
-complete operating systems requires further
-[verification obligations](docs/verification.md).
+The x86-64 models, verification-condition generators, ELF certificates and
+managed OS/concurrency proofs remain available. The [binary-search proof](docs/binary-search.md)
+is a worked example of that infrastructure. The historical
+[GCC/Clang corpus](docs/compiler-corpus.md) is retained for regression testing;
+its 20/40 score is a legacy measurement, not the source-first progress metric.
+No source-language, compiler-bootstrap or whole-OS theorem follows from that
+score.
 
 ## Project layout
 
 | Path | Contents |
 | --- | --- |
-| [`EDSL/`](EDSL/) | Lean semantics, resource models, proof infrastructure, and examples |
-| [`EDSL.lean`](EDSL.lean) | Reusable sequential verification API |
-| [`EDSL/All.lean`](EDSL/All.lean) | Full proof catalogue for audits and replay |
-| [`Tools/`](Tools/) | Command-line entrypoints |
-| [`docs/`](docs/README.md) | Guides, architecture, capabilities, and roadmap |
-| [`tests/`](tests/) and [`fixtures/`](fixtures/) | Contract regressions, rejection checks, and native fixtures |
-| [`corpus/`](corpus/) | Frozen compiler outputs and reproducible measurements |
+| `EDSL/` | Lean semantics, contracts and proof infrastructure |
+| `EDSL/Source.lean` | Shared source-core interface and nonvacuous certificates |
+| `EDSL/Semantics.lean` | Generic behavior and refinement interfaces |
+| `EDSL/All.lean` | Full proof catalogue for audits and replay |
+| `Tools/` | Command-line entrypoints |
+| `docs/` | Scope, trust boundaries, guides and roadmap |
+| `tests/`, `fixtures/` | Independent regressions and owned synthetic inputs |
+| `corpus/` | Legacy frozen compiler outputs and measurements |
 
-Contributions use [Apache-2.0](LICENSE) with [DCO sign-off](CONTRIBUTING.md).
-See [contribution guidance](CONTRIBUTING.md), the [roadmap](docs/roadmap.md),
-and the [security policy](SECURITY.md). Research citation metadata is available
-in [CITATION.cff](CITATION.cff).
+The project uses [Apache-2.0](LICENSE). See [contribution guidance](CONTRIBUTING.md)
+and the [security policy](SECURITY.md). Citation metadata is available through
+[CITATION.cff](CITATION.cff).

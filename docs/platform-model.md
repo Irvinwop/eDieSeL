@@ -1,5 +1,11 @@
 # Platform model and the boundary of the guarantee
 
+> This page records the retained legacy binary-verification architecture and
+> scope. The primary path is now [shared source semantics](source-semantics.md),
+> proved source definedness/contracts and the [single-seed bootstrap roadmap](roadmap.md).
+> Legacy coverage numbers do not measure progress on that path.
+
+
 eDieSeL's current platform models cover restricted x86-64 userspace execution,
 ELF loading and selected OS resource and concurrency contracts. A theorem
 establishes behavior in its named model. Applying it to native execution also
@@ -18,8 +24,10 @@ environment. A function theorem may establish total return and a resource
 frame; a process theorem may depend on a completed OS action; a concurrent
 theorem specifies which schedules and progress conditions it covers.
 
-Source-language preservation is an optional extra requiring source semantics
-and a checked relation to those same bytes. The general machine/OS composition
+For a standalone legacy binary theorem, source-language preservation is an
+additional claim requiring a checked relation to those same bytes. In the
+primary source-first bootstrap chain, compiler preservation is a required
+stage obligation; see the [bootstrap plan](bootstrap.md). The general machine/OS composition
 is a design obligation, not an existing universal `MachineOS` API.
 
 Observations must retain relevant results, faults, failures, resource effects
@@ -94,7 +102,7 @@ Hashes and versions identify evidence; they do not prove implementation
 correctness or that checked bytes are the bytes later executed. A deployment
 using hashes needs an integrity/collision assumption and an artifact-binding
 mechanism. ASLR needs an allowed-address/relocation theorem or a stated profile
-restriction. See [artifact binding](verification.md#4-bind-the-theorem-to-the-real-build).
+restriction. See [artifact and bootstrap obligations](verification.md#close-the-bootstrap-chain).
 
 ## Machine semantics and native boundaries
 

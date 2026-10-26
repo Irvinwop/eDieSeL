@@ -1,7 +1,13 @@
 # Binary-first verification
 
-eDieSeL starts with machine code and an independently written contract. Its
-current reusable path proves restricted sequential x86-64 functions, including
+> This page records the retained legacy binary-verification architecture and
+> scope. The primary path is now [shared source semantics](source-semantics.md),
+> proved source definedness/contracts and the [single-seed bootstrap roadmap](roadmap.md).
+> Legacy coverage numbers do not measure progress on that path.
+
+
+The retained binary route starts with machine code and an independently written
+contract. Its reusable path proves restricted sequential x86-64 functions, including
 read-only memory and loops, with caller-resource and final-ELF composition.
 Writable calls, process boundaries and managed concurrency use separate
 profiles. [Coverage](coverage.md) lists the implemented limits.
@@ -62,9 +68,11 @@ Loops need sparse cutpoint invariants and decreasing ranks. Source structure,
 LLVM IR, debug information and optimization remarks can suggest those proofs;
 their suggestions must be checked against the machine semantics.
 
-Source eDSLs and IR semantics are longer-term routes for generation and optional
-preservation proofs. They are not prerequisites for a direct binary theorem.
-The [language plan](languages.md) describes their separate obligations.
+A direct legacy binary theorem does not require source preservation. The
+primary [source-first route](source-semantics.md) uses a shared source semantics
+and requires preservation throughout its bootstrap chain. LLVM IR remains a
+separate planned domain. The [language plan](languages.md) records their
+respective obligations.
 
 <a id="first-implementation-gate"></a>
 

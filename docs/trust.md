@@ -1,12 +1,51 @@
 # Trust, assumptions, and evidence
 
+## Primary source-first chain
+
+The primary route proves a program's defined behavior and independent contract
+in the shared GNU C23/GNU++26 semantics. NoUB is a proof obligation, never an
+assumption that admits the desired target. Unsupported syntax or missing rules
+cannot establish definedness, and behavior existence is required to avoid
+vacuous safety. Input domains must describe meaningful inputs independently of
+the result being proved. The current finite source core uses `Certificate` to
+require an inhabited domain as well as the execution/contract theorem. This
+witness rules out an empty domain; domain and specification independence still
+require review. Its `NoUB` additionally requires defined completion, a stronger
+scoped property than UB freedom for a future language with loops.
+
+OS interfaces, scheduler choices, memory models, synchronization and inputs are
+explicit parts of the semantic contract. Their implementations remain
+outstanding assumptions until their own sources and composition are proved.
+An abstract OS model is not a proof about a deployed kernel.
+
+Exactly one minimal program-level binary seed is intended to anchor the
+bootstrap chain. Each later stage needs source safety, its compiler/interpreter
+contract, and a preservation/composition theorem connecting it to the preceding
+stage. Compiler source safety alone does not prove emitted-code correctness.
+No seed or closed bootstrap chain is implemented yet. Hardware correspondence
+and the proof-checking kernel remain explicit trust boundaries.
+
+Kernel-checked terms, including `decide +kernel`, are allowed. Development
+oracles such as `native_decide` stay in ignored scratch; final/audited proofs
+exclude `native_decide`, `ofReduceBool`, project axioms and proof holes.
+Heartbeats, packet/action sizes and CI timeouts are engineering limits; changing
+them does not replace a kernel check. Heavy authoritative checks and replay run
+in GitHub-hosted CI. Specifications and environmental hypotheses still need
+review.
+
+See the [source foundation](source-semantics.md) and [roadmap](roadmap.md).
+The existing binary certificates below are retained legacy results, not a
+completed source or compiler-preservation chain.
+
+## Legacy binary certificates
+
 eDieSeL proves properties of modeled executions under explicit contracts.
 Exact-byte certificates connect those executions to particular artifacts.
 Interpreting a result on a deployed system additionally requires the stated
 ISA, ABI, memory, loader, runtime and environment assumptions. No physical CPU,
 Linux implementation or general source-preservation theorem is implemented.
 
-## Current boundary
+### Legacy execution boundary
 
 The [coverage index](coverage.md) identifies each execution profile and its
 contracts. The common proof chain is: independent specification and admitted
@@ -168,7 +207,8 @@ optimality result.
 | Specification and input domain | Independent review, feasible admitted states and a precise fault/divergence policy |
 | ISA/resource/OS definitions | Reviewed semantics; adequacy to native specifications remains separate |
 | Lean kernel and foundations | Pinned checker and the accepted standard axioms |
-| Compiler, assembler and linker | Untrusted producers; prove the particular final output |
+| Source-first compiler/tool stages | Source safety, independent preservation contracts and artifact transport from the preceding justified stage |
+| Legacy compiler/assembler/linker producers | Untrusted producers; prove the particular final output for that binary theorem |
 | Parser, decoder and importer | Checked correspondence for the selected route; extraction/test success alone is insufficient |
 | Runtime, loader and kernel | Concrete proofs or visible implementation-contract assumptions |
 | CPU, firmware, hypervisor and devices | Physical conformance and deployment assumptions |

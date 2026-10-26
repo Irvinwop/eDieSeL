@@ -2,9 +2,10 @@
 Copyright 2026 Irvinwop
 SPDX-License-Identifier: Apache-2.0
 -/
--- Reusable sequential verification API. No frozen corpus or example imports.
+-- Reusable source and sequential verification APIs. No frozen corpus or example imports.
 -- EDSL.All explicitly imports the complete historical proof catalogue.
 import EDSL.Semantics
+import EDSL.Source
 import EDSL.X86.VCGen
 import EDSL.X86.VCGen.PureCall
 import EDSL.X86.VCGen.CutpointsFlags
