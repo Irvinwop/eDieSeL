@@ -119,7 +119,7 @@ theorem reserveAll_eq (dialect : Dialect) (kinds : List ArithmeticType)
         omega
       have tail := ih (reservedState dialect kind state)
         (reservedState_wellFormed dialect kind state metadata) remaining
-      simp only [BlockEval.reserveAll, Op.bind, reserve_eq dialect kind state ready]
+      simp only [BlockEval.reserveAll, Op.bind, Effects.Op.bind, reserve_eq dialect kind state ready]
       rw [tail]
       simp only [Op.pure, List.append_nil, reservationEnv, reservedAllState, reservationEvents,
         reservedState, State.putObject]
@@ -282,7 +282,7 @@ theorem closeAll_contract {kinds : List ArithmeticType} (environment : Env kinds
       obtain ⟨value, permissions, registered⟩ := (canEnd_iff_snapshot reference middle).mp ready
       have headRun := endLifetime_eq reference middle permissions value registered
       refine ⟨endedState reference permissions value middle, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
-      · simp only [BlockEval.closeAll, Op.bind, tailRun, headRun, closingEvents]
+      · simp only [BlockEval.closeAll, Op.bind, Effects.Op.bind, tailRun, headRun, closingEvents]
       · simpa only [Frozen, endedState, State.putObject] using frozen
       · change middle.next = state.next
         exact counter

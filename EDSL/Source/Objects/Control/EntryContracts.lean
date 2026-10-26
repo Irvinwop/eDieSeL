@@ -249,9 +249,10 @@ theorem prepare_contract (dialect : Dialect) (policy : IntegerConversionPolicy)
             middleMeta tailUnique pendingTail
           refine ⟨final, ?_, facts.metadata, facts.frozen, facts.next, facts.slots, ?_, ?_⟩
           · dsimp only [middle] at executed
+            dsimp only [Op.pure] at executed
             cases value <;>
               simp only [DeclarationSpine.fold, Option.map, StateEval.evalExpr_literal,
-                Op.bind, Op.pure, List.nil_append,
+                Op.bind, Effects.Op.bind, Op.pure, List.nil_append,
                 initialize_eq dialect reference state ⟨true, true⟩ _ pending.1 rfl,
                 executed, prepared, LiteralInitializers.values] <;> rfl
           · exact ⟨(facts.outside reference.id fresh).trans (State.putObject_same state reference.id _),
@@ -406,7 +407,8 @@ theorem enter_contract (function : Function target parameters result)
     change BlockEval.enterParameters function.dialect values state = _ at enteredParameters
     change BlockEval.reserveAll function.dialect function.body.localKinds parameterState = _ at reservedLocals
     dsimp only [reserved, parameterState] at reservedLocals initialized
-    simp only [FunctionEval.enterUnchecked, Op.bind, enteredParameters, reservedLocals, initialized,
+    dsimp only [Op.pure] at initialized
+    simp only [FunctionEval.enterUnchecked, Op.bind, Effects.Op.bind, enteredParameters, reservedLocals, initialized,
       Op.pure, List.append_nil]
     change (Except.ok _, final, _) = _
     rw [show (parametersState function.dialect values state).next = state.next + parameters.length

@@ -1,6 +1,7 @@
 /- Copyright 2026 Irvinwop. SPDX-License-Identifier: Apache-2.0 -/
 import EDSL.Source.Eval
 import EDSL.Source.Objects.Registry
+import EDSL.Source.Effects
 
 set_option autoImplicit false
 namespace EDSL.Source.Objects
@@ -111,28 +112,35 @@ inductive Event where
   deriving DecidableEq, Repr
 
 abbrev Result (target : Target) (parameters : List IntType) (Environment : Type)
-    (α : Type) := Except Stop α × State target parameters Environment × List Event
+    (α : Type) := Effects.Result (State target parameters Environment) Stop Event α
 abbrev Op (target : Target) (parameters : List IntType) (Environment : Type)
-    (α : Type) := State target parameters Environment → Result target parameters Environment α
+    (α : Type) := Effects.Op (State target parameters Environment) Stop Event α
 
 def Op.pure {target : Target} {parameters : List IntType} {Environment α : Type}
     (value : α) : Op target parameters Environment α :=
-  fun state => (.ok value, state, [])
+  Effects.Op.pure value
 
 def Op.reject {target : Target} {parameters : List IntType} {Environment α : Type}
     (reason : Stop) : Op target parameters Environment α :=
-  fun state => (.error reason, state, [])
+  Effects.Op.reject reason
 
 /-- Composition retains all earlier accepted state changes/events if a later
 operation fails. Primitive rejection itself remains state preserving. -/
 def Op.bind {target : Target} {parameters : List IntType} {Environment α β : Type}
     (first : Op target parameters Environment α) (next : α → Op target parameters Environment β) :
-    Op target parameters Environment β := fun state =>
-  let (outcome, updated, events) := first state
-  match outcome with
-  | .error reason => (.error reason, updated, events)
-  | .ok value =>
-      let (result, finalState, moreEvents) := next value updated
-      (result, finalState, events ++ moreEvents)
+    Op target parameters Environment β :=
+  Effects.Op.bind first next
+
+theorem Op.pure_eq_effects {target : Target} {parameters : List IntType} {Environment α : Type}
+    (value : α) :
+    (Op.pure value : Op target parameters Environment α) = Effects.Op.pure value := rfl
+
+theorem Op.reject_eq_effects {target : Target} {parameters : List IntType} {Environment α : Type}
+    (reason : Stop) :
+    (Op.reject reason : Op target parameters Environment α) = Effects.Op.reject reason := rfl
+
+theorem Op.bind_eq_effects {target : Target} {parameters : List IntType} {Environment α β : Type}
+    (first : Op target parameters Environment α) (next : α → Op target parameters Environment β) :
+    Op.bind first next = Effects.Op.bind first next := rfl
 
 end EDSL.Source.Objects

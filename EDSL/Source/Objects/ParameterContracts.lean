@@ -197,7 +197,7 @@ theorem enterParameters_eq (dialect : Dialect) {kinds : List ArithmeticType}
             (reservedState dialect kind state) ⟨true, true⟩ (some value)
             (State.putObject_same state state.next _) rfl
           rw [BlockEval.enterParameters_cons]
-          simp only [Op.bind, reserve_eq dialect kind state ready, completion]
+          simp only [Op.bind, Effects.Op.bind, reserve_eq dialect kind state ready, completion]
           dsimp only [parameterState] at tail
           rw [tail]
           simp only [Op.pure, List.append_nil]

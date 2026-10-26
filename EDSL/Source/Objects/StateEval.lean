@@ -110,7 +110,8 @@ theorem resolve_var {target : Target} {stateParameters : List IntType}
     (evalExpr dialect policy environment (.param index) : Op target stateParameters Environment _) =
       load dialect (environment.get index) := by
   simp only [evalExpr, ExpressionCore.evalCore, ExpressionCore.evalEngine,
-    ExpressionCore.integerResolver_index, Param.ofIndex_toIndex, resolve_var, EffectM.ofOp]
+    ExpressionCore.integerResolver_index, Param.ofIndex_toIndex, resolve_var, EffectM.ofOp,
+    Effects.EffectM.ofOp]
 
 @[simp] theorem evalStmt_ret {target : Target} {stateParameters : List IntType}
     {Environment : Type} {context : List ArithmeticType} {result : IntType}
@@ -165,9 +166,9 @@ private theorem preserves_bind {target : Target} {stateParameters : List IntType
       have firstSame : updated = state := by
         simpa only [firstResult] using firstStable state
       cases outcome with
-      | error reason => simpa only [Op.bind, firstResult] using firstSame
+      | error reason => simpa only [Op.bind, Effects.Op.bind, firstResult] using firstSame
       | ok value =>
-          simp only [Op.bind, firstResult]
+          simp only [Op.bind, Effects.Op.bind, firstResult]
           exact (nextStable value updated).trans firstSame
 
 private theorem preserves_liftScalar {target : Target} {stateParameters : List IntType}
@@ -224,7 +225,7 @@ theorem evalStmt_set_after_expression {target : Target} {stateParameters : List 
       let continuation := Op.bind (store (environment.get index) evaluated)
         (fun _ => evalStmt dialect policy environment next) evaluatedState
       (continuation.1, continuation.2.1, readEvents ++ continuation.2.2) := by
-  simp only [evalStmt, Op.bind, computed]
+  simp only [evalStmt, Op.bind, Effects.Op.bind, computed]
 
 /-- Statement branch demands exactly the selected subtree once the condition
 has been computed. No claim is made that skipped syntax passed coverage. -/
@@ -240,7 +241,7 @@ theorem evalStmt_branch_after_expression {target : Target} {stateParameters : Li
       let continuation := evalStmt dialect policy environment
         (if evaluated.toInt = 0 then no else yes) evaluatedState
       (continuation.1, continuation.2.1, readEvents ++ continuation.2.2) := by
-  simp only [evalStmt, Op.bind, computed]
+  simp only [evalStmt, Op.bind, Effects.Op.bind, computed]
   split <;> rfl
 
 end EDSL.Source.Objects.StateEval

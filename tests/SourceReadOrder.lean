@@ -33,14 +33,14 @@ theorem failed_reads_keep_priority {target : Target} {parameters : List IntType}
       (.error (uninitializedRead dialect), state, []) := by
     change Op.bind (load dialect uninitializedRef) (fun left =>
       Op.bind (load dialect missingRef) (fun right => Op.pure (left, right))) state = _
-    simp only [Op.bind, uninitializedFailed]
+    simp only [Op.bind, Effects.Op.bind, uninitializedFailed]
   have backward :
       (pair (EffectM.ofOp (load dialect missingRef))
         (EffectM.ofOp (load dialect uninitializedRef))).run state =
       (.error (.invalidBinding .unknownObject), state, []) := by
     change Op.bind (load dialect missingRef) (fun right =>
       Op.bind (load dialect uninitializedRef) (fun left => Op.pure (right, left))) state = _
-    simp only [Op.bind, missingFailed]
+    simp only [Op.bind, Effects.Op.bind, missingFailed]
   refine ⟨forward, backward, ?_⟩
   rw [forward, backward]
   intro related

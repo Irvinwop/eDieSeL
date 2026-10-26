@@ -295,7 +295,7 @@ theorem load_after_store (dialect : Dialect) (state : State target parameters En
       (.ok (), updated, [.write ref.id kind value.toInt]) := accepted
   have loaded := load_contract dialect updated ref value canLoad
   refine ⟨updated, stored, canLoad, loaded, ?_⟩
-  simp [Op.bind, stored, loaded]
+  simp [Op.bind, Effects.Op.bind, stored, loaded]
 
 /-- In particular, writing a reached live uninitialized object establishes the
 read condition. No premise assumes that reading its old contents was defined. -/
@@ -433,7 +433,7 @@ theorem store_without_read_permission (dialect : Dialect)
       (.error (.denied .readPermission), updated, []) :=
     load_without_read_permission dialect updated ref _
       (State.putObject_same _ _ _) rfl rfl rfl rfl unreadable
-  exact ⟨updated, accepted, rejected, by simp [Op.bind, accepted, rejected]⟩
+  exact ⟨updated, accepted, rejected, by simp [Op.bind, Effects.Op.bind, accepted, rejected]⟩
 
 /- Audit all public laws, including the frozen whole-state read frame. These
 commands report dependencies only; they introduce no proof assumptions. -/

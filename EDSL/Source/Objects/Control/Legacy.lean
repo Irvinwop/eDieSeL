@@ -88,7 +88,7 @@ theorem evalStmt_reaches (dialect : Dialect) (policy : IntegerConversionPolicy)
       cases outcome with
       | error reason =>
           refine ⟨_, ⟨2, rfl⟩, ?_⟩
-          simp [Agrees, statusOfOutcome, evalStmt_set_assign, Op.bind, computed,
+          simp [Agrees, statusOfOutcome, evalStmt_set_assign, Op.bind, Effects.Op.bind, computed,
             run, tick, startUnchecked, Code.ofStmt, perform]
       | ok evaluated =>
           obtain ⟨final, reached, agreement⟩ := ih updated (earlierEvents ++ observations) continuation
@@ -98,7 +98,7 @@ theorem evalStmt_reaches (dialect : Dialect) (policy : IntegerConversionPolicy)
             simpa only [tick, startUnchecked, Code.ofStmt, perform, computed] using reached
           · rcases following : StateEval.evalStmt dialect policy bindings next updated with
               ⟨outcome, finalState, moreEvents⟩
-            simpa only [Agrees, evalStmt_set_assign, Op.bind, computed, following,
+            simpa only [Agrees, evalStmt_set_assign, Op.bind, Effects.Op.bind, computed, following,
               List.append_assoc] using agreement
   | branch condition yes no ihYes ihNo =>
       rcases computed : StateEval.evalExpr dialect policy bindings condition state with
@@ -106,7 +106,7 @@ theorem evalStmt_reaches (dialect : Dialect) (policy : IntegerConversionPolicy)
       cases outcome with
       | error reason =>
           refine ⟨_, ⟨1, rfl⟩, ?_⟩
-          simp [Agrees, statusOfOutcome, StateEval.evalStmt, Op.bind, computed,
+          simp [Agrees, statusOfOutcome, StateEval.evalStmt, Op.bind, Effects.Op.bind, computed,
             run, tick, startUnchecked, Code.ofStmt, perform]
       | ok evaluated =>
           by_cases zero : evaluated.toInt = 0
@@ -117,7 +117,7 @@ theorem evalStmt_reaches (dialect : Dialect) (policy : IntegerConversionPolicy)
                 using reached
             · rcases following : StateEval.evalStmt dialect policy bindings no updated with
                 ⟨outcome, finalState, moreEvents⟩
-              simpa only [Agrees, StateEval.evalStmt, Op.bind, computed, zero, ↓reduceIte,
+              simpa only [Agrees, StateEval.evalStmt, Op.bind, Effects.Op.bind, computed, zero, ↓reduceIte,
                 following, List.append_assoc] using agreement
           · obtain ⟨final, reached, agreement⟩ := ihYes updated (earlierEvents ++ observations) continuation
             refine ⟨final, ?_, ?_⟩
@@ -126,7 +126,7 @@ theorem evalStmt_reaches (dialect : Dialect) (policy : IntegerConversionPolicy)
                 using reached
             · rcases following : StateEval.evalStmt dialect policy bindings yes updated with
                 ⟨outcome, finalState, moreEvents⟩
-              simpa only [Agrees, StateEval.evalStmt, Op.bind, computed, zero, ↓reduceIte,
+              simpa only [Agrees, StateEval.evalStmt, Op.bind, Effects.Op.bind, computed, zero, ↓reduceIte,
                 following, List.append_assoc] using agreement
   | ret value =>
       rcases computed : StateEval.evalExpr dialect policy bindings value state with

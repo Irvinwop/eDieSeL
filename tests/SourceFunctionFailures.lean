@@ -47,7 +47,7 @@ theorem retained_body_failure (state : State target parameters Environment) (ref
   have evaluated : StateEval.evalStmt dialect policy (.cons ref .nil) (writeThenRead value) state =
       (.error (.denied .readPermission), updated, [.write ref.id .uint value.toInt]) := by
     simp only [writeThenRead, StateEval.evalStmt, StateEval.evalExpr_literal, StateEval.evalExpr_var,
-      Env.get_here, Op.bind, Op.pure, stored, denied, List.nil_append, List.append_nil]
+      Env.get_here, Op.bind, Effects.Op.bind, Op.pure, stored, denied, List.nil_append, List.append_nil]
   obtain ⟨steps, reached⟩ := FunctionEval.ofStmt_cleanup_reaches (wrapper dialect policy value)
     (singleEntry ref value) (writeThenRead value) rfl state earlier
   change _ = FunctionEval.settleResult (singleEntry ref value) earlier
@@ -79,7 +79,7 @@ theorem retained_cleanup_failure (state : State target parameters Environment) (
   have evaluated : StateEval.evalStmt dialect policy (.cons ref .nil) (writeThenRead value) state =
       (.ok value, updated, [.write ref.id .uint value.toInt, .read ref.id .uint value.toInt]) := by
     simp only [writeThenRead, StateEval.evalStmt, StateEval.evalExpr_literal, StateEval.evalExpr_var,
-      Env.get_here, Op.bind, Op.pure, stored, loaded, List.nil_append, List.cons_append]
+      Env.get_here, Op.bind, Effects.Op.bind, Op.pure, stored, loaded, List.nil_append, List.cons_append]
   have ended : endLifetime ref updated = (.ok (), final, [.endLifetime ref.id .uint]) :=
     endLifetime_eq ref updated ⟨true, true⟩ (some value) (State.putObject_same state ref.id _)
   have second : endLifetime ref final = (.error (.invalidBinding .alreadyEnded), final, []) :=
@@ -87,7 +87,7 @@ theorem retained_cleanup_failure (state : State target parameters Environment) (
   have cleanup : FunctionEval.cleanup (duplicateEntry ref value) value updated =
       (.error (.invalidBinding .alreadyEnded), final, [.endLifetime ref.id .uint]) := by
     simp only [FunctionEval.cleanup, duplicateEntry, singleEntry, BlockEval.closeAll,
-      Op.bind, Op.pure, ended, second, List.nil_append, List.append_nil]
+      Op.bind, Effects.Op.bind, Op.pure, ended, second, List.nil_append, List.append_nil]
   obtain ⟨steps, reached⟩ := FunctionEval.ofStmt_cleanup_reaches (wrapper dialect policy value)
     (duplicateEntry ref value) (writeThenRead value) rfl state earlier
   change _ = FunctionEval.settleResult (duplicateEntry ref value) earlier

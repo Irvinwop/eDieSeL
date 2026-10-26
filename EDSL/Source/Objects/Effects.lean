@@ -6,78 +6,47 @@ namespace EDSL.Source.Objects
 
 /-- A state/error/event carrier for the shared expression traversal.
 The carrier imposes no source sequencing, environment or scheduler assumptions. -/
-structure EffectM (target : Target) (parameters : List IntType) (Environment : Type)
-    (α : Type) where
-  run : Op target parameters Environment α
+abbrev EffectM (target : Target) (parameters : List IntType) (Environment : Type)
+    (α : Type) := Effects.EffectM (State target parameters Environment) Stop Event α
 
 namespace EffectM
 
+/-- Preserve the old qualified constructor and projection on the specialization. -/
+@[match_pattern] abbrev mk {target : Target} {parameters : List IntType} {Environment α : Type}
+    (run : Op target parameters Environment α) : EffectM target parameters Environment α :=
+  Effects.EffectM.mk run
+
+abbrev run {target : Target} {parameters : List IntType} {Environment α : Type}
+    (self : EffectM target parameters Environment α) : Op target parameters Environment α :=
+  Effects.EffectM.run self
+
 theorem ext {target : Target} {parameters : List IntType} {Environment α : Type}
     {first second : EffectM target parameters Environment α}
-    (same : first.run = second.run) : first = second := by
-  cases first
-  cases second
-  cases same
-  rfl
+    (same : first.run = second.run) : first = second := Effects.EffectM.ext same
 
-instance {target : Target} {parameters : List IntType} {Environment : Type} :
-    Monad (EffectM target parameters Environment) where
-  pure value := ⟨Op.pure value⟩
-  bind first next := ⟨Op.bind first.run (fun value => (next value).run)⟩
+/-- The old instance name forwards to the generic instance; no second instance
+or implementation of composition is installed. -/
+abbrev instMonad {target : Target} {parameters : List IntType} {Environment : Type} :
+    Monad (EffectM target parameters Environment) := Effects.EffectM.instMonad
 
 def ofOp {target : Target} {parameters : List IntType} {Environment α : Type}
     (operation : Op target parameters Environment α) : EffectM target parameters Environment α :=
-  ⟨operation⟩
+  Effects.EffectM.ofOp operation
 
 theorem bind_pure_left {target : Target} {parameters : List IntType} {Environment α β : Type}
     (value : α) (next : α → EffectM target parameters Environment β) :
-    (pure value >>= next) = next value := by
-  apply ext
-  funext state
-  change Op.bind (Op.pure value) (fun value => (next value).run) state = (next value).run state
-  unfold Op.bind Op.pure
-  cases execution : (next value).run state with
-  | mk outcome rest =>
-      rcases rest with ⟨updated, events⟩
-      simp only [execution, List.nil_append]
+    (pure value >>= next) = next value := Effects.EffectM.bind_pure_left value next
 
 theorem bind_pure_right {target : Target} {parameters : List IntType} {Environment α : Type}
     (first : EffectM target parameters Environment α) :
-    (first >>= pure) = first := by
-  apply ext
-  funext state
-  change Op.bind first.run (fun value => Op.pure value) state = first.run state
-  cases execution : first.run state with
-  | mk outcome rest =>
-      rcases rest with ⟨updated, events⟩
-      cases outcome <;> simp [Op.bind, Op.pure, execution]
+    (first >>= pure) = first := Effects.EffectM.bind_pure_right first
 
 theorem bind_assoc {target : Target} {parameters : List IntType} {Environment α β γ : Type}
     (first : EffectM target parameters Environment α)
     (next : α → EffectM target parameters Environment β)
     (last : β → EffectM target parameters Environment γ) :
-    ((first >>= next) >>= last) = (first >>= fun value => next value >>= last) := by
-  apply ext
-  funext state
-  change Op.bind (Op.bind first.run (fun value => (next value).run))
-      (fun value => (last value).run) state =
-    Op.bind first.run (fun value => Op.bind (next value).run (fun result => (last result).run)) state
-  cases execution : first.run state with
-  | mk outcome rest =>
-      rcases rest with ⟨updated, events⟩
-      cases outcome with
-      | error reason => simp [Op.bind, execution]
-      | ok value =>
-          cases following : (next value).run updated with
-          | mk outcome rest =>
-              rcases rest with ⟨followingState, followingEvents⟩
-              cases outcome with
-              | error reason => simp [Op.bind, execution, following]
-              | ok result =>
-                  cases final : (last result).run followingState with
-                  | mk outcome rest =>
-                      rcases rest with ⟨finalState, finalEvents⟩
-                      simp [Op.bind, execution, following, final, List.append_assoc]
+    ((first >>= next) >>= last) = (first >>= fun value => next value >>= last) :=
+  Effects.EffectM.bind_assoc first next last
 
 /-- Scalar failures retain their identity while gaining the explicit object-state
 carrier. No object failure is reclassified as a scalar UB here. -/

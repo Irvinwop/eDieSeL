@@ -68,12 +68,12 @@ theorem wp_bind (first : Op target parameters Environment α)
   | mk result rest =>
       rcases rest with ⟨middle, earlierEvents⟩
       cases result with
-      | error reason => simp [WP, Op.bind, execution]
+      | error reason => simp [WP, Op.bind, Effects.Op.bind, execution]
       | ok value =>
           cases following : next value middle with
           | mk result rest =>
               rcases rest with ⟨final, suffix⟩
-              cases result <;> simp [WP, Op.bind, execution, following]
+              cases result <;> simp [WP, Op.bind, Effects.Op.bind, execution, following]
 
 /-- Replacing a postcondition by a pointwise equivalent one preserves the
 actual operation condition without changing state or event observations. -/

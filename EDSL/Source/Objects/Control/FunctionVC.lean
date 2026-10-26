@@ -211,7 +211,7 @@ theorem cleanup_contract (entry : FunctionEntry target parameters result) (value
     BlockContracts.closeAll_contract entry.parameterBindings middle metaL parameterUnique liveP
   refine ⟨final, ?_, ⟨frozenP.1.trans frozenL.1, frozenP.2.1.trans frozenL.2.1,
     frozenP.2.2.trans frozenL.2.2⟩, nextP.trans nextL, ?_, metaP, ?_, ?_, ?_⟩
-  · simp only [FunctionEval.cleanup, Op.bind, closeLocals, closeParameters, Op.pure, List.append_nil]
+  · simp only [FunctionEval.cleanup, Op.bind, Effects.Op.bind, closeLocals, closeParameters, Op.pure, List.append_nil]
   · rw [slotsP, slotsL]
   · apply BlockContracts.endedBindings_transport entry.localBindings state.actor middle final _ endedL
     intro id member

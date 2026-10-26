@@ -41,9 +41,9 @@ private theorem preservesWorld_bind (first : Op target parameters Environment α
       have earlier : WorldFrame state middle := by
         simpa only [execution] using firstFrame state
       cases outcome with
-      | error reason => simpa only [Op.bind, execution] using earlier
+      | error reason => simpa only [Op.bind, Effects.Op.bind, execution] using earlier
       | ok value =>
-          simp only [Op.bind, execution]
+          simp only [Op.bind, Effects.Op.bind, execution]
           exact earlier.trans (nextFrame value middle)
 
 theorem evalExpr_worldFrame (dialect : Dialect) (policy : IntegerConversionPolicy)

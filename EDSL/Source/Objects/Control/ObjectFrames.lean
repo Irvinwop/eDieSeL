@@ -57,9 +57,9 @@ private theorem preservesObjects_bind (bindings : Env context)
   rcases execution : first state with ⟨outcome, middle, observations⟩
   have earlier : ObjectFrame bindings state middle := by simpa only [execution] using firstFrame state
   cases outcome with
-  | error reason => simpa only [Op.bind, execution] using earlier
+  | error reason => simpa only [Op.bind, Effects.Op.bind, execution] using earlier
   | ok value =>
-      simp only [Op.bind, execution]
+      simp only [Op.bind, Effects.Op.bind, execution]
       exact earlier.trans (nextFrame value middle)
 
 private theorem expression_objects (dialect : Dialect) (policy : IntegerConversionPolicy)

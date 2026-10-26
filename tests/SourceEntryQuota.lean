@@ -63,13 +63,13 @@ theorem shortage_before_local_initializers (dialect : Dialect) (policy : Integer
   have localFailure : (BlockEval.reserveAll dialect [.sint, .uint] entered :
       Result target [.sint, .uint] Environment _) =
       (.error (.denied .automaticStorageExhausted), final, reserveEvents dialect 2 .sint actor) := by
-    simp only [BlockEval.reserveAll, Op.bind, first, exhausted, enteredNext, enteredActor,
+    simp only [BlockEval.reserveAll, Op.bind, Effects.Op.bind, first, exhausted, enteredNext, enteredActor,
       List.append_nil]
     rfl
   have actual : FunctionEval.enterUnchecked function values initial =
       (.error (.denied .automaticStorageExhausted), final,
         parameterEvents dialect actor 0 values ++ reserveEvents dialect 2 .sint actor) := by
-    simp only [FunctionEval.enterUnchecked, function, mixed, DeclarationSpine.localKinds, Op.bind,
+    simp only [FunctionEval.enterUnchecked, function, mixed, DeclarationSpine.localKinds, Op.bind, Effects.Op.bind,
       enteredEq, localFailure]
     simp only [initial, State.empty]
   have supported : function.Supported := by

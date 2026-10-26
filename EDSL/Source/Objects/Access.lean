@@ -167,7 +167,7 @@ theorem Op.bind_reject_after_success {target : Target} {parameters : List IntTyp
     (accepted : first state = (.ok value, updated, events)) :
     Op.bind first (fun _ => Op.reject (α := β) reason) state =
       (.error reason, updated, events) := by
-  unfold Op.bind
+  unfold Op.bind Effects.Op.bind
   rw [accepted]
   exact congrArg (fun trace => ((.error reason : Except Stop β), updated, trace))
     (List.append_nil events)

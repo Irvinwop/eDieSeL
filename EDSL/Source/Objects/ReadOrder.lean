@@ -40,7 +40,7 @@ theorem bind_error_left (first : EffectM target parameters Environment α)
     (events : List Event) (failed : first.run state = (.error reason, updated, events)) :
     (first >>= next).run state = (.error reason, updated, events) := by
   change Op.bind first.run (fun value => (next value).run) state = _
-  simp only [Op.bind, failed]
+  simp only [Op.bind, Effects.Op.bind, failed]
 
 /-- A later failure retains its own final state and all prefix and failure events.
 Accepted effects are not rolled back and failure events are not discarded. -/
@@ -52,7 +52,7 @@ theorem bind_error_right (first : EffectM target parameters Environment α)
     (failed : (next value).run updated = (.error reason, finalState, moreEvents)) :
     (first >>= next).run state = (.error reason, finalState, events ++ moreEvents) := by
   change Op.bind first.run (fun value => (next value).run) state = _
-  simp only [Op.bind, accepted, failed]
+  simp only [Op.bind, Effects.Op.bind, accepted, failed]
 
 private theorem pair_success (first : EffectM target parameters Environment α)
     (second : EffectM target parameters Environment β)
@@ -64,7 +64,7 @@ private theorem pair_success (first : EffectM target parameters Environment α)
       (.ok (left, right), state, leftEvents ++ rightEvents) := by
   change Op.bind first.run (fun left =>
     Op.bind second.run (fun right => Op.pure (left, right))) state = _
-  simp only [Op.bind, Op.pure, leftReady, rightReady, List.append_nil]
+  simp only [Op.bind, Effects.Op.bind, Op.pure, leftReady, rightReady, List.append_nil]
 
 /-- INTERNAL composition lemma, not source admission. Both executions must succeed
 at the SAME state and preserve that entire state. Access clients must first derive

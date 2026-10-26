@@ -47,9 +47,9 @@ private theorem reads_bind (first : EffectM target parameters Environment α)
       rcases rest with ⟨middle, events⟩
       have earlier : Reads events := by simpa only [execution] using firstReads state
       cases outcome with
-      | error reason => simpa only [Op.bind, execution] using earlier
+      | error reason => simpa only [Op.bind, Effects.Op.bind, execution] using earlier
       | ok value =>
-          simp only [Op.bind, execution]
+          simp only [Op.bind, Effects.Op.bind, execution]
           exact reads_append earlier (nextReads value middle)
 
 /-- Actual load emits either its ordinary read event or no event on refusal.

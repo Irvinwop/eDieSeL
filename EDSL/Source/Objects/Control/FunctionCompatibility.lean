@@ -338,10 +338,10 @@ theorem settleResult_eq_bind (entry : FunctionEntry target parameters result)
       ofResult (prepend earlierEvents (Op.bind body (FunctionEval.cleanup entry) state)) := by
   rcases evaluation : body state with ⟨outcome, updated, events⟩
   cases outcome with
-  | error reason => simp only [FunctionEval.settleResult, Op.bind, evaluation, prepend, ofResult]
+  | error reason => simp only [FunctionEval.settleResult, Op.bind, Effects.Op.bind, evaluation, prepend, ofResult]
   | ok value =>
       rcases cleaned : FunctionEval.cleanup entry value updated with ⟨outcome, final, moreEvents⟩
-      cases outcome <;> simp only [FunctionEval.settleResult, Op.bind, evaluation, cleaned,
+      cases outcome <;> simp only [FunctionEval.settleResult, Op.bind, Effects.Op.bind, evaluation, cleaned,
         prepend, ofResult, List.append_assoc]
 
 /-- Full public entry-to-return compatibility for every finite program and
@@ -365,7 +365,7 @@ theorem runProgram_reaches (program : StateSyntax.Program target parameters resu
           refine ⟨0, ?_⟩
           simp only [FunctionEval.observe, FunctionEval.start,
             Function.ofProgram_firstUnsupported, coverage, enterUnchecked_ofProgram,
-            BlockEval.runProgram, execute_eq_prepare, Op.bind, prepared, ofResult]
+            BlockEval.runProgram, execute_eq_prepare, Op.bind, Effects.Op.bind, prepared, ofResult]
       | ok entry =>
           obtain ⟨steps, reached⟩ := FunctionEval.ofStmt_cleanup_reaches
             (Function.ofProgram program) entry.toFunctionEntry entry.body rfl updated events
@@ -374,9 +374,9 @@ theorem runProgram_reaches (program : StateSyntax.Program target parameters resu
               .active ⟨entry.toFunctionEntry,
                 startUnchecked entry.toFunctionEntry.code updated events⟩ := by
             simp only [FunctionEval.start, Function.ofProgram_firstUnsupported, coverage,
-              enterUnchecked_ofProgram, Op.bind, prepared, Op.pure, List.append_nil]
+              enterUnchecked_ofProgram, Op.bind, Effects.Op.bind, prepared, Op.pure, List.append_nil]
           rw [starting, reached, settleResult_eq_bind]
-          simp only [BlockEval.runProgram, coverage, execute_eq_prepare, Op.bind, prepared]
+          simp only [BlockEval.runProgram, coverage, execute_eq_prepare, Op.bind, Effects.Op.bind, prepared]
           rfl
 
 /-- Function endpoints absorb observation; active observation exhaustion is

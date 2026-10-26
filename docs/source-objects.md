@@ -87,8 +87,15 @@ or extend the finite function driver's cleanup theorem to looping bodies.
 ## One expression engine
 
 `ExpressionCore.evalCore` is the shared traversal. Its typed lookup and scalar
-outcome adapter are explicit. `EffectM` supplies a state/error/event carrier;
-its composition laws and scalar adapter are checked. Resolver replacement and
+outcome adapter are explicit. `Source.Effects` defines the common state/error/event
+carrier independently of the object model. `Objects.EffectM` and `Objects.Op`
+specialize it to the fixed object state, stops and observations. There is one
+bind implementation: failure retains accepted state/events, and a continuation
+appends its observations after the prefix, including on failure. The composition
+laws hold for arbitrary raw states; they assume no source definedness or
+well-formedness. Scalar outcome interpretation remains in the object adapter.
+Qualified constructor/projection helpers forward to the generic carrier; its
+generated structural rules now belong to `Effects.EffectM`. Resolver replacement and
 carrier-mapping theorems concern complete computations, including failures,
 state and events.
 

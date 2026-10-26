@@ -593,7 +593,7 @@ theorem double_end_bind (ref : LValue kind) (state : State target parameters Env
   have first := endLifetime_eq ref state permissions value registered
   have second := endLifetime_once ref state ready
   rw [first] at second ⊢
-  simp only [Op.bind, first, second, List.append_nil]
+  simp only [Op.bind, Effects.Op.bind, first, second, List.append_nil]
 
 /-- Only the three primitives compose here; no source statement semantics or
 recovery after a failed initializer is supplied by this definition. -/
@@ -642,7 +642,7 @@ theorem declarationCycle_eq (dialect : Dialect) (kind : ArithmeticType)
   have final := cycle_state_eq dialect kind value state ready.2
   change endedState ref ⟨true, true⟩ value initialized = completedState kind value state at final
   dsimp only [ref, reserved, initialized] at initialization ending final
-  simp only [declarationCycle, Op.bind, reservation, initialization, ending, Op.pure,
+  simp only [declarationCycle, Op.bind, Effects.Op.bind, reservation, initialization, ending, Op.pure,
     List.append_nil, final, List.append_assoc]
 
 /-- Completed cycle conserves slots, advances freshness once and leaves the exact
@@ -681,7 +681,7 @@ theorem declarationCycle_preserves_wellFormed (dialect : Dialect) (kind : Arithm
       exact ⟨by have bound := old.1; simp only [completedState]; omega, old.2⟩
   · have exhausted : state.automaticSlots = 0 := by omega
     have failure := reserve_exhausted dialect kind state (fresh_of_wellFormed state wellFormed) exhausted
-    simpa only [declarationCycle, Op.bind, failure] using wellFormed
+    simpa only [declarationCycle, Op.bind, Effects.Op.bind, failure] using wellFormed
 
 /-- A completed cycle's tombstone remains registered on the next reserve, whose
 fresh identity is its successor. Freed slots never recycle object identities. -/

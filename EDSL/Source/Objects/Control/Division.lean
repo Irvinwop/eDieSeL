@@ -197,7 +197,7 @@ private theorem eval_uadd {context : List ArithmeticType}
   change Op.bind (StateEval.evalExpr dialect policy env left)
     (fun a => Op.bind (StateEval.evalExpr dialect policy env right)
       (fun b => (EffectM.liftScalar (unsignedAdd target a b)).run)) state = _
-  simp only [Op.bind, leftRun, rightRun, scalar, EffectM.run_liftScalar,
+  simp only [Op.bind, Effects.Op.bind, leftRun, rightRun, scalar, EffectM.run_liftScalar,
     EffectM.scalarOutcome, List.append_nil]
 
 private theorem eval_usub {context : List ArithmeticType}
@@ -211,7 +211,7 @@ private theorem eval_usub {context : List ArithmeticType}
   change Op.bind (StateEval.evalExpr dialect policy env left)
     (fun a => Op.bind (StateEval.evalExpr dialect policy env right)
       (fun b => (EffectM.liftScalar (unsignedSub target a b)).run)) state = _
-  simp only [Op.bind, leftRun, rightRun, scalar, EffectM.run_liftScalar,
+  simp only [Op.bind, Effects.Op.bind, leftRun, rightRun, scalar, EffectM.run_liftScalar,
     EffectM.scalarOutcome, List.append_nil]
 
 private theorem eval_compare {context : List ArithmeticType}
@@ -225,7 +225,7 @@ private theorem eval_compare {context : List ArithmeticType}
   change Op.bind (StateEval.evalExpr dialect policy env left)
     (fun a => Op.bind (StateEval.evalExpr dialect policy env right)
       (fun b => Op.pure (compareValues operation a b))) state = _
-  simp only [Op.bind, leftRun, rightRun, Op.pure, List.append_nil]
+  simp only [Op.bind, Effects.Op.bind, leftRun, rightRun, Op.pure, List.append_nil]
 
 theorem eval_var (dialect : Dialect) (policy : IntegerConversionPolicy)
     (q r dRef : LValue .uint) (index : Vars Context .uint)
@@ -289,7 +289,7 @@ private theorem tick_assign (dialect : Dialect) (policy : IntegerConversionPolic
       Configuration target parameters Environment) =
         ⟨rest, put state (env.get index) value,
           events ++ (reads ++ [.write (env.get index).id .uint value.toInt]), .running⟩ := by
-  simp only [tick, perform, assign, Op.bind, evaluation, store_ready state _ value ready]
+  simp only [tick, perform, assign, Op.bind, Effects.Op.bind, evaluation, store_ready state _ value ready]
 
 private theorem tick_loop (dialect : Dialect) (policy : IntegerConversionPolicy)
     (env : Env Context) (test : RHS target Context (.small .boolean))

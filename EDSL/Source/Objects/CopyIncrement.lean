@@ -211,7 +211,7 @@ theorem run_eq (dialect : Dialect) (initial : State target [.uint] Environment)
     change Op.bind (load dialect localObject) (fun current =>
       Op.bind (Op.pure (one target)) (fun added =>
         (EffectM.liftScalar (unsignedAdd target current added)).run)) initializedLocal = _
-    simp only [Op.bind, readLocal, Op.pure, EffectM.liftScalar, EffectM.scalarOutcome]
+    simp only [Op.bind, Effects.Op.bind, readLocal, Op.pure, EffectM.liftScalar, EffectM.scalarOutcome]
     rfl
   have bodyStatement : StateEval.evalStmt dialect .gnuModulo
       (Env.cons localObject (Env.cons parameter .nil))
@@ -221,7 +221,7 @@ theorem run_eq (dialect : Dialect) (initial : State target [.uint] Environment)
         [.read localObject.id .uint input.toInt,
          .write localObject.id .uint result.toInt,
          .read localObject.id .uint result.toInt]) := by
-    simp only [StateEval.evalStmt, Op.bind, incrementExpr, Env.get_here,
+    simp only [StateEval.evalStmt, Op.bind, Effects.Op.bind, incrementExpr, Env.get_here,
       storeLocal, StateEval.evalExpr_var, readResult]
     rfl
   dsimp only [initializedLocal] at bodyStatement
@@ -239,7 +239,7 @@ theorem run_eq (dialect : Dialect) (initial : State target [.uint] Environment)
           (Env.cons localObject (Env.cons parameter .nil))
           (.set .here (.uadd (.param .here) (.literal (one target))) (.ret (.param .here)))))
       reservedLocal = _
-    simp only [Op.bind, readParameter, Op.pure, initializeLocal, bodyStatement,
+    simp only [Op.bind, Effects.Op.bind, readParameter, Op.pure, initializeLocal, bodyStatement,
       Option.map_some, List.append_nil, List.append_assoc]
   have inputForm : initial.inputs = .cons input .nil := by
     dsimp only [input]
@@ -254,24 +254,24 @@ theorem run_eq (dialect : Dialect) (initial : State target [.uint] Environment)
     change Op.bind (reserve dialect .uint) (fun reference =>
       Op.bind (Objects.initialize dialect reference (some input)) (fun _ =>
         Op.bind (Op.pure Env.nil) (fun tail => Op.pure (Env.cons reference tail)))) initial = _
-    simp only [Op.bind, reserveParameter, initializeParameter, Op.pure, parameter,
+    simp only [Op.bind, Effects.Op.bind, reserveParameter, initializeParameter, Op.pure, parameter,
       Option.map_some, List.append_nil]
     rfl
   have reserveExecution : BlockEval.reserveAll dialect [.uint] entered =
       (.ok (Env.cons localObject .nil), reservedLocal,
         reserveEvents dialect localObject.id .uint initial.actor) := by
     rw [BlockEval.reserveAll_cons, BlockEval.reserveAll_nil]
-    simp only [Op.bind, reserveLocal, Op.pure, List.append_nil]
+    simp only [Op.bind, Effects.Op.bind, reserveLocal, Op.pure, List.append_nil]
     rfl
   have localCleanup : BlockEval.closeAll (Env.cons localObject .nil) storedLocal =
       (.ok (), endedLocal, [.endLifetime localObject.id .uint]) := by
     change Op.bind (Op.pure ()) (fun _ => endLifetime localObject) storedLocal = _
-    simp only [Op.bind, Op.pure, endLocal, List.nil_append]
+    simp only [Op.bind, Effects.Op.bind, Op.pure, endLocal, List.nil_append]
     rfl
   have parameterCleanup : BlockEval.closeAll (Env.cons parameter .nil) endedLocal =
       (.ok (), endedParameter, [.endLifetime parameter.id .uint]) := by
     change Op.bind (Op.pure ()) (fun _ => endLifetime parameter) endedLocal = _
-    simp only [Op.bind, Op.pure, endParameter, List.nil_append]
+    simp only [Op.bind, Effects.Op.bind, Op.pure, endParameter, List.nil_append]
     rfl
   have finalSame : endedParameter = finalState initial := by
     dsimp [endedParameter, endedState, endedLocal, storedLocal, initializedLocal,
@@ -293,7 +293,7 @@ theorem run_eq (dialect : Dialect) (initial : State target [.uint] Environment)
         (program target dialect).body parameters locals) (fun value =>
           Op.bind (BlockEval.closeAll locals) (fun _ =>
             Op.bind (BlockEval.closeAll parameters) (fun _ => Op.pure value))))) initial = _
-  simp only [Op.bind, entryExecution, reserveExecution, bodyExecution,
+  simp only [Op.bind, Effects.Op.bind, entryExecution, reserveExecution, bodyExecution,
     localCleanup, parameterCleanup, Op.pure, List.append_nil]
   rw [finalSame]
   simp only [events, parameter, localObject, input, result, List.append_assoc]
