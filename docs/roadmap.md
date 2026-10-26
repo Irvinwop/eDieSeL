@@ -18,7 +18,12 @@ typed input. `Certificate` combines
 the execution/contract theorem with an inhabited domain; domain and contract
 independence still need review. See the [API](source-core-api.md) and
 [implementation status](implementation-status.md) for exact limits. There is
-no source-text frontend, mutable source statement execution or bootstrap stage yet. Structural
+no source-text frontend or bootstrap stage yet. A separate finite object-backed
+statement driver now executes declarations, assignment, branches and return
+through the shared expression engine, with mutable parameters, complete local
+reservation, normal cleanup and exact structural VCs. This is an internal
+fragment; native operand-order and memory correspondence remain open. See the
+[statement API](source-statements.md). Structural
 verification conditions are proved exact for this grammar. Unsigned division
 has an independent interval contract and a synthetic candidate proved safe
 but functionally incorrect; these reuse the same executable semantics.
@@ -39,8 +44,9 @@ certificates discharge overflow from input ranges, including the equal-width
 unsigned-short promotion case. Comparison/logical helpers return C int or C++
 bool. Conditional helpers cover unqualified integral prvalue arms: C uses the arithmetic common type; C++
 first preserves matching arm types. No source lvalues or general C++ value
-categories are implemented. Wider integer types, effectful sequencing, objects,
-memory, statements, loops and source-connected OS effects remain dependencies.
+categories are implemented. The finite statement slice sequences full
+expressions and object effects; wider integer types, representation-level
+memory, loops and source-connected OS effects remain dependencies.
 
 Public program evaluation checks coverage of the whole expression before
 execution, including skipped arms. Inhabited certificates derive this structural
@@ -66,10 +72,10 @@ storage, source parsing or overloaded C++ operators.
 The expression implementation now has one traversal with explicit lookup and
 outcome handling. The [declared-object foundation](source-objects.md) supplies
 checked internal state/resource primitives and contracts, with a pure-state
-compatibility theorem. The next connection is finite declarations, assignment,
-branch and return with actual object reads, structural stateful VCs and
-independent program/frame contracts. Primitive contracts alone do not certify
-a mutable source program. Read-order correspondence, storage representation,
+compatibility theorem. Finite declarations, assignment, branch and return now
+use actual object reads, with structural stateful VCs and independent allocation
+and cleanup contracts. Each mutable source program still needs its own
+independently stated functional/frame contract and discharged obligations. Read-order correspondence, storage representation,
 source-connected OS behavior and larger language features remain dependencies.
 
 Start with a small, executable, typed source fragment. Record its language

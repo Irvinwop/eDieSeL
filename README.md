@@ -29,15 +29,19 @@ structural verification conditions. Independent source contracts use arithmetic
 equations and ranges, with definedness proved on each stated input domain.
 The expression engine also exposes typed effectful lookup. An internal
 [declared-object foundation](docs/source-objects.md) provides initialization,
-lifetime, authority and capacity contracts; connecting it to source statements
-and OS behavior remains work in progress.
+lifetime, authority and capacity contracts. A [finite statement API](docs/source-statements.md)
+connects mutable parameters and locals to those operations, with exact structural
+verification conditions and normal-return cleanup. Native source-order and OS
+correspondence remain open.
 Composition examples discharge overflow from operand ranges and account for
 unsigned wrapping. Guarded quotient programs admit all typed inputs and derive
 definedness from their guards. Public evaluation first checks model coverage of
 the complete body, including skipped arms.
 
 Its [API guide](docs/source-core-api.md) records the exact scope. Inputs are
-immutable typed values. It has no source-text parser, memory operations or OS effects.
+immutable typed values in the expression-only specialization; the finite statement
+API allocates mutable object bindings. Neither has a source-text parser or
+source-connected OS effects.
 
 This source-language foundation is under development. Complete GNU semantics,
 source parsing, a verified bootstrap compiler and source-verified kernels are

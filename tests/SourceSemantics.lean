@@ -11,6 +11,7 @@ import tests.SourceCasts
 import tests.SourceArithmetic
 import tests.SourceConditions
 import tests.SourceUnary
+import tests.SourceReadOrder
 import tests.SourceExpressionCore
 import EDSL.Source.GuardContracts
 import EDSL.Source.ComparisonContracts
@@ -160,4 +161,7 @@ set_option warningAsError true
 #print axioms EDSL.Source.Objects.LifecycleContracts.initialize_cpp_completion_before_begin
 #print axioms EDSL.Source.Objects.LifecycleContracts.declarationCycle_preserves_wellFormed
 #print axioms EDSL.Source.Objects.LifecycleContracts.reserve_after_cycle_no_reuse
+#print axioms EDSL.Source.Objects.StateSyntax.Program.firstUnsupported_eq_none_iff
+#print axioms EDSL.Source.Objects.StateSyntax.Env.get_injective
+#print axioms EDSL.Source.Objects.ReadOrder.load_load_diamond
 #audit_edsl_owners

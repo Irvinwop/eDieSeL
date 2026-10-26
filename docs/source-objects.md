@@ -2,8 +2,10 @@
 
 Import `EDSL.Source.Objects` for the internal object model, executable
 operations, contracts and pure-program embedding. These components are checked
-Lean declarations. They do not add object or statement syntax to the existing
-expression/return `Program`, or establish a theorem about native source files.
+Lean declarations. A separate [finite statement API](source-statements.md) now
+connects typed declarations and mutable variables to these operations. The
+expression-only `Source.Program` stays unchanged; neither API establishes a
+theorem about native source files.
 
 ## State and resources
 
@@ -56,9 +58,10 @@ writes. Lifecycle contracts prove fresh identity, once-only initialization/end,
 well-formedness preservation, capacity deltas and a complete declaration cycle
 that restores remaining capacity without reusing an ended identity.
 
-These are primitive/protocol contracts. Source statement execution, generated
-stateful VCs and an independent functional contract are still needed before a
-mutable source program can receive a source certificate.
+These are primitive/protocol contracts. The finite statement API adds a fixed
+source driver and exact structural statement/declaration VCs. Each mutable source
+program still needs independent input and result contracts, discharged VCs and
+an inhabited entry domain.
 
 ## One expression engine
 
@@ -76,7 +79,8 @@ environment witness; an empty environment type cannot manufacture a certificate.
 
 This embedding uses pure supplied inputs. It is not a proof that a mutable
 source parameter may be replaced by its initial value. Mutable parameters need
-initialized objects and actual variable reads in the future source driver.
+initialized objects and actual variable reads; the finite statement driver uses
+that representation.
 
 ## Remaining connections
 

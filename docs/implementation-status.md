@@ -15,7 +15,7 @@ binary seed, and source-proved compiler bootstrap stages.
 | Dialect-sensitive construction | Comparison/logical results are C int or C++ bool; integral prvalue conditionals use C common arithmetic typing and C++ same-type preservation before common typing |
 | Integral unary expressions | Plus/minus/complement after integer promotion, and dialect-typed logical NOT; existing evaluator/VC reused; signed-minimum negation boundary and generic arithmetic-to-value-bit complement bridge |
 | Shared effectful traversal | Scalar evaluator is a specialization of one generic traversal; checked computation/resolver mapping and pure-state embedding; effect-aware lookup regressions |
-| Internal object foundation | Declared full-int records, initialization/lifetime/current authority/quota operations, independent access/frame/lifecycle contracts; not source statement syntax or source-program memory support |
+| Internal object foundation | Declared full-int records, independent access/frame/lifecycle contracts; finite typed declaration/assignment/branch/return driver with mutable parameter objects, complete local reservation and normal cleanup; exact structural statement/declaration VCs; no native memory/order correspondence |
 | Source text and general C/C++ | No source-text parser, preprocessing correspondence or general verifier |
 | Source-connected OS semantics | Existing resource/concurrency components require source-step integration |
 | Single bootstrap seed | Not selected or proved for the source-first chain |
@@ -23,7 +23,7 @@ binary seed, and source-proved compiler bootstrap stages.
 
 The [source core API](source-core-api.md) lists exact declarations and scope.
 The [object guide](source-objects.md) separates the checked primitive foundation
-from pending source-step, stateful VC and OS connections.
+from native source-order, memory and OS correspondence; see the [finite statement API](source-statements.md).
 Small types are limited to bool, plain/signed/unsigned char and signed/unsigned short.
 Wider integer types remain unsupported. Explicit integral casts cover all current
 endpoints, with bool zero/nonzero behavior and the selected GNU range/congruence
