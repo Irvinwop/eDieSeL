@@ -51,7 +51,7 @@ No input generator, memory load, object initialization or ABI is hidden here.
 | `param index` | A supplied parameter |
 | `promote operand` | Value-preserving integer promotion to a full arithmetic type |
 | `convert destination operand` | Explicit cast between every admitted integral source and destination |
-| `uadd`, `sadd`, `udiv`, `sdiv` | Existing same-type full-rank arithmetic primitives |
+| `uadd`/`sadd`, `usub`/`ssub`, `umul`/`smul`, `udiv`/`sdiv`, `urem`/`srem` | Same-type full-rank addition, subtraction, multiplication, division and remainder |
 | `unsupported feature` | Explicit missing coverage, never successful verification |
 
 `Program target parameters result` contains `dialect`, an explicitly supplied
@@ -75,8 +75,11 @@ eval (program : Program target parameters result)
 ```
 
 The disjoint outcomes are `defined value`, `undefined reason`, and
-`unsupported feature`. UB reasons include signed-add overflow, zero division,
-and signed-division overflow. Division truncates toward zero. Missing coverage
+`unsupported feature`. UB reasons distinguish signed addition, subtraction and multiplication overflow,
+zero division, and division/remainder quotient overflow. Signed division
+truncates toward zero and signed remainder follows the dividend sign.
+An unrepresentable quotient makes remainder undefined even when its mathematical
+value is zero, including the signed minimum with divisor -1. Missing coverage
 is not a UB witness or a security defect.
 
 All evaluation is structural recursion on pure finite expressions. Left-first
@@ -123,10 +126,18 @@ width. Sign and zero corollaries follow. Promotion of a valid value is total;
 a later signed operation can still overflow.
 
 `commonType target left right` selects a full arithmetic type **after** these
-promotions. `Expr.usualAdd` and `.usualDiv` insert promotion, common-type
-conversion and the existing primitive. `Expr.promotedAdd` / `.promotedDiv` handle
-already promoted operands. Their evaluation laws bind normalization to the
-same evaluator. These are not a complete rank engine or source frontend.
+promotions. `ArithmeticOp` selects addition, subtraction, multiplication, division
+or remainder. `Expr.usualBinary` inserts promotion and common-type conversions;
+`Expr.promotedBinary` handles already promoted operands, and `Expr.primitiveBinary`
+builds the corresponding same-type grammar node. These construct syntax rather
+than executing it. `Expr.usualAdd`, `.usualSub`, `.usualMul`, `.usualDiv` and
+`.usualRem` are convenience forms of that shared construction.
+
+`commonBinary` selects the evaluator's existing numeric primitive. The generic
+`eval_promotedBinary` and `eval_usualBinary` laws bind every operation/type pair
+to the same operand evaluation, conversions and primitive, including failures.
+Existing addition/division helpers and evaluation laws remain available. This
+is not a complete rank engine or source frontend.
 
 For example, unsigned short 65535 plus 65535 returns signed 131070 on the int32
 profile, but unsigned 65534 on the int16 profile. With int17/short16 both inputs
@@ -160,6 +171,23 @@ executions and proved signed-sum bounds without unfolding the whole program.
 Clients reuse numeric lemmas rather than new execution interpreters
 or soundness proofs. It does not solve arbitrary conditions automatically.
 
+## Reusable arithmetic laws
+
+`IntegerArithmetic` connects the shared primitives to independent result
+relations. Unsigned subtraction uses a borrow equation with borrow at most one;
+unsigned multiplication uses an unrestricted natural carry for the whole product.
+Unsigned remainder uses a reconstruction equation and a result below the divisor.
+Signed subtraction/multiplication state exact mathematical results and overflow
+boundaries. These laws derive primitive definedness from typed operands and numeric conditions.
+
+`TruncatingDivision` specifies quotient/remainder by reconstruction, remainder
+magnitude and the dividend's sign, without calling division or remainder.
+`signedDiv_quotient_fits_iff` identifies the minimum/-1 exception for every
+typed nonzero signed divisor. `signedRem_defined_iff` proves actual remainder
+existence exactly for a nonzero divisor outside that pair; its zero and overflow
+reasons have separate iff characterizations. A remainder's own representability
+does not excuse an unrepresentable quotient.
+
 ## Certified clients
 
 Import client modules explicitly; the reusable umbrella excludes synthetic clients.
@@ -178,10 +206,16 @@ Every listed positive certificate derives NoUB on its stated domain.
 | `CastContracts.castReturn` | All admitted types/profiles/inputs; `CastResult` states zero/nonzero or bounds and an integer-carry equation |
 | `CastContracts.representableRoundTrip` | Input fits the intermediate type; exact original value, with an inhabited numeric domain |
 | `CastContracts.lowByteAdd` | All unsigned int inputs on int32/char8; exact sum of the two residues modulo 256, bounded by 510 |
+| `ArithmeticContracts.unsignedReturn` | All five operations; all unsigned inputs, except a nonzero denominator for division/remainder; independent equations or quotient interval |
+| `ArithmeticContracts.signedReturn` | All five operations; explicit mathematical result ranges for add/sub/mul, nonzero denominator and exclusion of minimum/-1 for division/remainder; exact results or truncating reconstruction |
+| `ArithmeticContracts.subtractAdd` | All unsigned inputs/profiles; subtraction then addition recovers the first operand, including wrapping intermediates |
+| `ArithmeticContracts.byteProduct` | All uchar inputs on int32/char8; exact signed product, overflow discharged from operand ranges |
 
 The synthetic `Division.wrappedIncrement` candidate is proved NoUB yet incorrect
 for the quotient contract. Zero division, signed boundaries, unsupported coverage,
 conversion order and promotion behavior have independent positive/negative checks.
+`signedRem_nonzero_not_certified` rejects the overbroad signed-remainder domain
+that excludes only zero divisors, for every target and result postcondition.
 These are embedded-program theorems, without source-file or native correspondence.
 
 ```sh

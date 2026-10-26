@@ -10,7 +10,8 @@ regressions. Their corpus score is not the main progress measure.
 
 The initial `EDSL.Source` implementation is a finite pure expression/return
 fragment with bool, plain char and the signed/unsigned char, short and int
-types, integer promotions, addition/division, explicit integral casts, and
+types, integer promotions, addition/subtraction/multiplication/division/remainder,
+explicit integral casts, and
 defined/UB/unsupported outcomes. Its unsigned-addition client proves an
 independent bounded-carry equation for every typed input. `Certificate` combines
 the execution/contract theorem with an inhabited domain; domain and contract
@@ -20,6 +21,12 @@ no source-text frontend, memory/effect model or bootstrap stage yet. Structural
 verification conditions are proved exact for this grammar. Unsigned division
 has an independent interval contract and a synthetic candidate proved safe
 but functionally incorrect; these reuse the same executable semantics.
+A shared construction now normalizes all five arithmetic operations through
+promotion and common-type conversion. Generic signed/unsigned source contracts
+state the necessary numeric domains and derive NoUB from actual execution.
+Universal quotient bounds establish the minimum/-1 exception for signed division
+and remainder. Subtract/add cancellation and byte multiplication demonstrate
+composition and safety derived from input ranges.
 
 The fixed GNU conversion policy and explicit casts cover every admitted
 bool/char/short/int source and destination. Bool conversion uses zero/nonzero

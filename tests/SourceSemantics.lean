@@ -8,6 +8,8 @@ import EDSL.Source.PromotionContracts
 import tests.SourcePromotions
 import EDSL.Source.CastContracts
 import tests.SourceCasts
+import tests.SourceArithmetic
+import EDSL.Source.ArithmeticContracts
 import EDSL.Audit.Owners
 
 set_option autoImplicit false
@@ -67,4 +69,23 @@ set_option warningAsError true
 #print axioms EDSL.Source.CastContracts.representableRoundTrip_noUB
 #print axioms EDSL.Source.CastContracts.lowByteAdd_certificate
 #print axioms EDSL.Source.CastContracts.lowByteAdd_noUB
+#print axioms EDSL.Source.eval_promotedBinary
+#print axioms EDSL.Source.eval_usualBinary
+#print axioms EDSL.Source.eval_primitiveBinary_defined
+#print axioms EDSL.Source.IntegerArithmetic.unsignedSub_spec
+#print axioms EDSL.Source.IntegerArithmetic.unsignedMul_spec
+#print axioms EDSL.Source.IntegerArithmetic.unsignedRem_spec
+#print axioms EDSL.Source.IntegerArithmetic.signedDiv_quotient_fits_iff
+#print axioms EDSL.Source.IntegerArithmetic.signedRem_defined_iff
+#print axioms EDSL.Source.IntegerArithmetic.signedRem_overflow_iff
+#print axioms EDSL.Source.ArithmeticContracts.unsignedReturn_certificate
+#print axioms EDSL.Source.ArithmeticContracts.signedReturn_certificate
+#print axioms EDSL.Source.ArithmeticContracts.unsignedReturn_noUB
+#print axioms EDSL.Source.ArithmeticContracts.signedReturn_noUB
+#print axioms EDSL.Source.ArithmeticContracts.subtractAdd_certificate
+#print axioms EDSL.Source.ArithmeticContracts.subtractAdd_noUB
+#print axioms EDSL.Source.ArithmeticContracts.byteProduct_certificate
+#print axioms EDSL.Source.ArithmeticContracts.byteProduct_noUB
+#print axioms EDSL.Source.ArithmeticContracts.signedRem_nonzero_not_verified
+#print axioms EDSL.Source.ArithmeticContracts.signedRem_nonzero_not_certified
 #audit_edsl_owners

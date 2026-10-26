@@ -11,8 +11,11 @@ namespace EDSL.Source
 
 inductive UBReason where
   | signedAdditionOverflow
+  | signedSubtractionOverflow
+  | signedMultiplicationOverflow
   | divisionByZero
   | signedDivisionOverflow
+  | signedRemainderOverflow
   deriving DecidableEq, Repr
 
 /-- Unsupported coverage is separate from both a defined value and source UB. -/
@@ -45,6 +48,25 @@ def signedAdd (target : Target) (x y : Value target .sint) :
     Outcome (Value target .sint) :=
   checkedSigned target .signedAdditionOverflow (x.val + y.val)
 
+/-- Adding a modulus before subtracting prevents Nat saturation because
+both operands are already strictly below that modulus. -/
+def unsignedSub (target : Target) (x y : Value target .uint) :
+    Outcome (Value target .uint) :=
+  .defined ⟨(x.val + target.modulus - y.val) % target.modulus,
+    Nat.mod_lt _ target.modulus_pos⟩
+
+def signedSub (target : Target) (x y : Value target .sint) :
+    Outcome (Value target .sint) :=
+  checkedSigned target .signedSubtractionOverflow (x.val - y.val)
+
+def unsignedMul (target : Target) (x y : Value target .uint) :
+    Outcome (Value target .uint) :=
+  .defined ⟨(x.val * y.val) % target.modulus, Nat.mod_lt _ target.modulus_pos⟩
+
+def signedMul (target : Target) (x y : Value target .sint) :
+    Outcome (Value target .sint) :=
+  checkedSigned target .signedMultiplicationOverflow (x.val * y.val)
+
 def unsignedDiv (target : Target) (x y : Value target .uint) :
     Outcome (Value target .uint) :=
   if y.val = 0 then .undefined .divisionByZero
@@ -56,6 +78,23 @@ def signedDiv (target : Target) (x y : Value target .sint) :
     Outcome (Value target .sint) :=
   if y.val = 0 then .undefined .divisionByZero
   else checkedSigned target .signedDivisionOverflow (x.val.tdiv y.val)
+
+def unsignedRem (target : Target) (x y : Value target .uint) :
+    Outcome (Value target .uint) :=
+  if h : y.val = 0 then .undefined .divisionByZero
+  else .defined ⟨x.val % y.val,
+    Nat.lt_trans (Nat.mod_lt _ (Nat.pos_of_ne_zero h)) y.isLt⟩
+
+/-- Remainder uses truncating division. Reject zero first, then require the
+quotient to fit even when the remainder is zero (INT_MIN % -1 is UB).
+The remainder itself is checked before constructing its signed value. -/
+def signedRem (target : Target) (x y : Value target .sint) :
+    Outcome (Value target .sint) :=
+  if y.val = 0 then .undefined .divisionByZero
+  else if -target.signedBound ≤ x.val.tdiv y.val ∧
+      x.val.tdiv y.val < target.signedBound then
+    checkedSigned target .signedRemainderOverflow (x.val.tmod y.val)
+  else .undefined .signedRemainderOverflow
 
 /-- One total integral conversion rule under the program's explicit GNU policy.
 Boolean destinations test zero/nonzero; other destinations select the congruent
@@ -86,12 +125,30 @@ def evalExpr {target : Target} {parameters : List IntType}
   | _, .sadd left right =>
       (evalExpr policy inputs left).andThen fun x =>
         (evalExpr policy inputs right).andThen fun y => signedAdd target x y
+  | _, .usub left right =>
+      (evalExpr policy inputs left).andThen fun x =>
+        (evalExpr policy inputs right).andThen fun y => unsignedSub target x y
+  | _, .ssub left right =>
+      (evalExpr policy inputs left).andThen fun x =>
+        (evalExpr policy inputs right).andThen fun y => signedSub target x y
+  | _, .umul left right =>
+      (evalExpr policy inputs left).andThen fun x =>
+        (evalExpr policy inputs right).andThen fun y => unsignedMul target x y
+  | _, .smul left right =>
+      (evalExpr policy inputs left).andThen fun x =>
+        (evalExpr policy inputs right).andThen fun y => signedMul target x y
   | _, .udiv left right =>
       (evalExpr policy inputs left).andThen fun x =>
         (evalExpr policy inputs right).andThen fun y => unsignedDiv target x y
   | _, .sdiv left right =>
       (evalExpr policy inputs left).andThen fun x =>
         (evalExpr policy inputs right).andThen fun y => signedDiv target x y
+  | _, .urem left right =>
+      (evalExpr policy inputs left).andThen fun x =>
+        (evalExpr policy inputs right).andThen fun y => unsignedRem target x y
+  | _, .srem left right =>
+      (evalExpr policy inputs left).andThen fun x =>
+        (evalExpr policy inputs right).andThen fun y => signedRem target x y
   | _, .unsupported feature => .unsupported feature
 
 /-- Compose defined operand executions and a proved signed-sum range through

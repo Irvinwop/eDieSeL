@@ -18,12 +18,14 @@ a verified chain capable of building GCC and the programs it compiles.
 
 The `EDSL.Source` API is a finite expression/return fragment with bool, plain
 char and the signed/unsigned char, short and int types, integer promotions,
-addition and division. Explicit
+addition, subtraction, multiplication, division and remainder. Explicit
 casts connect every admitted integral type: bool conversion distinguishes zero
 from nonzero; other destinations use the value in range congruent modulo
 `2^width`, under a recorded GNU policy. These operations share one evaluator and
-structural verification conditions, with independent unsigned-addition and
-division contracts. Definedness is proved on each stated input domain.
+structural verification conditions. Independent source contracts use arithmetic
+equations and ranges, with definedness proved on each stated input domain.
+Composition examples discharge overflow from operand ranges and account for
+unsigned wrapping.
 Its [API guide](docs/source-core-api.md) records the exact scope. It has no
 source-text parser, memory operations or OS effects.
 

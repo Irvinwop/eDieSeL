@@ -13,9 +13,9 @@ of the declared model; adequacy of that model still needs review.
 - C++: [WG21 N5001](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2024/n5001.pdf),
   working draft dated 2024-12-17. Clause content was reviewed in the draft
   project's `n5001` tagged sources:
-  [basic.tex](https://github.com/cplusplus/draft/blob/n5001/source/basic.tex) and
-  [expressions.tex](https://github.com/cplusplus/draft/blob/n5001/source/expressions.tex).
-  Its [configuration identifies N5001](https://github.com/cplusplus/draft/blob/n5001/source/config.tex).
+  [basic.tex](https://github.com/cplusplus/draft/blob/6b9b2e9f31aff143334e379e49807488872003e4/source/basic.tex) and
+  [expressions.tex](https://github.com/cplusplus/draft/blob/6b9b2e9f31aff143334e379e49807488872003e4/source/expressions.tex).
+  Its [configuration identifies N5001](https://github.com/cplusplus/draft/blob/6b9b2e9f31aff143334e379e49807488872003e4/source/config.tex).
 
 These dated ISO-language drafts do not specify the complete GNU dialects or
 pin a GCC implementation. The current dialect selectors record intent; only
@@ -30,15 +30,35 @@ Let `N = target.intBits`. The declarations are in `EDSL.Source`;
 
 | Feature and current Lean rule | C23 draft reference | C++ draft reference |
 | --- | --- | --- |
-| `Target.atLeast16`: `N ≥ 16`; `Value` admits unsigned `[0, 2^N)` and signed `[-2^(N-1), 2^(N-1))` values | [N3096 §5.2.4.2.1 ¶1; §6.2.5 ¶11; §6.2.6.2 ¶1–2](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n3096.pdf) | [N5001 `[basic.fundamental]` ¶1–4 and minimum-width table](https://github.com/cplusplus/draft/blob/n5001/source/basic.tex#L4733-L4833) |
-| `unsignedAdd`: addition modulo `2^N` | [N3096 §6.2.5 ¶11; §6.5.6 ¶6](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n3096.pdf) | [N5001 `[basic.fundamental]` ¶2](https://github.com/cplusplus/draft/blob/n5001/source/basic.tex#L4759-L4785), [`[expr.add]` ¶3](https://github.com/cplusplus/draft/blob/n5001/source/expressions.tex#L5966-L5969) |
-| `signedAdd` / `checkedSigned`: mathematical addition; an unrepresentable result yields `signedAdditionOverflow` | [N3096 §6.5 ¶5; §6.5.6 ¶6](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n3096.pdf) | [N5001 `[expr.pre]` ¶4](https://github.com/cplusplus/draft/blob/n5001/source/expressions.tex#L53-L67), [`[expr.add]` ¶3](https://github.com/cplusplus/draft/blob/n5001/source/expressions.tex#L5966-L5969) |
-| `unsignedDiv`: a zero divisor yields `divisionByZero`; otherwise return the integer quotient | [N3096 §6.5.5 ¶6–7](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n3096.pdf) | [N5001 `[expr.mul]` ¶4](https://github.com/cplusplus/draft/blob/n5001/source/expressions.tex#L5908-L5922) |
-| `signedDiv`: division toward zero; reject zero and an unrepresentable quotient, including minimum-signed-value divided by `-1` | [N3096 §6.5.5 ¶6–7 and footnote 118](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n3096.pdf) | [N5001 `[expr.mul]` ¶4](https://github.com/cplusplus/draft/blob/n5001/source/expressions.tex#L5908-L5922) |
+| `Target.atLeast16`: `N ≥ 16`; `Value` admits unsigned `[0, 2^N)` and signed `[-2^(N-1), 2^(N-1))` values | [N3096 §5.2.4.2.1 ¶1; §6.2.5 ¶11; §6.2.6.2 ¶1–2](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n3096.pdf) | [N5001 `[basic.fundamental]` ¶1–4 and minimum-width table](https://github.com/cplusplus/draft/blob/6b9b2e9f31aff143334e379e49807488872003e4/source/basic.tex#L5019-L5088) |
+| `unsignedAdd`: addition modulo `2^N` | [N3096 §6.2.5 ¶11; §6.5.6 ¶6](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n3096.pdf) | [N5001 `[basic.fundamental]` ¶2](https://github.com/cplusplus/draft/blob/6b9b2e9f31aff143334e379e49807488872003e4/source/basic.tex#L5019-L5088), [`[expr.add]` ¶3](https://github.com/cplusplus/draft/blob/6b9b2e9f31aff143334e379e49807488872003e4/source/expressions.tex#L6346-L6396) |
+| `signedAdd` / `checkedSigned`: mathematical addition; an unrepresentable result yields `signedAdditionOverflow` | [N3096 §6.5 ¶5; §6.5.6 ¶6](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n3096.pdf) | [N5001 `[expr.pre]` ¶4](https://github.com/cplusplus/draft/blob/6b9b2e9f31aff143334e379e49807488872003e4/source/expressions.tex#L59-L73), [`[expr.add]` ¶3](https://github.com/cplusplus/draft/blob/6b9b2e9f31aff143334e379e49807488872003e4/source/expressions.tex#L6346-L6396) |
+| `unsignedDiv`: a zero divisor yields `divisionByZero`; otherwise return the integer quotient | [N3096 §6.5.5 ¶6–7](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n3096.pdf) | [N5001 `[expr.mul]` ¶4](https://github.com/cplusplus/draft/blob/6b9b2e9f31aff143334e379e49807488872003e4/source/expressions.tex#L6297-L6344) |
+| `signedDiv`: division toward zero; reject zero and an unrepresentable quotient, including minimum-signed-value divided by `-1` | [N3096 §6.5.5 ¶6–7 and footnote 118](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n3096.pdf) | [N5001 `[expr.mul]` ¶4](https://github.com/cplusplus/draft/blob/6b9b2e9f31aff143334e379e49807488872003e4/source/expressions.tex#L6297-L6344) |
+| `unsignedSub`, `unsignedMul`: difference/product modulo `2^N`; subtraction does not saturate | [N3096 §6.2.5 ¶11; §6.5.6 ¶7; §6.5.5 ¶5](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n3096.pdf) | [N5001 `[basic.fundamental]` ¶2](https://github.com/cplusplus/draft/blob/6b9b2e9f31aff143334e379e49807488872003e4/source/basic.tex#L5019-L5088), [`[expr.add]`](https://github.com/cplusplus/draft/blob/6b9b2e9f31aff143334e379e49807488872003e4/source/expressions.tex#L6346-L6396), [`[expr.mul]`](https://github.com/cplusplus/draft/blob/6b9b2e9f31aff143334e379e49807488872003e4/source/expressions.tex#L6297-L6344) |
+| `signedSub`, `signedMul`: mathematical result, checked against the signed range | [N3096 §6.5 ¶5; §6.5.6 ¶7; §6.5.5 ¶5](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n3096.pdf) | [N5001 `[expr.pre]` ¶4](https://github.com/cplusplus/draft/blob/6b9b2e9f31aff143334e379e49807488872003e4/source/expressions.tex#L59-L73), [`[expr.add]`](https://github.com/cplusplus/draft/blob/6b9b2e9f31aff143334e379e49807488872003e4/source/expressions.tex#L6346-L6396), [`[expr.mul]`](https://github.com/cplusplus/draft/blob/6b9b2e9f31aff143334e379e49807488872003e4/source/expressions.tex#L6297-L6344) |
+| `unsignedRem`, `signedRem`: reject zero; signed remainder follows the dividend sign and also rejects an unrepresentable quotient | [N3096 §6.5.5 ¶6–7 and footnote 118](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n3096.pdf) | [N5001 `[expr.mul]` ¶4 and footnote 63](https://github.com/cplusplus/draft/blob/6b9b2e9f31aff143334e379e49807488872003e4/source/expressions.tex#L6297-L6344) |
 
 The last overflow case follows from the reviewed quotient and value-range
 rules; the drafts need not enumerate that operand pair. The model's explicit
 UB reason is a diagnostic representation, not a claim about a native trap.
+
+## Arithmetic construction and proof scope
+
+`ArithmeticOp` selects the five admitted integer arithmetic operations.
+The common construction promotes both operands, selects their common full
+integer type, inserts explicit conversions and builds the primitive expression.
+It does not perform arithmetic at the original small type's width. Generic
+normalization laws connect every operation/type pair to the same evaluator;
+the VC generator retains its exactness theorem for the extended grammar.
+
+Independent contracts use bounded borrow, unrestricted product carry,
+reconstruction equations and remainder magnitude/sign. The signed quotient-range
+proof establishes exactly the minimum/-1 exception for nonzero divisors at every
+admitted int width. Although its remainder is mathematically zero, that source
+operation remains UB. A nonzero-divisor-only certificate is therefore rejected.
+Diagnostic names and the pure evaluator's left-first failure convention are
+model interfaces; they do not specify native traps or operand sequencing.
 
 ## Scope of the correspondence
 
@@ -47,7 +67,7 @@ Ordinary small types are promoted before common-type conversion and arithmetic.
 Explicit casts cover all admitted integral endpoints. There is no source
 literal-token typing or complete integer-rank engine. Relevant rules are
 [N3096 §6.3.1.8 and §6.5.5 ¶4 / §6.5.6 ¶5](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n3096.pdf)
-and [N5001 `[expr.arith.conv]`](https://github.com/cplusplus/draft/blob/n5001/source/expressions.tex#L1078-L1133).
+and [N5001 `[expr.arith.conv]`](https://github.com/cplusplus/draft/blob/6b9b2e9f31aff143334e379e49807488872003e4/source/expressions.tex#L1165-L1245).
 The implemented subset does not cover the full scope of those rules.
 
 `Target` models value ranges. It does not model object storage, padding bits,
@@ -77,7 +97,7 @@ documents destination-range modulo conversion without a signal. This is the
 selected GNU C policy, rather than the full set of behaviors allowed by
 [N3096 §6.3.1.3 ¶1–3](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n3096.pdf).
 The C++ arithmetic result is justified separately by
-[N5001 `[conv.integral]` ¶1–4](https://github.com/cplusplus/draft/blob/n5001/source/expressions.tex#L946-L969).
+[N5001 `[conv.integral]` ¶1–4](https://github.com/cplusplus/draft/blob/6b9b2e9f31aff143334e379e49807488872003e4/source/expressions.tex#L946-L969).
 The same executable conversion code implements this common selected result.
 This does not establish correspondence to a real GCC executable or source file.
 
@@ -97,7 +117,7 @@ The existing `Expr.convert` covers every source/destination pair among the
 admitted bool, plain/signed/unsigned char, signed/unsigned short, and full int
 and unsigned int types. Conversion TO bool follows
 [N3096 §6.3.1.2 ¶1](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n3096.pdf)
-and [N5001 `[conv.bool]` ¶1](https://github.com/cplusplus/draft/blob/n5001/source/expressions.tex#L1154-L1161):
+and [N5001 `[conv.bool]` ¶1](https://github.com/cplusplus/draft/blob/6b9b2e9f31aff143334e379e49807488872003e4/source/expressions.tex#L1154-L1161):
 zero becomes zero, every nonzero integer becomes one. It is not reduction modulo
 two. Bool's existing values 0/1 are representable in all other admitted types.
 

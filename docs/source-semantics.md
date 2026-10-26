@@ -11,16 +11,19 @@ a source-text frontend and the bootstrap chain are not implemented.
 
 - Bool, plain char and the signed/unsigned char, short and int types, with explicit
   numeric-width and plain-char-signedness profiles and typed external parameters.
-- Unsigned modular addition, checked signed addition, unsigned division and
-  signed division toward zero.
+- Addition, subtraction, multiplication, division and remainder after integer
+  promotion/common-type conversion. Unsigned arithmetic wraps; signed
+  addition/subtraction/multiplication check the mathematical result. Division
+  truncates toward zero; signed remainder follows the dividend sign. Zero
+  divisors and unrepresentable signed quotients are UB for division and remainder.
 - Value-preserving integer promotions and common-type normalization before
   arithmetic, plus explicit casts between every admitted integral type under
   a fixed GNU conversion policy. Conversion to bool tests zero versus nonzero;
   other destinations select the congruent value within their numeric range.
 - Distinct defined, undefined and unsupported outcomes.
-- Shared execution and verification interfaces, independent unsigned-addition
-  and division contracts, structural verification conditions, and a certificate
-  requiring a useful input domain.
+- Shared execution and verification interfaces, independent arithmetic
+  contracts, structural verification conditions, and a certificate requiring a
+  useful input domain. Shared composition lemmas support larger expressions.
 
 The same evaluator interprets both dialect selections. Its present expressions
 are pure, so the left-first failure diagnostic does not resolve a C/C++

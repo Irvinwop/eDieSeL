@@ -8,9 +8,9 @@ binary seed, and source-proved compiler bootstrap stages.
 
 | Component | Current status |
 | --- | --- |
-| Executable source foundation | Finite typed expression/return eDSL: bool/char/short/int value ranges and promotions, addition/division, explicit casts between all admitted integral types, defined/UB/unsupported outcomes |
-| Source definedness/contracts | Shared `Verifies` and completion-style `NoUB`; `Certificate` requires an inhabited input domain; unsigned-addition contract for all typed inputs, division contract for all nonzero denominators; conversion/mixed-operation, promotion and cast/composition clients with inhabited domains and proved NoUB |
-| Source proof reuse | Structural verification conditions proved equivalent to actual defined execution plus postcondition for the finite pure grammar |
+| Executable source foundation | Finite typed expression/return eDSL: bool/char/short/int value ranges and promotions, addition/subtraction/multiplication/division/remainder, explicit casts between all admitted integral types, defined/UB/unsupported outcomes |
+| Source definedness/contracts | Shared `Verifies` and completion-style `NoUB`; `Certificate` requires an inhabited input domain; unsigned-addition contract for all typed inputs, division contract for all nonzero denominators; generic arithmetic, conversion/mixed-operation, promotion and cast/composition clients with inhabited domains and proved NoUB; signed division/remainder exception characterized |
+| Source proof reuse | Structural verification conditions proved equivalent to actual defined execution plus postcondition for the finite pure grammar; shared arithmetic normalization and execution composition |
 | Source text and general C/C++ | No source-text parser, preprocessing correspondence or general verifier |
 | Source-connected OS semantics | Existing resource/concurrency components require source-step integration |
 | Single bootstrap seed | Not selected or proved for the source-first chain |

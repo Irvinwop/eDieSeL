@@ -243,9 +243,21 @@ inductive Expr (target : Target) (parameters : List IntType) : IntType → Type 
       Expr target parameters .uint
   | sadd : Expr target parameters .sint → Expr target parameters .sint →
       Expr target parameters .sint
+  | usub : Expr target parameters .uint → Expr target parameters .uint →
+      Expr target parameters .uint
+  | ssub : Expr target parameters .sint → Expr target parameters .sint →
+      Expr target parameters .sint
+  | umul : Expr target parameters .uint → Expr target parameters .uint →
+      Expr target parameters .uint
+  | smul : Expr target parameters .sint → Expr target parameters .sint →
+      Expr target parameters .sint
   | udiv : Expr target parameters .uint → Expr target parameters .uint →
       Expr target parameters .uint
   | sdiv : Expr target parameters .sint → Expr target parameters .sint →
+      Expr target parameters .sint
+  | urem : Expr target parameters .uint → Expr target parameters .uint →
+      Expr target parameters .uint
+  | srem : Expr target parameters .sint → Expr target parameters .sint →
       Expr target parameters .sint
   | unsupported {ty : IntType} : UnsupportedFeature → Expr target parameters ty
 

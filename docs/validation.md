@@ -24,7 +24,13 @@ A representability-conditioned round trip and a low-byte sum combine casts,
 promotion and checked arithmetic. Independent boundary probes check nonzero
 even bool inputs, signed narrowing boundaries, negative unsigned conversions,
 plain-char signedness, information loss, and propagation of unsafe/unsupported
-children. The source fragment
+children. Arithmetic checks cover wrap versus saturation, unrestricted product
+carry, checked signed boundaries, truncating remainder signs, quotient overflow,
+common-type conversion and unsupported operands. Generic source certificates
+cover all five full-rank arithmetic operations on their explicit numeric domains.
+Subtract/add cancellation and byte multiplication prove composition behavior;
+a universal negative control rejects signed remainder admission based only on
+a nonzero divisor. The source fragment
 and stronger finite-completion meaning of `NoUB` are documented in the
 [source core API](source-core-api.md). This command does not parse or certify
 a C/C++ source file.

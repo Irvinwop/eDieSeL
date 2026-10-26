@@ -44,12 +44,30 @@ def vcExpr {target : Target} {parameters : List IntType}
   | _, .sadd left right, post =>
       vcExpr policy inputs left fun x => vcExpr policy inputs right fun y =>
         (signedAdd target x y).requires post
+  | _, .usub left right, post =>
+      vcExpr policy inputs left fun x => vcExpr policy inputs right fun y =>
+        (unsignedSub target x y).requires post
+  | _, .ssub left right, post =>
+      vcExpr policy inputs left fun x => vcExpr policy inputs right fun y =>
+        (signedSub target x y).requires post
+  | _, .umul left right, post =>
+      vcExpr policy inputs left fun x => vcExpr policy inputs right fun y =>
+        (unsignedMul target x y).requires post
+  | _, .smul left right, post =>
+      vcExpr policy inputs left fun x => vcExpr policy inputs right fun y =>
+        (signedMul target x y).requires post
   | _, .udiv left right, post =>
       vcExpr policy inputs left fun x => vcExpr policy inputs right fun y =>
         (unsignedDiv target x y).requires post
   | _, .sdiv left right, post =>
       vcExpr policy inputs left fun x => vcExpr policy inputs right fun y =>
         (signedDiv target x y).requires post
+  | _, .urem left right, post =>
+      vcExpr policy inputs left fun x => vcExpr policy inputs right fun y =>
+        (unsignedRem target x y).requires post
+  | _, .srem left right, post =>
+      vcExpr policy inputs left fun x => vcExpr policy inputs right fun y =>
+        (signedRem target x y).requires post
   | _, .unsupported _, _ => False
 
 /-- The generated condition is exact for this finite grammar. Its soundness
@@ -78,11 +96,35 @@ theorem vcExpr_iff {target : Target} {parameters : List IntType} {ty : IntType}
       simp only [vcExpr, evalExpr, Outcome.requires_andThen]
       rw [leftIH]
       simp only [rightIH]
+  | usub left right leftIH rightIH =>
+      simp only [vcExpr, evalExpr, Outcome.requires_andThen]
+      rw [leftIH]
+      simp only [rightIH]
+  | ssub left right leftIH rightIH =>
+      simp only [vcExpr, evalExpr, Outcome.requires_andThen]
+      rw [leftIH]
+      simp only [rightIH]
+  | umul left right leftIH rightIH =>
+      simp only [vcExpr, evalExpr, Outcome.requires_andThen]
+      rw [leftIH]
+      simp only [rightIH]
+  | smul left right leftIH rightIH =>
+      simp only [vcExpr, evalExpr, Outcome.requires_andThen]
+      rw [leftIH]
+      simp only [rightIH]
   | udiv left right leftIH rightIH =>
       simp only [vcExpr, evalExpr, Outcome.requires_andThen]
       rw [leftIH]
       simp only [rightIH]
   | sdiv left right leftIH rightIH =>
+      simp only [vcExpr, evalExpr, Outcome.requires_andThen]
+      rw [leftIH]
+      simp only [rightIH]
+  | urem left right leftIH rightIH =>
+      simp only [vcExpr, evalExpr, Outcome.requires_andThen]
+      rw [leftIH]
+      simp only [rightIH]
+  | srem left right leftIH rightIH =>
       simp only [vcExpr, evalExpr, Outcome.requires_andThen]
       rw [leftIH]
       simp only [rightIH]
