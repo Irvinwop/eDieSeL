@@ -30,7 +30,7 @@ theorem quotient_verified (target : Target) (dialect : Dialect) :
   have nonzero : denominator.val ≠ 0 := permitted
   refine ⟨⟨numerator.val / denominator.val,
     Nat.lt_of_le_of_lt (Nat.div_le_self _ _) numerator.isLt⟩, ?_, ?_⟩
-  · simp [eval, quotient, evalExpr, ExpressionCore.evalOutcome, ExpressionCore.evalCore, bind, Outcome.andThen, unsignedDiv,
+  · simp [eval, quotient, evalExpr, ExpressionCore.evalOutcome, ExpressionCore.evalCore, ExpressionCore.evalEngine, bind, Outcome.andThen, unsignedDiv,
       numerator, denominator, nonzero]
   · exact ⟨Nat.div_mul_le_self _ _, by
       simpa [Nat.mul_comm] using
@@ -77,7 +77,7 @@ theorem wrappedIncrement_noUB (target : Target) (dialect : Dialect) :
     ⟨(numerator.val + 1) % target.modulus, Nat.mod_lt _ target.modulus_pos⟩
   refine ⟨⟨incremented.val / denominator.val,
     Nat.lt_of_le_of_lt (Nat.div_le_self _ _) incremented.isLt⟩, ?_⟩
-  simp [eval, wrappedIncrement, evalExpr, ExpressionCore.evalOutcome, ExpressionCore.evalCore, bind, pure, Outcome.andThen, unsignedAdd,
+  simp [eval, wrappedIncrement, evalExpr, ExpressionCore.evalOutcome, ExpressionCore.evalCore, ExpressionCore.evalEngine, Expr.firstUnsupported, Engine.typeDiagnostic, Engine.SyntaxProfile.scalarCovered, bind, pure, Outcome.andThen, unsignedAdd,
     unsignedDiv, one, numerator, denominator, incremented, nonzero]
 
 def maximum (target : Target) : Value target .uint :=

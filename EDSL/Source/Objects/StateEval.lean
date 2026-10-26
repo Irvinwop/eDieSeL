@@ -2,6 +2,7 @@
 import EDSL.Source.Objects.StateSyntax
 import EDSL.Source.Objects.Effects
 import EDSL.Source.Objects.Access
+import EDSL.Source.ExpressionCore.PureInvariant
 
 set_option autoImplicit false
 
@@ -108,7 +109,8 @@ theorem resolve_var {target : Target} {stateParameters : List IntType}
     (index : Vars context kind) :
     (evalExpr dialect policy environment (.param index) : Op target stateParameters Environment _) =
       load dialect (environment.get index) := by
-  simp only [evalExpr, ExpressionCore.evalCore, resolve_var, EffectM.ofOp]
+  simp only [evalExpr, ExpressionCore.evalCore, ExpressionCore.evalEngine,
+    ExpressionCore.integerResolver_index, Param.ofIndex_toIndex, resolve_var, EffectM.ofOp]
 
 @[simp] theorem evalStmt_ret {target : Target} {stateParameters : List IntType}
     {Environment : Type} {context : List ArithmeticType} {result : IntType}
@@ -200,15 +202,10 @@ theorem evalExpr_preserves_state {target : Target} {stateParameters : List IntTy
   have allStable : PreservesState
       (ExpressionCore.evalCore (M := EffectM target stateParameters Environment) policy
         (fun outcome => EffectM.liftScalar outcome) (resolve dialect environment) expression) := by
-    induction expression <;> simp only [ExpressionCore.evalCore]
-    all_goals repeat' first
-      | assumption
-      | apply preserves_pure
-      | apply preserves_liftScalar
-      | apply resolve_preserves_state
-      | apply preserves_bind
-      | split
-      | intro value
+    exact ExpressionCore.evalCore_property (fun operation => PreservesState operation)
+      preserves_pure preserves_bind policy (fun outcome => EffectM.liftScalar outcome)
+      (resolve dialect environment) preserves_liftScalar
+      (fun index => resolve_preserves_state dialect environment index) expression
   exact allStable state
 
 /-- Once an RHS succeeds, assignment performs its actual authority-checked store

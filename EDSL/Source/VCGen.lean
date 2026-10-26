@@ -38,75 +38,63 @@ theorem Outcome.requires_andThen {α β : Type} (outcome : Outcome α)
       outcome.requires (fun value => (next value).requires post) := by
   cases outcome <;> rfl
 
-/-- Structural verification-condition generation for the finite pure fragment.
-Arithmetic leaves use the shared evaluator's primitive operations, rather than
-an alternate language semantics. Kernel reduction exposes their range and
-nonzero-divisor obligations. Select requires its condition and chosen arm only;
-the program VC separately checks static coverage of all syntax. There is no
-execution-fuel or solver premise. -/
+namespace VerificationCarrier
+
+/-- Predicates on results are computed through the same traversal as execution. -/
+abbrev Predicate (α : Type) : Type := (α → Prop) → Prop
+
+instance : Monad Predicate where
+  pure value post := post value
+  bind first next post := first (fun value => next value post)
+
+@[instance_reducible] def outcomeMonad : Monad Outcome where
+  pure := Outcome.defined
+  bind := Outcome.andThen
+
+attribute [local instance] outcomeMonad
+
+theorem requires_pure {α : Type} (value : α) :
+    (pure value : Outcome α).requires = (pure value : Predicate α) := rfl
+
+theorem requires_bind {α β : Type} (first : Outcome α) (next : α → Outcome β) :
+    (first >>= next).requires =
+      (first.requires >>= fun value => (next value).requires : Predicate β) := by
+  funext post
+  exact propext (Outcome.requires_andThen first next post)
+
+end VerificationCarrier
+
+attribute [local instance] VerificationCarrier.outcomeMonad
+
+/-- The logical carrier specializes the one shared expression traversal.
+Primitive UB and unsupported outcomes require False; branch demand is exactly
+that of execution. Whole-tree source coverage remains the separate public VC
+preflight. No second arithmetic syntax traversal or solver premise is used. -/
 def vcExpr {target : Target} {parameters : List IntType}
     (policy : IntegerConversionPolicy) (inputs : Inputs target parameters) :
-    {ty : IntType} → Expr target parameters ty → (Value target ty → Prop) → Prop
-  | _, .literal value, post => post value
-  | _, .param index, post => post (inputs.get index)
-  | _, .promote operand, post =>
-      vcExpr policy inputs operand fun value =>
-        post (IntegerPromotions.promoteValue value)
-  | _, .convert destination operand, post =>
-      vcExpr policy inputs operand fun value =>
-        (convertValue policy target _ destination value).requires post
-  | _, .uadd left right, post =>
-      vcExpr policy inputs left fun x => vcExpr policy inputs right fun y =>
-        (unsignedAdd target x y).requires post
-  | _, .sadd left right, post =>
-      vcExpr policy inputs left fun x => vcExpr policy inputs right fun y =>
-        (signedAdd target x y).requires post
-  | _, .usub left right, post =>
-      vcExpr policy inputs left fun x => vcExpr policy inputs right fun y =>
-        (unsignedSub target x y).requires post
-  | _, .ssub left right, post =>
-      vcExpr policy inputs left fun x => vcExpr policy inputs right fun y =>
-        (signedSub target x y).requires post
-  | _, .umul left right, post =>
-      vcExpr policy inputs left fun x => vcExpr policy inputs right fun y =>
-        (unsignedMul target x y).requires post
-  | _, .smul left right, post =>
-      vcExpr policy inputs left fun x => vcExpr policy inputs right fun y =>
-        (signedMul target x y).requires post
-  | _, .udiv left right, post =>
-      vcExpr policy inputs left fun x => vcExpr policy inputs right fun y =>
-        (unsignedDiv target x y).requires post
-  | _, .sdiv left right, post =>
-      vcExpr policy inputs left fun x => vcExpr policy inputs right fun y =>
-        (signedDiv target x y).requires post
-  | _, .urem left right, post =>
-      vcExpr policy inputs left fun x => vcExpr policy inputs right fun y =>
-        (unsignedRem target x y).requires post
-  | _, .srem left right, post =>
-      vcExpr policy inputs left fun x => vcExpr policy inputs right fun y =>
-        (signedRem target x y).requires post
-  | _, .compare operation _ left right, post =>
-      vcExpr policy inputs left fun x => vcExpr policy inputs right fun y =>
-        post (compareValues operation x y)
-  | _, .select condition onTrue onFalse, post =>
-      vcExpr policy inputs condition fun value =>
-        if value.toInt = 0 then vcExpr policy inputs onFalse post
-        else vcExpr policy inputs onTrue post
-  | _, .unsupported _, _ => False
+    {ty : IntType} → Expr target parameters ty → (Value target ty → Prop) → Prop :=
+  fun {_} expression post =>
+    ExpressionCore.evalCore (M := VerificationCarrier.Predicate) policy
+      (fun outcome => outcome.requires) (fun index post => post (inputs.get index))
+      expression post
 
-/-- The generated condition is exact for this finite grammar. Its soundness
-includes actual defined execution; it cannot merely exclude an error by
-omitting the corresponding behavior. -/
+/-- Exactness follows by mapping complete computations of the shared core,
+including lazy selection and failures, into the logical carrier. -/
 theorem vcExpr_iff {target : Target} {parameters : List IntType} {ty : IntType}
     (policy : IntegerConversionPolicy) (inputs : Inputs target parameters)
     (expression : Expr target parameters ty)
     (post : Value target ty → Prop) :
     vcExpr policy inputs expression post ↔ (evalExpr policy inputs expression).requires post := by
-  unfold evalExpr ExpressionCore.evalOutcome
-  induction expression <;>
-    simp_all only [vcExpr, ExpressionCore.evalCore, bind, pure,
-      Outcome.requires_andThen, Outcome.requires_defined,
-      Outcome.requires_unsupported, Outcome.requires_ite]
+  have mapped := ExpressionCore.evalCore_map
+    (M := Outcome) (N := VerificationCarrier.Predicate) policy
+    (fun outcome => outcome.requires)
+    (fun value => VerificationCarrier.requires_pure value)
+    (fun first next => VerificationCarrier.requires_bind first next)
+    (fun outcome => outcome) (fun outcome => outcome.requires)
+    (fun index => Outcome.defined (inputs.get index))
+    (fun index post => post (inputs.get index))
+    (fun _ => rfl) (fun _ => rfl) expression
+  exact Iff.of_eq (congrFun mapped post).symm
 
 /-- Each admitted input requires full static model coverage followed by the raw
 expression VC. An empty admission remains vacuous, as for `Verifies`; inhabited

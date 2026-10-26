@@ -42,7 +42,7 @@ value set; it makes no claim of one-bit storage.
 ## Syntax and execution
 
 The scalar operations live in `Source.Operations`; `Source.ExpressionCore`
-provides the one shared traversal. `evalExpr` is its scalar specialization,
+provides one mutual expression/place traversal. `evalExpr` is its scalar specialization,
 using immutable input lookup and the actual `Outcome` operations.
 `ExpressionCore.evalCore` additionally accepts an explicit effect carrier,
 typed lookup and outcome adapter. This library interface does not let a public
@@ -106,6 +106,38 @@ operand-sequencing promise. The evaluator
 executes each operand before promotion/conversion; neither operation repairs
 operand UB or unsupported coverage. Casts are total on defined integral operand
 values; this does not make unsupported operands or arithmetic UB defined.
+
+## Shared expressions and places
+
+The public `Expr target parameters result` is a guarded pure specialization
+of `Engine.Expr`. Its original integer constructors remain available. The
+fragment index prevents a pointer load from entering that pure API, including
+inside an integer expression or an unselected branch. Typed input maps preserve
+parameter lookup; `Expr.inductionOn` in `Syntax.Properties` supplies proof
+induction over the old integer cases. The underlying datatype is mutual, so
+its generated constructor/recursor interface is now `Engine.Expr`/`Engine.Place`.
+The public `param` adapter constructs an expression; use the raw constructor
+and the proved index maps when eliminating it.
+
+The object fragment adds typed load, address, array-decay and pointer-offset
+syntax. `Place` contains variable designators and indirection; subscript is
+indirection of pointer addition. `evalEngine` and `evalPlace` share arithmetic
+and interpret places with explicit designation or address intent. Addressing an
+indirect expression evaluates its pointer once, then uses the supplied pointer
+interpretation operation before ordinary indirection can occur.
+
+These generic memory operations are computation parameters. They do not provide
+a concrete pointer validator, heap, ABI or new executable source-memory support.
+The current public object driver still uses its integer registry specialization.
+A source certificate uses its fixed program semantics; choosing arbitrary handlers
+does not certify a C or C++ program.
+
+`Syntax.Coverage` relates the complete scanner to structural coverage, including
+all branches, places and signature/context types. The common profile preserves
+existing C/C++ integer syntax; the separate C23 data profile checks supplied
+layout/type facts. Neither profile proves runtime memory safety. The shared
+carrier-map theorems transport complete computations, including failures and
+observations; they assume no implicit purity, scheduling or Monad laws.
 
 ## Integral casts
 
@@ -223,6 +255,12 @@ The helpers cover admitted integral values and built-in C++ prvalues. They
 do not add pointer, floating, enum, overloaded, lvalue or source-text rules.
 
 ## Verification and reuse
+
+The pure `vcExpr` specializes the same expression engine to a predicate-transformer
+carrier. It has no separate arithmetic syntax traversal. `vcExpr_iff` connects
+those conditions to actual defined execution; program coverage remains a separate
+whole-tree obligation. Stateful expression and statement VCs compose the fixed
+object operations, rather than letting each program supply a new interpreter.
 
 `Verifies program admitted post` requires, for every admitted input, an actual
 defined evaluation and the independent result predicate. It accepts no supplied

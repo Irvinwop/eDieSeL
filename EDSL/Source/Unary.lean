@@ -130,8 +130,9 @@ theorem Expr.firstUnsupported_unaryComplement {target : Target} {parameters : Li
 theorem Expr.firstUnsupported_logicalNot {target : Target} {parameters : List IntType}
     {source : IntType} (dialect : Dialect) (operand : Expr target parameters source) :
     (operand.logicalNot dialect).firstUnsupported = operand.firstUnsupported := by
-  cases dialect <;> cases coverage : operand.firstUnsupported <;>
-    simp [Expr.logicalNot, Expr.logicalResult, Expr.truth, coverage]
+  cases dialect <;>
+    change Engine.firstSome operand.firstUnsupported none = operand.firstUnsupported
+  all_goals cases operand.firstUnsupported <;> rfl
 
 theorem eval_unaryPlus {target : Target} {parameters : List IntType} {source : IntType}
     (policy : IntegerConversionPolicy) (inputs : Inputs target parameters)

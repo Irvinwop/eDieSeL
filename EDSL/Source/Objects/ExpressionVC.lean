@@ -208,6 +208,8 @@ theorem vcExpr_var {context : List ArithmeticType} {kind : ArithmeticType}
     vcExpr policy environment (.param index) post initial ↔ ∃ value,
       CanLoad initial (environment.get index) value ∧
         post initial value initial [.read (environment.get index).id kind value.toInt] := by
+  simp only [vcExpr, evalExpr, ExpressionCore.evalCore, ExpressionCore.evalEngine,
+    ExpressionCore.integerResolver_index, Param.ofIndex_toIndex]
   change resolve environment index (post initial) initial ↔ _
   rw [resolve_var]
   rfl

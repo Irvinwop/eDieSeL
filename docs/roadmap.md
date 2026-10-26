@@ -83,14 +83,20 @@ composes entry, control and actual cleanup. A loop-bearing division function
 proves an independent quotient/remainder, caller-frame and resource contract.
 The [typed memory foundation](source-memory.md) now separates numeric values
 from supplied storage layout and proves typed payload/path/update laws. Raw
-pointer descriptors intentionally retain invalid cases. The next dependency
-order is:
+pointer descriptors intentionally retain invalid cases. Shared expression/place
+syntax and one mutual traversal are implemented, with complete-effect transport
+and an exact guarded pure restriction. Pure execution and VCs specialize the
+same traversal; current-object read and existing program contracts remain checked.
+The new memory leaves are abstract computation parameters, not a pointer runtime.
+The next dependency order is:
 
-1. Extend the existing expression grammar and its single traversal with typed
-   places, keeping the pure integer fragment and complete outcomes compatible.
-2. Generalize the existing object registry contents; implement checked address,
-   designation, load/store and pointer-offset operations with explicit resource
-   and lifetime conditions. Do not introduce a parallel heap.
+1. Share the state/error/event carrier and widen the authoritative registry
+   contents in place to typed payloads, preserving exact old primitive behavior
+   for every state and outcome.
+2. Implement checked address, designation, load/store and pointer-offset
+   operations, then their fixed operational/logical expression adapters. Bounds,
+   lifetime, authority and value-use conditions remain explicit. Do not
+   introduce a parallel heap.
 3. Extend the current declaration fold and statement/control machine over that
    same state and expression engine. Prove indexed swap, then buffer-prefix
    reversal, against independent contents/bounds/frame contracts.

@@ -1,5 +1,6 @@
 /- Copyright 2026 Irvinwop. SPDX-License-Identifier: Apache-2.0 -/
 import EDSL.Source.Memory
+import EDSL.Source.Syntax.Coverage
 import EDSL.Source.Certificates
 import EDSL.Source.VCGen
 import EDSL.Source.Division
@@ -24,6 +25,8 @@ import tests.SourceFunctionFailures
 import tests.SourceEntryBoundaries
 import tests.SourceEntryQuota
 import tests.SourceMemory
+import tests.SourcePlaceEngine
+import tests.SourcePlaceCoverage
 import tests.SourceReadOrder
 import tests.SourceExpressionCore
 import EDSL.Source.GuardContracts

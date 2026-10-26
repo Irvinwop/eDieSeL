@@ -84,15 +84,10 @@ theorem evalExpr_reads {context : List ArithmeticType} {type : IntType}
   have allReads : ReadsOnly
       (ExpressionCore.evalCore (M := EffectM target parameters Environment) policy
         (fun outcome => EffectM.liftScalar outcome) (StateEval.resolve dialect environment) expression) := by
-    induction expression <;> simp only [ExpressionCore.evalCore]
-    all_goals repeat' first
-      | assumption
-      | apply reads_pure
-      | apply reads_scalar
-      | apply resolve_reads
-      | apply reads_bind
-      | split
-      | intro value
+    exact ExpressionCore.evalCore_property (fun operation => ReadsOnly operation)
+      reads_pure reads_bind policy (fun outcome => EffectM.liftScalar outcome)
+      (StateEval.resolve dialect environment) reads_scalar
+      (fun index => resolve_reads dialect environment index) expression
   exact allReads state
 
 /-- INTERNAL composition of two arbitrary source RHS computations from their
