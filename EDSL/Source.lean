@@ -5,6 +5,7 @@ import EDSL.Source.Syntax.Coverage
 import EDSL.Source.Semantics
 import EDSL.Source.Certificate
 import EDSL.Source.VCGen
+import EDSL.Source.VCRules
 import EDSL.Source.ArithmeticConversions
 import EDSL.Source.IntegerPromotions
 import EDSL.Source.IntegerCasts

@@ -1,5 +1,5 @@
 /- Copyright 2026 Irvinwop. SPDX-License-Identifier: Apache-2.0 -/
-import EDSL.Source.VCGen
+import EDSL.Source.VCRules
 import EDSL.Source.Division
 import EDSL.Source.IntegerArithmetic
 
@@ -121,23 +121,10 @@ theorem signedGuard_observes (target : Target) (policy : IntegerConversionPolicy
     compareValues_nonzero_iff .ne denominator (signedNegativeOne target)
   apply (Outcome.requires_iff _ _).mp
   apply (vcExpr_iff policy inputs (signedGuard target) _).mp
-  have apply_choice {α β : Type} (condition : Prop) [Decidable condition]
-      (yes no : α → β) (argument : α) :
-      (if condition then yes else no) argument =
-        if condition then yes argument else no argument := by
-    split <;> rfl
-  dsimp [vcExpr, signedGuard, signedNonzeroGuard, ExpressionCore.evalCore,
-    ExpressionCore.evalEngine, ExpressionCore.integerResolver, Param.toIndex,
-    VerificationCarrier.Predicate, Memory.ScalarValue, bind, pure]
-  simp only [ExpressionCore.integerResolver_index, Param.ofIndex, apply_choice]
-  change (if (compareValues .ne denominator (signedZero target)).toInt = 0 then
-      ((booleanValue (target := target) false).toInt ≠ 0 ↔ denominator.val ≠ 0 ∧
-        ¬ IntegerArithmetic.DivisionOverflowPair numerator denominator)
-    else if (compareValues .ne numerator (signedMinimum target)).toInt = 0 then
-      ((compareValues .ne denominator (signedNegativeOne target)).toInt ≠ 0 ↔
-        denominator.val ≠ 0 ∧ ¬ IntegerArithmetic.DivisionOverflowPair numerator denominator)
-    else ((booleanValue (target := target) true).toInt ≠ 0 ↔ denominator.val ≠ 0 ∧
-        ¬ IntegerArithmetic.DivisionOverflowPair numerator denominator))
+  simp only [signedGuard, signedNonzeroGuard, vcExpr_select, vcExpr_compare,
+    vcExpr_param, vcExpr_literal,
+    show inputs.get .here = numerator from rfl,
+    show inputs.get (.there .here) = denominator from rfl]
   by_cases denominator_zero : (compareValues .ne denominator (signedZero target)).toInt = 0
   · have zero : denominator.val = 0 := by
       by_cases zero : denominator.val = 0

@@ -262,6 +262,15 @@ those conditions to actual defined execution; program coverage remains a separat
 whole-tree obligation. Stateful expression and statement VCs compose the fixed
 object operations, rather than letting each program supply a new interpreter.
 
+Use the named equations in `Source.VCRules` to expose a new program's obligations:
+`vcExpr_literal`, `vcExpr_param`, `vcExpr_promote`, `vcExpr_convert`, the ten
+arithmetic rules, `vcExpr_compare`, `vcExpr_select` and `vcExpr_unsupported`.
+They apply to arbitrary typed operands and posts. Use them with `rw` or
+`simp only`; they are not global simplifier rules. Program proofs can then use
+the existing numeric/specification lemmas without unfolding the shared engine,
+index adapters or logical carrier. The signed-guard client uses this interface
+while retaining its original all-input contract and exceptional-input behavior.
+
 `Verifies program admitted post` requires, for every admitted input, an actual
 defined evaluation and the independent result predicate. It accepts no supplied
 NoUB premise. `Verifies.noUB`, `.excludesUB`, `.excludesUnsupported` and
