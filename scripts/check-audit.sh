@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Build every explicit audit import even with a cold or partial Lake cache.
+# Restored objects are an optimization, never an implicit audit prerequisite.
+lake build EDSL.All EDSL.Audit EDSL.Audit.Owners
 lake env lean -DwarningAsError=true scripts/Audit.lean
 
 # A theorem inside the project depends on an axiom outside the namespace.
