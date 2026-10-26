@@ -18,7 +18,8 @@ a verified chain capable of building GCC and the programs it compiles.
 
 The initial `EDSL.Source` API is a finite expression/return fragment: typed
 `int` and `unsigned int`, addition and division, explicit UB/unsupported
-outcomes, and an unsigned-addition contract proved for every typed input.
+outcomes, structural verification conditions, and independent unsigned-addition
+and division contracts. Definedness is proved on each stated input domain.
 Its [API guide](docs/source-core-api.md) records the exact scope. It has no
 source-text parser, memory operations or OS effects.
 

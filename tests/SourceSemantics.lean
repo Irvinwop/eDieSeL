@@ -1,6 +1,7 @@
 /- Copyright 2026 Irvinwop. SPDX-License-Identifier: Apache-2.0 -/
 import EDSL.Source.Certificates
 import EDSL.Source.VCGen
+import EDSL.Source.Division
 import EDSL.Audit.Owners
 
 set_option autoImplicit false
@@ -18,4 +19,12 @@ set_option warningAsError true
 #print axioms EDSL.Source.vcExpr_iff
 #print axioms EDSL.Source.vc_iff_verifies
 #print axioms EDSL.Source.certificate_of_vc
+#print axioms EDSL.Source.Division.quotient_verified
+#print axioms EDSL.Source.Division.quotient_certificate
+#print axioms EDSL.Source.Division.quotient_noUB
+#print axioms EDSL.Source.Division.wrappedIncrement_noUB
+#print axioms EDSL.Source.Division.wrappedIncrement_counterexample_defined
+#print axioms EDSL.Source.Division.counterexample_violates_contract
+#print axioms EDSL.Source.Division.wrappedIncrement_not_verified
+#print axioms EDSL.Source.Division.wrappedIncrement_not_certified
 #audit_edsl_owners

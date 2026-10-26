@@ -38,10 +38,12 @@ be given their separate general meanings. See the [source core API](source-core-
 
 ## Keep the environment explicit
 
-The execution model includes inputs, memory, object lifetimes, threads,
-scheduler choices, atomicity, synchronization and OS effects. An abstract
-interface remains an assumption until its implementation sources are proved
-in the same system and the composition is checked.
+The current source core is pure and accepts typed parameter values; it has
+no memory, threads or OS effects. Before admitting effectful source constructs,
+the model must represent their inputs, memory, object lifetimes, threads,
+scheduler choices, atomicity, synchronization and OS effects explicitly. An
+abstract interface remains an assumption until its implementation sources
+are proved in the same system and the composition is checked.
 
 Safety, functional correctness, termination, deadlock freedom, confidentiality
 and side-channel properties are different statements. A source result theorem

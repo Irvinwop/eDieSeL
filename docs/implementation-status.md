@@ -9,7 +9,8 @@ binary seed, and source-proved compiler bootstrap stages.
 | Component | Current status |
 | --- | --- |
 | Executable source foundation | Finite typed expression/return eDSL: `int`/`unsigned int`, addition and division, explicit defined/UB/unsupported outcomes |
-| Source definedness/contracts | Shared `Verifies` and completion-style `NoUB`; `Certificate` requires an inhabited input domain; unsigned-addition contract for all typed inputs |
+| Source definedness/contracts | Shared `Verifies` and completion-style `NoUB`; `Certificate` requires an inhabited input domain; unsigned-addition contract for all typed inputs, division contract for all nonzero denominators |
+| Source proof reuse | Structural verification conditions proved equivalent to actual defined execution plus postcondition for the finite pure grammar |
 | Source text and general C/C++ | No source-text parser, preprocessing correspondence or general verifier |
 | Source-connected OS semantics | Existing resource/concurrency components require source-step integration |
 | Single bootstrap seed | Not selected or proved for the source-first chain |

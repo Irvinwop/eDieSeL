@@ -15,7 +15,10 @@ independent bounded-carry equation for every typed input. `Certificate` combines
 the execution/contract theorem with an inhabited domain; domain and contract
 independence still need review. See the [API](source-core-api.md) and
 [implementation status](implementation-status.md) for exact limits. There is
-no source-text frontend, memory/effect model or bootstrap stage yet.
+no source-text frontend, memory/effect model or bootstrap stage yet. Structural
+verification conditions are proved exact for this grammar. Unsigned division
+has an independent interval contract and a synthetic candidate proved safe
+but functionally incorrect; these reuse the same executable semantics.
 
 ## 1. Establish the GNU C23 semantics foundation
 

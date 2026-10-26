@@ -14,8 +14,9 @@ a source-text frontend and the bootstrap chain are not implemented.
 - Unsigned modular addition, checked signed addition, unsigned division and
   signed division toward zero.
 - Distinct defined, undefined and unsupported outcomes.
-- Shared execution and verification interfaces, an independent unsigned-addition
-  contract, and a certificate requiring a useful input domain.
+- Shared execution and verification interfaces, independent unsigned-addition
+  and division contracts, structural verification conditions, and a certificate
+  requiring a useful input domain.
 
 The same evaluator interprets both dialect selections. Its present expressions
 are pure, so the left-first failure diagnostic does not resolve a C/C++
@@ -23,6 +24,8 @@ sequencing question. There are no conversions, lvalues, objects, pointers,
 memory operations, calls, loops, OS effects or threads. `Target` records integer
 value ranges, not an ABI, storage representation or compiler/hardware relation.
 The [source core API](source-core-api.md) lists exact declarations and limits.
+The [rule-reference table](source-rules.md) maps current integer rules to
+dated C/C++ draft clauses and records the limits of that review.
 
 ## One semantic implementation
 
@@ -66,6 +69,13 @@ Boundary examples distinguish signed overflow, zero division, signed-division
 overflow and truncation toward zero. An unsupported nested expression cannot
 be certified as a successful return, regardless of the chosen result predicate.
 
+The unsigned-division certificate covers every typed numerator and nonzero
+denominator, using the independent interval `q*d ≤ n < (q+1)*d`. A synthetic
+`(n+1u)/d` candidate is proved free of UB on the same domain, but its result
+violates that interval at `UINT_MAX, d=1`. This separates proved safety from
+functional correctness. Structural verification conditions are proved exact
+for this grammar and construct the same execution-based certificates.
+
 ## Outcomes as the language grows
 
 | Outcome | Required treatment |
@@ -106,7 +116,8 @@ The initial reference inventory includes the public
 [WG21 N5001 C++ draft](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2024/n5001.pdf),
 [GCC language standards](https://gcc.gnu.org/onlinedocs/gcc/Standards.html) and
 [GNU extensions](https://gcc.gnu.org/onlinedocs/gcc/C-Extensions.html).
-Implemented features need a recorded version and clause review. These documents
-provide a reference inventory, not a full conformance claim. In particular,
+The [current rule review](source-rules.md) records the dated clauses for integer
+ranges, addition and division; future features need the same traceability.
+These documents and manual reviews do not establish full conformance. In particular,
 recording the dialect name in the current AST does not implement every rule
 of that dialect.

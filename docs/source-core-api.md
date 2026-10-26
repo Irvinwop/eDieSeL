@@ -187,3 +187,23 @@ parse source text, solve arbitrary conditions, add control-flow invariants or
 cover effects. Extending the expression grammar requires extending this
 exactness proof. Independent review of the chosen input/result specification
 is still required.
+
+## Division contract and safety/correctness separation
+
+Import `EDSL.Source.Division` for these clients, in namespace
+`EDSL.Source.Division`. `quotient` returns the unsigned quotient of two external
+parameters. `NonzeroDenominator` admits every typed numerator and every nonzero
+typed denominator. The independent `QuotientInterval` specification is
+`q*d ≤ n ∧ n < (q+1)*d`; it contains no division or remainder operation.
+`quotient_verified`, `quotient_certificate` and `quotient_noUB` cover that whole
+domain at every admitted width and for either dialect. The inhabited-domain
+witness is numerator zero, denominator one.
+
+The project-owned synthetic `wrappedIncrement` candidate instead computes
+`(n+1u)/d`. `wrappedIncrement_noUB` proves actual defined completion on the same
+domain. `wrappedIncrement_counterexample_defined` shows it returns zero at
+`UINT_MAX, d=1`, and `counterexample_violates_contract` proves this violates the
+quotient interval. `wrappedIncrement_not_verified` and
+`wrappedIncrement_not_certified` rule out the intended result claim despite its
+safety proof. These are embedded syntax theorems, with no native-source-file or
+ABI correspondence implied.
