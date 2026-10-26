@@ -137,6 +137,22 @@ theorem small_rank_lt_full (ty : SmallType) :
 
 end IntType
 
+/-- C comparisons/logical operators produce int; C++ produces bool. This is
+value-type metadata, without a source-text typing or object-representation claim. -/
+def Dialect.logicalType : Dialect → IntType
+  | .gnuC23 => .sint
+  | .gnuCpp26 => .small .boolean
+
+/-- Integer comparison operations before language-specific result lifting. -/
+inductive ComparisonOp where
+  | eq
+  | ne
+  | lt
+  | le
+  | gt
+  | ge
+  deriving DecidableEq, Repr
+
 /-- Mathematical values with their representability proof, not machine storage.
 In particular, constructing a literal cannot silently truncate its value. -/
 def Value (target : Target) : IntType → Type
@@ -228,9 +244,10 @@ inductive UnsupportedFeature where
   | dialectExtension
   deriving DecidableEq, Repr
 
-/-- Finite typed source expressions. Arithmetic primitives take operands of the
-same full-rank type; explicit conversion changes type. Literals are already
-typed values, not parsed literal tokens. An unsupported
+/-- Finite typed source expressions. Arithmetic and comparison primitives take
+operands of the same full-rank type; explicit conversion changes type. Select
+requires a bool condition and arms of one type, without implicit conversions.
+Literals are already typed values, not parsed literal tokens. An unsupported
 marker explicitly records a hole in coverage and cannot execute successfully. -/
 inductive Expr (target : Target) (parameters : List IntType) : IntType → Type where
   | literal {ty : IntType} : Value target ty → Expr target parameters ty
@@ -259,7 +276,51 @@ inductive Expr (target : Target) (parameters : List IntType) : IntType → Type 
       Expr target parameters .uint
   | srem : Expr target parameters .sint → Expr target parameters .sint →
       Expr target parameters .sint
+  | compare (operation : ComparisonOp) (kind : ArithmeticType)
+      (left right : Expr target parameters kind.asIntType) :
+      Expr target parameters (.small .boolean)
+  | select {ty : IntType} (condition : Expr target parameters (.small .boolean))
+      (onTrue onFalse : Expr target parameters ty) : Expr target parameters ty
   | unsupported {ty : IntType} : UnsupportedFeature → Expr target parameters ty
+
+namespace Expr
+
+@[simp] private def firstSome (first second : Option UnsupportedFeature) : Option UnsupportedFeature :=
+  match first with
+  | some feature => some feature
+  | none => second
+
+/-- Static model coverage in left-first syntax order, including the condition
+and both select arms. This scan does not execute expressions or diagnose UB;
+even a marker in an unchosen arm means the program exceeds model coverage. -/
+@[simp] def firstUnsupported {target : Target} {parameters : List IntType} :
+    {ty : IntType} → Expr target parameters ty → Option UnsupportedFeature
+  | _, .literal _ => none
+  | _, .param _ => none
+  | _, .convert _ operand => operand.firstUnsupported
+  | _, .promote operand => operand.firstUnsupported
+  | _, .uadd left right => firstSome left.firstUnsupported right.firstUnsupported
+  | _, .sadd left right => firstSome left.firstUnsupported right.firstUnsupported
+  | _, .usub left right => firstSome left.firstUnsupported right.firstUnsupported
+  | _, .ssub left right => firstSome left.firstUnsupported right.firstUnsupported
+  | _, .umul left right => firstSome left.firstUnsupported right.firstUnsupported
+  | _, .smul left right => firstSome left.firstUnsupported right.firstUnsupported
+  | _, .udiv left right => firstSome left.firstUnsupported right.firstUnsupported
+  | _, .sdiv left right => firstSome left.firstUnsupported right.firstUnsupported
+  | _, .urem left right => firstSome left.firstUnsupported right.firstUnsupported
+  | _, .srem left right => firstSome left.firstUnsupported right.firstUnsupported
+  | _, .compare _ _ left right => firstSome left.firstUnsupported right.firstUnsupported
+  | _, .select condition onTrue onFalse =>
+      firstSome condition.firstUnsupported
+        (firstSome onTrue.firstUnsupported onFalse.firstUnsupported)
+  | _, .unsupported feature => some feature
+
+/-- Coverage of all syntax, separately from source typing and defined execution. -/
+def Supported {target : Target} {parameters : List IntType} {ty : IntType}
+    (expression : Expr target parameters ty) : Prop :=
+  expression.firstUnsupported = none
+
+end Expr
 
 /-- The fixed GNU integer-conversion policy. Out-of-range conversion to signed
 uses the destination-range modulo representative, with no conversion signal.

@@ -52,6 +52,8 @@ No input generator, memory load, object initialization or ABI is hidden here.
 | `promote operand` | Value-preserving integer promotion to a full arithmetic type |
 | `convert destination operand` | Explicit cast between every admitted integral source and destination |
 | `uadd`/`sadd`, `usub`/`ssub`, `umul`/`smul`, `udiv`/`sdiv`, `urem`/`srem` | Same-type full-rank addition, subtraction, multiplication, division and remainder |
+| `compare operation kind left right` | Compare same-type full-rank integers; canonical internal bool result |
+| `select condition yes no` | Evaluate a bool condition, then exactly one same-typed arm |
 | `unsupported feature` | Explicit missing coverage, never successful verification |
 
 `Program target parameters result` contains `dialect`, an explicitly supplied
@@ -82,8 +84,18 @@ An unrepresentable quotient makes remainder undefined even when its mathematical
 value is zero, including the signed minimum with divisor -1. Missing coverage
 is not a UB witness or a security defect.
 
-All evaluation is structural recursion on pure finite expressions. Left-first
-failure diagnostics make no C/C++ operand-sequencing promise. The evaluator
+All evaluation is structural recursion on pure finite expressions. Public
+`eval` first checks `Expr.firstUnsupported` across the complete body, including
+both conditional arms. Any marker gives an unsupported outcome before execution
+diagnostics. This is a tool-coverage phase, not source execution or type checking.
+`Expr.Supported` means this scan returned `none`.
+
+Raw `evalExpr` evaluates only the selected arm. Thus an unselected, fully modeled
+division-by-zero expression does not fail execution; an unselected missing-rule
+marker still prevents public certification. `eval_defined_iff` characterizes
+public success as full-body support together with actual raw defined execution.
+Left-first arithmetic/comparison failure diagnostics make no general C/C++
+operand-sequencing promise. The evaluator
 executes each operand before promotion/conversion; neither operation repairs
 operand UB or unsupported coverage. Casts are total on defined integral operand
 values; this does not make unsupported operands or arithmetic UB defined.
@@ -144,6 +156,32 @@ profile, but unsigned 65534 on the int16 profile. With int17/short16 both inputs
 fit signed int, yet 65535 plus 1 causes signed-add overflow. Representable
 promoted operands do not establish safe arithmetic by themselves.
 
+## Comparisons and lazy expressions
+
+`ComparisonOp` includes `eq`, `ne`, `lt`, `le`, `gt` and `ge`.
+`Expr.usualCompare` promotes both operands, converts them to their common
+arithmetic type and uses the primitive comparison. `Expr.sourceCompare` then
+adapts the result to `Dialect.logicalType`: signed int in C, bool in C++.
+Both have the integer value 0 or 1. `ComparisonOp.Relates` specifies the
+mathematical relation; generic comparison certificates use independently
+specified common-type representatives through `CastContracts.CastResult`.
+
+`Expr.truth` converts an integral expression by zero/nonzero. `Expr.logicalAnd`
+and `Expr.logicalOr` build lazy selections and adapt the final logical result
+to the dialect. The right operand executes only when the left requires it;
+a failed condition or selected operand propagates its failure.
+
+`Expr.conditional dialect condition yes no` covers unqualified integral
+**prvalue** arms. C uses `commonType`; C++ preserves identical arm types and
+otherwise uses `commonType`. `conditionalType` records that result index.
+Conversions stay inside each arm so the unselected arm is not evaluated.
+This is not the full C++ conditional type algorithm: lvalues, cv qualification,
+classes and pointers are outside this grammar.
+
+These operations read immutable typed parameters. A guarded denominator cannot
+change between the test and division in this model. A proof here does not
+justify volatile/shared reads, overloaded operators, or effectful sequencing.
+
 ## Verification and reuse
 
 `Verifies program admitted post` requires, for every admitted input, an actual
@@ -163,9 +201,18 @@ establish that the chosen domain or result is the intended specification;
 review both independently. Do not define admission by this candidate's NoUB or
 postconditions by rerunning its evaluator.
 
+`Certificate.supported` derives whole-body coverage, including skipped arms,
+from the certificate's inhabitation and successful execution. Its
+`.raw_verified` exposes defined raw execution with the same postcondition.
+`no_certificate_with_unsupported` rejects any public certificate containing a
+missing-rule marker. `certificate_iff_supported_useful_raw_vc` characterizes
+certification as support, inhabited admission and the exact raw conditions.
+
 `vcExpr policy inputs expression post` generates structural conditions using
 the shared primitives. `vcExpr_iff` and `vc_iff_verifies` prove exactness for the
-implemented grammar. `certificate_of_vc` packages an inhabited domain and proved
+implemented grammar. Raw `vcExpr` follows selected execution; public `VC`
+adds the same full-body preflight as `eval`. An unselected modeled-UB arm has
+no runtime obligation. `certificate_of_vc` packages an inhabited domain and proved
 conditions. The shared `eval_sadd_defined` lemma composes defined operand
 executions and proved signed-sum bounds without unfolding the whole program.
 Clients reuse numeric lemmas rather than new execution interpreters
@@ -210,12 +257,19 @@ Every listed positive certificate derives NoUB on its stated domain.
 | `ArithmeticContracts.signedReturn` | All five operations; explicit mathematical result ranges for add/sub/mul, nonzero denominator and exclusion of minimum/-1 for division/remainder; exact results or truncating reconstruction |
 | `ArithmeticContracts.subtractAdd` | All unsigned inputs/profiles; subtraction then addition recovers the first operand, including wrapping intermediates |
 | `ArithmeticContracts.byteProduct` | All uchar inputs on int32/char8; exact signed product, overflow discharged from operand ranges |
+| `ComparisonContracts.compareReturn` | All six comparisons, admitted integral type pairs, profiles and typed inputs; independent normalized representatives and mathematical relations |
+| `GuardContracts.guardedUnsigned` | All typed numerator/denominator inputs; return zero for zero denominator, otherwise satisfy an independent quotient interval |
+| `GuardContracts.guardedSigned` | All typed inputs; return zero for zero denominator or minimum/-1, otherwise satisfy truncating reconstruction with bounded, correctly signed remainder |
 
 The synthetic `Division.wrappedIncrement` candidate is proved NoUB yet incorrect
 for the quotient contract. Zero division, signed boundaries, unsupported coverage,
 conversion order and promotion behavior have independent positive/negative checks.
 `signedRem_nonzero_not_certified` rejects the overbroad signed-remainder domain
 that excludes only zero divisors, for every target and result postcondition.
+`GuardContracts.nonzeroGuardedSigned_not_certified` likewise rejects a program
+whose internal guard checks only nonzero: minimum/-1 actually executes UB.
+The positive guarded clients have admission `True`; their guards establish the
+division preconditions locally instead of requiring them of callers.
 These are embedded-program theorems, without source-file or native correspondence.
 
 ```sh

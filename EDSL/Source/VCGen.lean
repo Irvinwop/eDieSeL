@@ -26,7 +26,9 @@ theorem Outcome.requires_andThen {α β : Type} (outcome : Outcome α)
 /-- Structural verification-condition generation for the finite pure fragment.
 Arithmetic leaves use the shared evaluator's primitive operations, rather than
 an alternate language semantics. Kernel reduction exposes their range and
-nonzero-divisor obligations. There is no execution-fuel or solver premise. -/
+nonzero-divisor obligations. Select requires its condition and chosen arm only;
+the program VC separately checks static coverage of all syntax. There is no
+execution-fuel or solver premise. -/
 def vcExpr {target : Target} {parameters : List IntType}
     (policy : IntegerConversionPolicy) (inputs : Inputs target parameters) :
     {ty : IntType} → Expr target parameters ty → (Value target ty → Prop) → Prop
@@ -68,6 +70,13 @@ def vcExpr {target : Target} {parameters : List IntType}
   | _, .srem left right, post =>
       vcExpr policy inputs left fun x => vcExpr policy inputs right fun y =>
         (signedRem target x y).requires post
+  | _, .compare operation _ left right, post =>
+      vcExpr policy inputs left fun x => vcExpr policy inputs right fun y =>
+        post (compareValues operation x y)
+  | _, .select condition onTrue onFalse, post =>
+      vcExpr policy inputs condition fun value =>
+        if value.toInt = 0 then vcExpr policy inputs onFalse post
+        else vcExpr policy inputs onTrue post
   | _, .unsupported _, _ => False
 
 /-- The generated condition is exact for this finite grammar. Its soundness
@@ -128,20 +137,41 @@ theorem vcExpr_iff {target : Target} {parameters : List IntType} {ty : IntType}
       simp only [vcExpr, evalExpr, Outcome.requires_andThen]
       rw [leftIH]
       simp only [rightIH]
+  | compare operation kind left right leftIH rightIH =>
+      simp only [vcExpr, evalExpr, Outcome.requires_andThen]
+      rw [leftIH]
+      simp only [rightIH, Outcome.requires]
+  | select condition onTrue onFalse conditionIH onTrueIH onFalseIH =>
+      simp only [vcExpr, evalExpr, Outcome.requires_andThen]
+      rw [conditionIH]
+      cases evalExpr policy inputs condition with
+      | defined value =>
+          by_cases zero : value.toInt = 0
+          · simpa only [Outcome.requires, zero, ↓reduceIte] using onFalseIH post
+          · simpa only [Outcome.requires, zero, ↓reduceIte] using onTrueIH post
+      | undefined _ => rfl
+      | unsupported _ => rfl
   | unsupported feature => rfl
 
+/-- Each admitted input requires full static model coverage followed by the raw
+expression VC. An empty admission remains vacuous, as for `Verifies`; inhabited
+admission is required separately by `Certificate`. -/
 def VC {target : Target} {parameters : List IntType} {result : IntType}
     (program : Program target parameters result)
     (admitted : Inputs target parameters → Prop)
     (post : Inputs target parameters → Value target result → Prop) : Prop :=
-  ∀ inputs, admitted inputs → vcExpr program.conversions inputs program.body (post inputs)
+  ∀ inputs, admitted inputs →
+    match program.body.firstUnsupported with
+    | none => vcExpr program.conversions inputs program.body (post inputs)
+    | some _ => False
 
 theorem vc_iff_verifies {target : Target} {parameters : List IntType} {result : IntType}
     (program : Program target parameters result)
     (admitted : Inputs target parameters → Prop)
     (post : Inputs target parameters → Value target result → Prop) :
     VC program admitted post ↔ Verifies program admitted post := by
-  simp only [VC, Verifies, vcExpr_iff, Outcome.requires_iff, eval]
+  cases coverage : program.body.firstUnsupported <;>
+    simp [VC, Verifies, eval, coverage, vcExpr_iff, Outcome.requires_iff]
 
 theorem certificate_of_vc {target : Target} {parameters : List IntType} {result : IntType}
     {program : Program target parameters result}

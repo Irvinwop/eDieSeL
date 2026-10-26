@@ -6,28 +6,32 @@
 
 eDieSeL is building a shared executable semantics for GNU C23 and GNU++26.
 The intended workflow proves a program free of undefined behavior and proves
-its contract in that semantics. Memory, inputs, threads, synchronization and OS
-services belong to the execution model. Their implementation assumptions stay
-explicit until the corresponding sources have been verified.
+its contract in that semantics. The execution model must represent memory,
+inputs, threads, synchronization and OS services. Their implementation
+assumptions stay explicit until the corresponding sources have been verified.
 
 The planned compiler trust chain starts with exactly one small, verified binary
 seed. Each subsequent bootstrap stage needs source-level safety and correctness
 proofs, including the compiler's semantic-preservation contract. The eventual
-target is
-a verified chain capable of building GCC and the programs it compiles.
+target is a verified chain capable of building GCC and the programs it compiles.
 
 The `EDSL.Source` API is a finite expression/return fragment with bool, plain
 char and the signed/unsigned char, short and int types, integer promotions,
-addition, subtraction, multiplication, division and remainder. Explicit
-casts connect every admitted integral type: bool conversion distinguishes zero
+addition, subtraction, multiplication, division, remainder and comparisons.
+Conditional expressions and built-in logical AND/OR evaluate only the selected
+arm or needed operand; comparison/logical results are int in C and bool in C++.
+Explicit casts connect every admitted integral type: bool conversion distinguishes zero
 from nonzero; other destinations use the value in range congruent modulo
 `2^width`, under a recorded GNU policy. These operations share one evaluator and
 structural verification conditions. Independent source contracts use arithmetic
 equations and ranges, with definedness proved on each stated input domain.
 Composition examples discharge overflow from operand ranges and account for
-unsigned wrapping.
-Its [API guide](docs/source-core-api.md) records the exact scope. It has no
-source-text parser, memory operations or OS effects.
+unsigned wrapping. Guarded quotient programs admit all typed inputs and derive
+definedness from their guards. Public evaluation first checks model coverage of
+the complete body, including skipped arms.
+
+Its [API guide](docs/source-core-api.md) records the exact scope. Inputs are
+immutable typed values. It has no source-text parser, memory operations or OS effects.
 
 This source-language foundation is under development. Complete GNU semantics,
 source parsing, a verified bootstrap compiler and source-verified kernels are

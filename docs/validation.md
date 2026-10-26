@@ -30,9 +30,32 @@ common-type conversion and unsupported operands. Generic source certificates
 cover all five full-rank arithmetic operations on their explicit numeric domains.
 Subtract/add cancellation and byte multiplication prove composition behavior;
 a universal negative control rejects signed remainder admission based only on
-a nonzero divisor. The source fragment
-and stronger finite-completion meaning of `NoUB` are documented in the
-[source core API](source-core-api.md). This command does not parse or certify
+a nonzero divisor.
+
+Comparison checks cover all six relations, normalized mixed signed/unsigned
+values and different short/int widths. Eager-comparison probes propagate a
+failing operand even when an unsigned boundary could predict the result.
+Logical and conditional checks exercise
+truth of zero/nonzero values, skipped versus selected UB, condition failures,
+C int/C++ bool results, and the distinct same-type prvalue conditional rules.
+Whole-body coverage checks distinguish raw branch success from public rejection
+of a marker in a skipped arm, including coverage failure taking precedence over
+execution diagnostics.
+
+All-input guarded unsigned and signed division certificates use admission True;
+the executed guard proves nonzero and, for signed division, excludes minimum/-1.
+Their posts use quotient intervals or reconstruction/remainder laws. NoUB follows
+from those actual executions. A universal negative theorem rejects the signed
+nonzero-only guard for every admitted target and dialect, under any postcondition.
+Certificates also derive whole-body support and raw execution, so an unselected
+unsupported marker cannot be hidden by a successful lazy branch.
+
+The scoped check for this comparison/conditional milestone completed 33 build
+jobs. Its defining-module audit covered 1,451 declarations in 24 project modules,
+including private and generated declarations. This records scoped build/audit
+evidence; authoritative hosted fresh replay remains a separate check. The
+source fragment and stronger finite-completion meaning of `NoUB` are documented
+in the [source core API](source-core-api.md). This command does not parse or certify
 a C/C++ source file.
 
 Final proofs may use `decide +kernel`. Development oracles belong only in

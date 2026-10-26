@@ -11,9 +11,10 @@ regressions. Their corpus score is not the main progress measure.
 The initial `EDSL.Source` implementation is a finite pure expression/return
 fragment with bool, plain char and the signed/unsigned char, short and int
 types, integer promotions, addition/subtraction/multiplication/division/remainder,
-explicit integral casts, and
-defined/UB/unsupported outcomes. Its unsigned-addition client proves an
-independent bounded-carry equation for every typed input. `Certificate` combines
+explicit integral casts, six comparisons, built-in logical AND/OR and lazy
+integral conditional expressions, with defined/UB/unsupported outcomes. Its
+unsigned-addition client proves an independent bounded-carry equation for every
+typed input. `Certificate` combines
 the execution/contract theorem with an inhabited domain; domain and contract
 independence still need review. See the [API](source-core-api.md) and
 [implementation status](implementation-status.md) for exact limits. There is
@@ -35,8 +36,23 @@ semantics; other destinations use their numeric range and congruence modulo
 and structural verification-condition interface. The profile records numeric
 widths and plain-char signedness. Promotions preserve values; arithmetic source
 certificates discharge overflow from input ranges, including the equal-width
-unsigned-short promotion case. Wider integer types, sequencing, objects, memory,
-control flow and source-connected OS effects remain dependencies.
+unsigned-short promotion case. Comparison/logical helpers return C int or C++
+bool. Conditional helpers cover unqualified integral prvalue arms: C uses the arithmetic common type; C++
+first preserves matching arm types. No source lvalues or general C++ value
+categories are implemented. Wider integer types, effectful sequencing, objects,
+memory, statements, loops and source-connected OS effects remain dependencies.
+
+Public program evaluation checks coverage of the whole expression before
+execution, including skipped arms. Inhabited certificates derive this structural
+support and actual raw execution. The raw evaluator and structural VCs remain
+lazy: they evaluate the condition and only the selected arm. Skipped modeled UB
+is inert; an unsupported marker anywhere still prevents public certification.
+All-input unsigned and signed guarded division clients derive their branch
+preconditions inside the body, rather than requiring nonzero input or absence of
+the minimum/-1 pair at admission. Their independent contracts give zero on the
+exceptional paths and a mathematical quotient law otherwise, with NoUB derived
+from execution. A universal negative theorem rejects the signed candidate whose
+guard checks only for a nonzero divisor.
 
 ## 1. Establish the GNU C23 semantics foundation
 
@@ -54,7 +70,8 @@ Extend in this dependency order:
 
 1. Integer types, target widths, values, arithmetic and conversions, including
    promotions, usual arithmetic conversions and signed-overflow rules.
-2. Expressions, value categories, evaluation order, sequencing and side effects.
+2. Extend the current pure comparison/logical/conditional expressions with
+   value categories, evaluation order, sequencing and side effects.
 3. Objects, byte representations, initialization, storage duration, lifetimes,
    pointer provenance, alignment, bounds and permitted aliasing.
 4. Statements, control flow, function calls, recursion, translation units,
@@ -89,8 +106,10 @@ Build reusable source verification-condition generation and reflection, with a
 soundness theorem checked once. Clients provide their mathematics, invariants
 and termination arguments. They do not introduce their own interpreter.
 
-Start with integer routines, then loops and small memory routines as the memory
-semantics becomes available. Include independently specified counterexamples
+The present integer clients include guards with all typed inputs admitted.
+Next establish statement/state semantics, then loops and small memory routines
+as their execution and memory rules become available. Include independently
+specified counterexamples
 that expose real semantic mistakes, such as signed overflow and invalid memory
 access. Keep partial correctness, termination, deadlock freedom and scheduling
 progress distinct. The current finite `NoUB` requires defined completion;

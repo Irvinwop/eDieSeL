@@ -8,9 +8,11 @@ binary seed, and source-proved compiler bootstrap stages.
 
 | Component | Current status |
 | --- | --- |
-| Executable source foundation | Finite typed expression/return eDSL: bool/char/short/int value ranges and promotions, addition/subtraction/multiplication/division/remainder, explicit casts between all admitted integral types, defined/UB/unsupported outcomes |
+| Executable source foundation | Finite typed expression/return eDSL: bool/char/short/int ranges and promotions; five arithmetic operations and integral casts; six comparisons, built-in AND/OR and lazy conditionals; defined/UB/unsupported outcomes |
 | Source definedness/contracts | Shared `Verifies` and completion-style `NoUB`; `Certificate` requires an inhabited input domain; unsigned-addition contract for all typed inputs, division contract for all nonzero denominators; generic arithmetic, conversion/mixed-operation, promotion and cast/composition clients with inhabited domains and proved NoUB; signed division/remainder exception characterized |
-| Source proof reuse | Structural verification conditions proved equivalent to actual defined execution plus postcondition for the finite pure grammar; shared arithmetic normalization and execution composition |
+| Source proof reuse | Exact structural VCs for raw execution; public VCs also require whole-body support; shared arithmetic/comparison normalization and branch composition |
+| Supported coverage and guards | Public evaluation preflights the complete body, including skipped arms; inhabited certificates derive support and raw execution; all-input unsigned/signed guarded-division contracts and derived NoUB, with universal rejection of an insufficient signed guard |
+| Dialect-sensitive construction | Comparison/logical results are C int or C++ bool; integral prvalue conditionals use C common arithmetic typing and C++ same-type preservation before common typing |
 | Source text and general C/C++ | No source-text parser, preprocessing correspondence or general verifier |
 | Source-connected OS semantics | Existing resource/concurrency components require source-step integration |
 | Single bootstrap seed | Not selected or proved for the source-first chain |
@@ -20,11 +22,23 @@ The [source core API](source-core-api.md) lists exact declarations and scope.
 Small types are limited to bool, plain/signed/unsigned char and signed/unsigned short.
 Wider integer types remain unsupported. Explicit integral casts cover all current
 endpoints, with bool zero/nonzero behavior and the selected GNU range/congruence
-policy. The arithmetic fragment
-has no lvalues, pointers, memory, loops,
-calls or effects. Its target records integer value ranges, not an ABI or a
-compiler/hardware correspondence. Boundary examples expose signed overflow,
+policy. The finite pure fragment has no lvalues, pointers, memory, statements, loops,
+calls, volatile accesses or effects. Its target records integer value ranges,
+not an ABI or a compiler/hardware correspondence. Boundary examples expose signed overflow,
 zero division, truncating signed division and unsupported nested expressions.
+
+Conditional arms are limited to unqualified integral prvalues. Both arm types
+determine the result before execution; only the selected arm and its inserted
+conversions execute. Public support checking is a model-coverage phase, not
+execution of dead syntax or a native diagnostic rule. Raw lazy evaluation can
+skip a marker, but no inhabited public certificate can include one anywhere in
+its body. Fully modeled UB may safely remain in an unselected arm.
+
+Guarded division admits every typed numerator/denominator with admission True.
+The body excludes zero and, for signed division, minimum/-1 before executing
+division. Result contracts use a quotient interval or truncating reconstruction,
+not an evaluator in the expected result. The minimum/-1 witness rules out an
+all-input certificate for the weaker nonzero-only signed guard, under any post.
 
 These are implementation boundaries, not assumed program properties. A target
 needs actual safety and contract proofs. See [source semantics](source-semantics.md)

@@ -65,7 +65,10 @@ an explicitly recorded GNU conversion policy, and a single expression return.
 It also models bool/ordinary char/short values, their integer promotions and
 explicit casts between every admitted integral type. Bool conversion uses
 zero/nonzero; other destinations use range/congruence. Wider integer types
-remain unsupported.
+remain unsupported. Built-in integral comparisons and logical AND/OR return
+int values 0/1 in C. Truth uses zero/nonzero, including negative and nonzero even
+values. Integral prvalue conditional arms undergo common arithmetic conversion;
+both arm types determine the result, with only one arm evaluated.
 It has no objects, pointers, memory, statements, calls, threads or
 source-text importer. The separate retained
 [atomic event-graph fragment](c23-atomic-events.md) provides
@@ -91,15 +94,20 @@ include:
 
 GNU extensions and additional C23 features need their own semantics and
 lowering evidence. The [roadmap](roadmap.md) starts from the implemented
-arithmetic fragment, then adds conversions, sequencing, objects and control
-flow. No C text importer
-is implemented.
+pure expression fragment, then adds effectful sequencing, objects and statement
+control flow. No C text importer is implemented.
 
 ## 4. GNU C++26
 
-The same source core records `Dialect.gnuCpp26` and proves dialect-independent
-evaluation only for its present pure common fragment. Extending it requires a
-pinned language revision, `-std=gnu++26` frontend boundary, standard library and
+The same source core records `Dialect.gnuCpp26`. Source comparison and logical
+helpers produce bool rather than C int. For unqualified integral prvalue
+conditional arms, C++ preserves a matching arm type, otherwise using common
+arithmetic typing. Thus two unsigned-char prvalue arms retain unsigned char in
+C++, while C promotes them before selecting the common type. Conditional
+glvalues, references, cv rules, classes, pointers and overloaded operators remain
+unsupported. The same-body dialect theorem concerns retagging an identical
+embedded term; it does not identify the types or meanings of arbitrary C/C++
+source contexts. Extending this fragment requires a pinned language revision, `-std=gnu++26` frontend boundary, standard library and
 ABI configuration. Sequencing, lifetimes and erroneous behavior need explicit
 C++ rules; shared syntax does not justify silently importing C rules.
 
@@ -117,6 +125,14 @@ A proof about lowered code does not establish correct template instantiation
 or frontend elaboration. Disabling exceptions or RTTI restricts a build profile;
 it supplies no proof for programs that use them. General GNU C++26 ingestion
 and source preservation are outside current support.
+
+The public source evaluator checks complete structural model coverage before raw
+execution. Skipped unsupported syntax therefore prevents certification; skipped
+modeled arithmetic UB does not execute. Inhabited certificates prove both that
+coverage condition and actual lazy execution. This tool boundary supplies no
+source-text parsing, static-constraint or native-diagnostic correspondence.
+The [reviewed rules](source-rules.md#comparisons-truth-and-conditional-expressions)
+record the dated clauses and limits.
 
 ## 5. LLVM IR
 
@@ -179,8 +195,8 @@ weak-memory executions, schedules, I/O replies or resource availability.
 ## 8. Program ingress and cross-language boundaries
 
 The primary route starts with Lean-authored source eDSL terms and proves their
-definedness and independent contracts. The current arithmetic fragment has no
-source emission or lowering theorem. Extending its artifact connection requires:
+definedness and independent contracts. The current pure expression fragment has
+no source emission or lowering theorem. Extending its artifact connection requires:
 
 - Lean-authored source eDSLs: justify any emitted text and every lowering used
   in a preservation claim.

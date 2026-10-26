@@ -19,8 +19,9 @@ of the declared model; adequacy of that model still needs review.
 
 These dated ISO-language drafts do not specify the complete GNU dialects or
 pin a GCC implementation. The current dialect selectors record intent; only
-the common fragment listed below has executable rules. Later draft changes,
-GNU extensions and effective compiler options need separate review.
+the finite shared fragment and explicit dialect-sensitive helpers listed below
+have executable rules. Later draft changes, GNU extensions and effective
+compiler options need separate review.
 
 ## Integer rules
 
@@ -42,6 +43,43 @@ Let `N = target.intBits`. The declarations are in `EDSL.Source`;
 The last overflow case follows from the reviewed quotient and value-range
 rules; the drafts need not enumerate that operand pair. The model's explicit
 UB reason is a diagnostic representation, not a claim about a native trap.
+
+## Comparisons, truth and conditional expressions
+
+The core primitives are same-type full-integer comparison and lazy
+same-type selection. Source helpers insert promotion, common-type conversion,
+truth conversion and the dialect's result typing. The following references
+were reviewed at the pinned draft identities above.
+
+| Implemented rule | C23 draft reference | C++ draft reference |
+| --- | --- | --- |
+| Six integral comparisons after promotion/common conversion; source result C int or C++ bool, numerically 0/1 | [N3096 §6.5.8 ¶4,7; §6.5.9 ¶4–5](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n3096.pdf) | [N5001 `[expr.rel]` ¶2,3,6](https://github.com/cplusplus/draft/blob/6b9b2e9f31aff143334e379e49807488872003e4/source/expressions.tex#L6679-L6743), [`[expr.eq]` ¶2,7](https://github.com/cplusplus/draft/blob/6b9b2e9f31aff143334e379e49807488872003e4/source/expressions.tex#L6768-L6887) |
+| Integral truth uses the existing zero/nonzero conversion; built-in AND/OR skip the right operand as appropriate | [N3096 §6.3.1.2 ¶1; §6.5.13–14 ¶2–4](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n3096.pdf) | [N5001 `[conv.bool]` ¶1](https://github.com/cplusplus/draft/blob/6b9b2e9f31aff143334e379e49807488872003e4/source/expressions.tex#L1154-L1161), [`[expr.log.and]`, `[expr.log.or]` ¶1–2](https://github.com/cplusplus/draft/blob/6b9b2e9f31aff143334e379e49807488872003e4/source/expressions.tex#L6965-L7017) |
+| Integral prvalue conditional: execute the condition and one arm; C uses common arithmetic typing; C++ first preserves matching arm types | [N3096 §6.5.15 ¶2–6](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n3096.pdf) | [N5001 `[expr.cond]` ¶1](https://github.com/cplusplus/draft/blob/6b9b2e9f31aff143334e379e49807488872003e4/source/expressions.tex#L7030-L7039), [¶5–7](https://github.com/cplusplus/draft/blob/6b9b2e9f31aff143334e379e49807488872003e4/source/expressions.tex#L7142-L7170) |
+
+Conditional helpers cover only unqualified admitted integral **prvalue** arms.
+They do not model conditional glvalues, source parameter-name lvalues,
+references, cv qualification, bit-fields, classes, pointer/void arms or overloaded
+operators. Both arm types determine the result before evaluation. Inserted
+conversions stay inside their arm; they do not force skipped evaluation.
+Comparisons require both operand values for successful completion. Their
+left-first failure diagnostics do not settle general source operand ordering.
+
+Public `eval` performs a whole-body model-coverage preflight, including both
+arms, before calling raw `evalExpr`. A marker anywhere produces unsupported,
+even if a branch would skip it. This is a tool coverage rule, not an ISO static
+constraint or native execution diagnostic. Raw evaluation and its exact VCs
+remain lazy. An unselected fully modeled UB expression is not evaluated.
+Inhabited certificates derive structural support and the actual raw execution;
+`certificate_iff_supported_useful_raw_vc` states the complete boundary.
+
+The guard clients admit all typed inputs. Unsigned division returns zero for a
+zero denominator; signed division also returns zero for minimum/-1. The selected
+division branch proves its arithmetic premises from the actual guard. Independent
+interval/reconstruction contracts yield completion-style NoUB. A nonzero-only
+signed guard is universally rejected using actual minimum/-1 UB. These are
+embedded-model proofs: no source parsing, volatile/effectful access, compiler
+preservation, native correspondence or complete GNU support follows.
 
 ## Arithmetic construction and proof scope
 
@@ -77,8 +115,10 @@ must still check its actual arithmetic. All admitted parameter values are
 already typed values, not unvalidated bytes or a parsed call.
 
 The evaluator is finite and pure. Its left-first failure diagnostic is not a
-C/C++ operand-sequencing rule. No source step currently accesses memory, ends
-a lifetime, calls a function, interacts with an OS or executes another thread.
+C/C++ operand-sequencing rule. Logical and conditional evaluation have explicit
+lazy dependencies.
+No source step currently accesses memory, ends a lifetime, calls a function,
+interacts with an OS or executes another thread.
 Those features require their own language rules and explicit semantic state
 before their programs can receive source certificates.
 

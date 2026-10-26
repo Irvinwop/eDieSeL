@@ -20,10 +20,14 @@ a source-text frontend and the bootstrap chain are not implemented.
   arithmetic, plus explicit casts between every admitted integral type under
   a fixed GNU conversion policy. Conversion to bool tests zero versus nonzero;
   other destinations select the congruent value within their numeric range.
-- Distinct defined, undefined and unsupported outcomes.
+- Six integral comparisons after promotion/common-type conversion, built-in
+  logical AND/OR, and lazy conditional expressions with explicit dialect types.
+- Distinct defined, undefined and unsupported outcomes, with complete-body
+  model-coverage checking before public evaluation.
 - Shared execution and verification interfaces, independent arithmetic
   contracts, structural verification conditions, and a certificate requiring a
-  useful input domain. Shared composition lemmas support larger expressions.
+  useful input domain. Shared composition lemmas support larger expressions;
+  guarded quotient clients prove safety for all typed inputs.
 
 The same evaluator interprets both dialect selections. Its present expressions
 are pure, so the left-first failure diagnostic does not resolve a C/C++
@@ -52,6 +56,58 @@ use the shared evaluator and verification-condition interface and propagate an
 operand's existing UB or unsupported outcome. A cast after overflowing signed
 arithmetic cannot make that arithmetic defined. No implicit return conversion
 is added: the current program body and return value still have the same type.
+
+## Comparisons and conditional execution
+
+The comparison helpers cover `==`, `!=`, `<`, `<=`, `>` and `>=` for the admitted
+integral types. They promote and convert operands to the common arithmetic
+type, then compare mathematical integers. Their independent contract relates
+the original inputs to their common-type representatives through range and
+carry equations, and states the corresponding equality or order relation.
+The result is exactly zero or one. Source-facing helpers return `int` in C
+and `bool` in C++; the internal comparison flag is canonical bool.
+
+Truth uses the existing zero/nonzero conversion. Built-in logical AND evaluates
+its right operand only when the left is nonzero; OR does so only when the left
+is zero. Their source-facing result types follow the same C `int` / C++ `bool`
+rule. These helpers concern integral built-in operators, not overloaded C++
+operators.
+
+The conditional helper covers integral value arms, restricted to prvalues in
+C++. C applies the common arithmetic type to both arms. C++ preserves matching
+arm types and otherwise applies the common arithmetic type. The result type
+is determined from both arms before execution; conversions stay inside their
+respective arms. When the condition succeeds, raw expression execution
+evaluates exactly one arm. Condition failure and a selected arm's failure
+propagate.
+
+All inputs are immutable typed mathematical values. Reusing a parameter after
+a guard observes that same value. These proofs do not concern volatile
+accesses or reads of shared/mutable objects, where a denominator might change
+between the check and division. The dialect-specific helpers construct the
+source result types; changing program metadata alone does not elaborate source
+syntax or establish correspondence with a C/C++ text file.
+
+## Coverage before execution
+
+Public `eval` first scans the original complete body for unsupported markers,
+including both conditional arms and both logical operands. An unsupported
+marker anywhere produces a coverage result before raw execution, even if its
+subexpression would be skipped. This is a tool coverage policy, not native
+execution or a UB diagnosis. The indexed syntax and this scan do not validate
+all language constraints or source text.
+
+A fully modeled arm whose execution would overflow or divide by zero can be
+skipped safely. Executing that arm still reports its specified UB. Coverage
+therefore checks that rules exist throughout the body; execution proofs
+establish safety along the actual selected branches.
+
+`evalExpr` and its raw verification conditions describe this lazy execution.
+The public program verification conditions additionally enforce full-body
+coverage and remain exact for public evaluation. A nonvacuous `Certificate`
+therefore establishes supported syntax as well as actual defined behavior and
+the independent result. Success of a raw expression or raw VC alone cannot
+certify a program containing a skipped unsupported marker.
 
 ## One semantic implementation
 
@@ -102,6 +158,21 @@ violates that interval at `UINT_MAX, d=1`. This separates proved safety from
 functional correctness. Structural verification conditions are proved exact
 for this grammar and construct the same execution-based certificates.
 
+The guarded quotient clients instead use admission `True` over all typed
+parameter values. Their guards derive the conditions required by division:
+
+| Embedded client | Independent result contract |
+| --- | --- |
+| Unsigned quotient with a nonzero-divisor guard | Return zero when `d = 0`; otherwise prove `q*d ≤ n < (q+1)*d`. |
+| Signed quotient guarded against zero and minimum-signed-value divided by `-1` | Return zero on either exceptional class; otherwise exhibit `r` with `n = q*d + r`, `abs(r) < abs(d)`, and either `r = 0` or `sign(r) = sign(n)`. |
+
+Both certificates provide inhabited domains and derive `NoUB` from actual
+defined execution; they assume neither a nonzero divisor nor program safety
+in admission. A synthetic signed client checking only `d != 0` reaches UB
+at minimum-signed-value / `-1`, so no result predicate can give it an
+all-input certificate. These are proofs of embedded core programs, not parsed
+source files.
+
 ## Outcomes as the language grows
 
 | Outcome | Required treatment |
@@ -142,8 +213,12 @@ The initial reference inventory includes the public
 [WG21 N5001 C++ draft](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2024/n5001.pdf),
 [GCC language standards](https://gcc.gnu.org/onlinedocs/gcc/Standards.html) and
 [GNU extensions](https://gcc.gnu.org/onlinedocs/gcc/C-Extensions.html).
-The [current rule review](source-rules.md) records the dated clauses for integer
-ranges, addition and division; future features need the same traceability.
+The [current rule review](source-rules.md) records the arithmetic reference
+inventory. Comparison, logical and conditional rules are reviewed against
+[N3096 §§6.5.8–6.5.15](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n3096.pdf)
+and N5001
+[`[expr.rel]`, `[expr.eq]`, `[expr.log.and]`, `[expr.log.or]` and `[expr.cond]`](https://github.com/cplusplus/draft/blob/6b9b2e9f31aff143334e379e49807488872003e4/source/expressions.tex).
+Future features need the same dated traceability.
 These documents and manual reviews do not establish full conformance. In particular,
 recording the dialect name in the current AST does not implement every rule
 of that dialect.

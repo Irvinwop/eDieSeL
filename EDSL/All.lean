@@ -9,6 +9,8 @@ import EDSL.Source.ConversionContracts
 import EDSL.Source.PromotionContracts
 import EDSL.Source.CastContracts
 import EDSL.Source.ArithmeticContracts
+import EDSL.Source.GuardContracts
+import EDSL.Source.ComparisonContracts
 -- Full proof catalogue for project audits and fresh kernel replay.
 -- New verification clients should import EDSL or a specific module instead.
 import EDSL

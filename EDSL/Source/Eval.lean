@@ -4,6 +4,7 @@ SPDX-License-Identifier: Apache-2.0
 -/
 import EDSL.Source.IntegerCasts
 import EDSL.Source.IntegerPromotions
+import EDSL.Source.IntegerComparisons
 
 set_option autoImplicit false
 
@@ -107,7 +108,9 @@ def convertValue (policy : IntegerConversionPolicy) (target : Target)
 
 /-- One structurally recursive evaluator for the common fragment. Left-first
 diagnostics do not claim a source-language operand sequencing guarantee: all
-supported expressions are pure. There is no fuel, scheduler, or hidden state. -/
+supported expressions are pure. Select executes only its chosen arm. This raw
+evaluator follows execution; public program evaluation first checks coverage
+of all syntax. There is no fuel, scheduler, or hidden state. -/
 def evalExpr {target : Target} {parameters : List IntType}
     (policy : IntegerConversionPolicy) (inputs : Inputs target parameters) :
     {ty : IntType} → Expr target parameters ty → Outcome (Value target ty)
@@ -149,6 +152,13 @@ def evalExpr {target : Target} {parameters : List IntType}
   | _, .srem left right =>
       (evalExpr policy inputs left).andThen fun x =>
         (evalExpr policy inputs right).andThen fun y => signedRem target x y
+  | _, .compare operation _ left right =>
+      (evalExpr policy inputs left).andThen fun x =>
+        (evalExpr policy inputs right).andThen fun y => .defined (compareValues operation x y)
+  | _, .select condition onTrue onFalse =>
+      (evalExpr policy inputs condition).andThen fun value =>
+        if value.toInt = 0 then evalExpr policy inputs onFalse
+        else evalExpr policy inputs onTrue
   | _, .unsupported feature => .unsupported feature
 
 /-- Compose defined operand executions and a proved signed-sum range through
@@ -166,10 +176,16 @@ theorem eval_sadd_defined {target : Target} {parameters : List IntType}
   rw [left_eval, right_eval]
   exact dite_eq_left fits
 
+/-- Public program evaluation checks static model coverage once, before any
+execution. The first unsupported marker takes precedence over execution UB,
+including markers in unchosen arms. This is a tool coverage gate, not native
+diagnosis or execution of dead syntax: modeled UB in an unchosen arm is inert. -/
 def eval {target : Target} {parameters : List IntType} {result : IntType}
     (program : Program target parameters result) (inputs : Inputs target parameters) :
     Outcome (Value target result) :=
-  evalExpr program.conversions inputs program.body
+  match program.body.firstUnsupported with
+  | none => evalExpr program.conversions inputs program.body
+  | some feature => .unsupported feature
 
 theorem eval_dialect_independent {target : Target} {parameters : List IntType}
     {result : IntType} (body : Expr target parameters result)

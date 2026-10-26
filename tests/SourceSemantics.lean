@@ -9,6 +9,9 @@ import tests.SourcePromotions
 import EDSL.Source.CastContracts
 import tests.SourceCasts
 import tests.SourceArithmetic
+import tests.SourceConditions
+import EDSL.Source.GuardContracts
+import EDSL.Source.ComparisonContracts
 import EDSL.Source.ArithmeticContracts
 import EDSL.Audit.Owners
 
@@ -88,4 +91,32 @@ set_option warningAsError true
 #print axioms EDSL.Source.ArithmeticContracts.byteProduct_noUB
 #print axioms EDSL.Source.ArithmeticContracts.signedRem_nonzero_not_verified
 #print axioms EDSL.Source.ArithmeticContracts.signedRem_nonzero_not_certified
+#print axioms EDSL.Source.compareValues_one_iff
+#print axioms EDSL.Source.Dialect.logicalValue_toInt
+#print axioms EDSL.Source.eval_defined_iff
+#print axioms EDSL.Source.Certificate.supported
+#print axioms EDSL.Source.Certificate.raw_verified
+#print axioms EDSL.Source.no_certificate_with_unsupported
+#print axioms EDSL.Source.certificate_iff_supported_useful_raw_vc
+#print axioms EDSL.Source.eval_select_zero
+#print axioms EDSL.Source.eval_select_nonzero
+#print axioms EDSL.Source.eval_promotedCompare
+#print axioms EDSL.Source.eval_usualCompare
+#print axioms EDSL.Source.GuardContracts.unsignedGuard_observes
+#print axioms EDSL.Source.GuardContracts.signedGuard_observes
+#print axioms EDSL.Source.GuardContracts.unsignedGuard_branch_safe
+#print axioms EDSL.Source.GuardContracts.signedGuard_branch_safe
+#print axioms EDSL.Source.GuardContracts.guardedUnsigned_certificate
+#print axioms EDSL.Source.GuardContracts.guardedSigned_certificate
+#print axioms EDSL.Source.GuardContracts.guardedUnsigned_noUB
+#print axioms EDSL.Source.GuardContracts.guardedSigned_noUB
+#print axioms EDSL.Source.GuardContracts.nonzeroGuardedSigned_not_verified
+#print axioms EDSL.Source.GuardContracts.nonzeroGuardedSigned_not_certified
+#print axioms EDSL.Source.eval_logicalAnd
+#print axioms EDSL.Source.eval_logicalOr
+#print axioms EDSL.Source.conditionalType_c
+#print axioms EDSL.Source.conditionalType_cpp_same
+#print axioms EDSL.Source.conditionalType_cpp_distinct
+#print axioms EDSL.Source.ComparisonContracts.compareReturn_certificate
+#print axioms EDSL.Source.ComparisonContracts.compareReturn_noUB
 #audit_edsl_owners
