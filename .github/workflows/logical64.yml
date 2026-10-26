@@ -63,3 +63,6 @@ jobs:
           name: sequential-logical64-evidence
           path: artifacts/sequential-logical64/
           if-no-files-found: error
+      - name: Audit final tracked and retained generated Lean sources
+        if: always()
+        run: node scripts/audit-lean-source.cjs --tracked --generated artifacts --generated .cache

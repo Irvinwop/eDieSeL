@@ -7,13 +7,14 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
-  frozen-corpus:
+  prepare-corpus:
     runs-on: ubuntu-24.04
-    # Include cold rebuilds and the complete fresh kernel replay. This is a job
-    # wall-clock limit; theorem budgets and required checks remain unchanged.
-    timeout-minutes: 60
+    # Cold full-project compilation and rejection controls are separate from
+    # the 20 fresh kernel replay units. Lean/resource budgets are unchanged.
+    timeout-minutes: 360
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -48,10 +49,23 @@ jobs:
         env:
           LEAN_NUM_THREADS: 1
         run: bash scripts/verify-corpus-v1.sh --frozen
-      - name: Verify full-project certificates, fresh regressions and changed-input rejection
+      - name: Prepare full-project certificates, regressions, audits and changed-input rejection
         env:
           LEAN_NUM_THREADS: 1
-        run: bash scripts/verify-corpus-certificates.sh --full-project
+        run: bash scripts/verify-corpus-certificates.sh --full-project --prepare-replay
+      - name: Seal exact inputs and plan twenty fresh replay units
+        run: bash scripts/ci/corpus-replay.sh pack
+      - name: Publish same-run kernel replay inputs
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: compiler-corpus-kernel-inputs-${{ github.run_attempt }}
+          path: |
+            .cache/ci-corpus-replay/inputs.tar
+            .cache/ci-corpus-replay/inputs.tar.sha256
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 1
       - name: Preserve owned corpus diagnostics and stage counts
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -61,3 +75,86 @@ jobs:
             artifacts/compiler-corpus-v1/
             artifacts/corpus-certificates/
           if-no-files-found: error
+      - name: Audit final tracked and retained generated Lean sources
+        if: always()
+        run: node scripts/audit-lean-source.cjs --tracked --generated artifacts --generated .cache
+
+  kernel-replay:
+    needs: prepare-corpus
+    runs-on: ubuntu-24.04
+    # Every fresh environment covers a bounded import root set. Dependencies
+    # may overlap; all units must finish without fail-fast cancellation.
+    timeout-minutes: 360
+    env:
+      LEAN_NUM_THREADS: '1'
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        shard: ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10',
+                '11', '12', '13', '14', '15', '16', '17', '18', '19', '20']
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install pinned elan
+        shell: bash
+        run: |
+          curl --fail --location --silent --show-error \
+            https://github.com/leanprover/elan/releases/download/v4.2.4/elan-x86_64-unknown-linux-gnu.tar.gz \
+            --output "$RUNNER_TEMP/elan.tar.gz"
+          printf '%s  %s\n' \
+            42b94d4244e8353142c456ec0e4ca6528fd898a6c604d4059f494e706e431f63 \
+            "$RUNNER_TEMP/elan.tar.gz" | sha256sum --check
+          mkdir -p "$RUNNER_TEMP/elan-installer"
+          tar -xzf "$RUNNER_TEMP/elan.tar.gz" -C "$RUNNER_TEMP/elan-installer"
+          "$RUNNER_TEMP/elan-installer/elan-init" -y --no-modify-path --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Cache pinned Lean toolchain
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.elan/toolchains
+          key: lean-toolchain-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain') }}
+      - name: Download and verify the exact preparation payload
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPLAY_ARTIFACT: compiler-corpus-kernel-inputs-${{ github.run_attempt }}
+        run: |
+          command -v gh
+          mkdir -p "$RUNNER_TEMP/corpus-replay-inputs"
+          gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" \
+            --name "$REPLAY_ARTIFACT" --dir "$RUNNER_TEMP/corpus-replay-inputs"
+          (cd "$RUNNER_TEMP/corpus-replay-inputs" && sha256sum --check inputs.tar.sha256)
+          tar -xf "$RUNNER_TEMP/corpus-replay-inputs/inputs.tar"
+      - name: Audit and fresh-replay this stored proof shard
+        env:
+          REPLAY_SHARD: ${{ matrix.shard }}
+        run: bash scripts/ci/corpus-replay.sh shard "$REPLAY_SHARD"
+      - name: Preserve owned fresh kernel replay receipts
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: compiler-corpus-kernel-replay-${{ matrix.shard }}-${{ github.run_attempt }}
+          path: |
+            .cache/ci-corpus-replay/receipts/
+            .cache/ci-corpus-replay/roots/plan.json
+          include-hidden-files: true
+          if-no-files-found: error
+      - name: Audit final tracked and retained generated Lean sources
+        if: always()
+        run: node scripts/audit-lean-source.cjs --tracked --generated artifacts --generated .cache
+
+  # Preserve the existing required status. Preparation alone cannot satisfy it.
+  frozen-corpus:
+    if: ${{ always() }}
+    needs: [prepare-corpus, kernel-replay]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Require preparation and every fresh kernel replay shard
+        env:
+          PREPARATION_RESULT: ${{ needs.prepare-corpus.result }}
+          REPLAY_RESULT: ${{ needs.kernel-replay.result }}
+        run: |
+          test "$PREPARATION_RESULT" = success
+          test "$REPLAY_RESULT" = success

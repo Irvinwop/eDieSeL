@@ -10,15 +10,18 @@ export LC_ALL=C
 umask 077
 
 full_project=false
-case "$#:${1:-}" in
-    0:) ;;
-    1:--full-project) full_project=true ;;
-    1:--help)
-        echo 'usage: scripts/verify-corpus-certificates.sh [--full-project]'
+prepare_replay=false
+case "$#:${1:-}:${2:-}" in
+    0::) ;;
+    1:--full-project:) full_project=true ;;
+    2:--full-project:--prepare-replay) full_project=true; prepare_replay=true ;;
+    1:--help:)
+        echo 'usage: scripts/verify-corpus-certificates.sh [--full-project [--prepare-replay]]'
         echo 'Builds twenty-four scalar, two managed concurrent fetch-add, two bounded byte-scan, four first-match search, two byte-comparison, two byte-equality and four managed plain load/store certificates, audits axioms and checks file binding.'
         echo 'Default: fresh-replays the named certificate checks and corpus.Certify. --full-project: also builds the full catalogue and verification, unary, popcount, average, parity, rotation, low-byte, SUB32/CMP32 immediate, full64 SUB/authority/continuation, CFG-profile, effect-scheduler, additive-RMW/OS, padding and full-vector multiplication/signum checks; fresh-replays them together and runs both registered packet gates.'
+        echo "--full-project --prepare-replay performs all pre-replay gates and emits PREPARED.md only; all 20 CI fresh replay shards are additionally required. It never emits READY.md."
         exit 0 ;;
-    *) echo 'usage: scripts/verify-corpus-certificates.sh [--full-project]' >&2; exit 2 ;;
+    *) echo 'usage: scripts/verify-corpus-certificates.sh [--full-project [--prepare-replay]]' >&2; exit 2 ;;
 esac
 
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
@@ -32,8 +35,12 @@ printf 'Corpus certificate gate receipts: %s\n' "$output" >&2
 
 # Every Lean/Lake/checker invocation takes its own lock. In particular, there is
 # no outer lock while native checks, shell controls or hashing run.
-lean_lock=(env "PATH=${ELAN_HOME:-$HOME/.elan}/bin:$PATH" LEAN_NUM_THREADS=1
-    flock /tmp/edsl-lean-build.lock)
+lean_lock=(env "PATH=${ELAN_HOME:-$HOME/.elan}/bin:$PATH" LEAN_NUM_THREADS=1)
+# GitHub-hosted jobs own isolated filesystems. Do not funnel authoritative CI
+# through a local-machine global lock; retain that protection for local users.
+if [[ ${GITHUB_ACTIONS:-false} != true ]]; then
+    lean_lock+=(flock /tmp/edsl-lean-build.lock)
+fi
 search_path=$output/lib:$root/.lake/build/lib/lean
 lean_env=("${lean_lock[@]}" lake env env "LEAN_PATH=$search_path")
 # Reuse the private corpus.Certify object emitted below. Re-elaborating the
@@ -123,6 +130,8 @@ finish() {
             stability=1
         fi
     fi
+    record final-generated-source-audit node scripts/audit-lean-source.cjs \
+        --tracked --generated "$output" || stability=1
     if (( stability != 0 )); then
         [[ $status -ne 0 ]] || failed_stage=final-stability
         status=1
@@ -133,6 +142,15 @@ finish() {
     fi
     printf '%s\n' "$status" > "$output/exit"
     if [[ $status -eq 0 ]]; then
+        if [[ $prepare_replay == true ]]; then
+            cat > "$output/PREPARED.md" <<EOF
+Preparation passed for the exact inputs recorded in source-before.sha256 and frozen-before.sha256.
+Scope: $gate_scope. Builds, private CLI, axiom/owner/source audits, file-binding and
+synthetic rejection controls passed, including final source/ELF/object rereads.
+Fresh kernel replay has NOT run. No full gate success or READY receipt is issued.
+All 20 same-run fresh replay shards and the frozen-corpus aggregate are required.
+EOF
+        else
         cat > "$output/READY.md" <<EOF
 Certificate gate passed for the inputs recorded in source-before.sha256 and frozen-before.sha256.
 Scope: $gate_scope.
@@ -153,6 +171,7 @@ EOF
 The fresh replay covers the named CorpusCertificateChecks assertions and their corpus.Certify imports; root EDSL replay is not claimed.
 EOF
         fi
+        fi
     else
         cat > "$output/BLOCKERS.md" <<EOF
 Gate did not pass. Stage at failure: $failed_stage; gate exit: $status.
@@ -169,11 +188,15 @@ EOF
     if (( manifest_status != 0 )); then
         status=1
         printf '%s\n' "$status" > "$output/exit"
-        rm -f -- "$output/READY.md"
+        rm -f -- "$output/READY.md" "$output/PREPARED.md"
         printf 'Evidence manifest could not be completed.\n' >> "$output/BLOCKERS.md"
     fi
     if [[ $status -eq 0 ]]; then
-        printf 'Corpus certificate gate passed: %s\n' "$output"
+        if [[ $prepare_replay == true ]]; then
+            printf 'Corpus preparation passed; fresh replay still required: %s\n' "$output"
+        else
+            printf 'Corpus certificate gate passed: %s\n' "$output"
+        fi
     else
         printf 'Corpus certificate gate failed at %s; receipts: %s\n' "$failed_stage" "$output" >&2
     fi
@@ -371,6 +394,7 @@ fi
 cat >> "$output/Audit.lean" <<'LEAN'
 import tests.SignumCertificates
 import EDSL.Audit
+import EDSL.Audit.Owners
 
 -- Independently require the promised eight compiler/operation instances, so a
 -- future replacement of acceptedCertificates by a weaker proposition fails.
@@ -686,6 +710,7 @@ example (compiler : EDSL.Corpus.V1.PlainInputs.Compiler) :
 #print axioms EDSL.Tests.SignumCertificates.short_extent_rejected
 #print axioms EDSL.Tests.SignumCertificates.changed_ret_rejected
 #audit_edsl
+#audit_edsl_owners
 LEAN
 
 # Named independent obligations are stored and included in both fresh targets.
@@ -1275,7 +1300,7 @@ fi
 record gate-inputs sha256sum -- "${gate_inputs[@]}"
 record save-gate-inputs cp -- "$output/commands/gate-inputs.stdout" "$output/gate-inputs.sha256"
 
-certificate_targets=(EDSL.Corpus.V1.Comparisons EDSL.Corpus.V1.Arithmetic EDSL.Corpus.V1.Clamps
+certificate_targets=(EDSL.Audit.Owners EDSL.Corpus.V1.Comparisons EDSL.Corpus.V1.Arithmetic EDSL.Corpus.V1.Clamps
     EDSL.Corpus.V1.FetchAddCertificates EDSL.Corpus.V1.ByteScanCertificates
     EDSL.Corpus.V1.IndexSearchCertificates EDSL.Corpus.V1.ByteComparisonCertificates
     EDSL.Corpus.V1.ByteEqualityCertificates
@@ -1285,8 +1310,9 @@ certificate_targets=(EDSL.Corpus.V1.Comparisons EDSL.Corpus.V1.Arithmetic EDSL.C
     EDSL.Corpus.V1.SignumRegistered tests.SignumCertificates
     EDSL.Corpus.PlainMixedWitnesses)
 if [[ $full_project == true ]]; then
-    record build-full-project "${lean_lock[@]}" lake build EDSL.All VerificationTests UnaryTests PopcountTests Immediate32Tests Sub64Tests AddressByteTests MixedCFGTests AverageTests ParityTests RotationTests Low8Tests ByteEqualityTests CFGProfileTests EffectSimulationTests AddRMW64Tests ManagedFetchAdd64Tests PaddingTests ChoiceTests ManagedQueue64Tests \
-        edsl-proof-export edsl-grade "${certificate_targets[@]}"
+    replay_build_targets=(EDSL.All VerificationTests UnaryTests PopcountTests Immediate32Tests Sub64Tests AddressByteTests MixedCFGTests AverageTests ParityTests RotationTests Low8Tests ByteEqualityTests CFGProfileTests EffectSimulationTests AddRMW64Tests ManagedFetchAdd64Tests PaddingTests ChoiceTests ManagedQueue64Tests edsl-proof-export edsl-grade "${certificate_targets[@]}")
+    printf '%s\n' "${replay_build_targets[@]}" > "$output/replay-build-targets.txt"
+    record build-full-project "${lean_lock[@]}" lake build "${replay_build_targets[@]}"
 else
     record build "${lean_lock[@]}" lake build "${certificate_targets[@]}"
 fi
@@ -1301,6 +1327,7 @@ fi
 record source-after-build bash -o pipefail -c "$source_hash_command"
 record source-before-proof-stable cmp -- "$output/source-before.sha256" \
     "$output/commands/source-after-build.stdout"
+record generated-source-audit node scripts/audit-lean-source.cjs --tracked --generated "$output"
 record compile-cli "${lean_env[@]}" lean -DwarningAsError=true \
     -o "$output/lib/corpus/Certify.olean" corpus/Certify.lean
 record compile-certificate-checks "${lean_env[@]}" lean -j1 -DwarningAsError=true \
@@ -2282,7 +2309,11 @@ reject 2 reject-positional "$valid_gcc"
 # Run structural, serialization and installed-admission controls before paying
 # for the full fresh replay. Replay is still mandatory for gate success; the
 # original source, object and tool pins remain in force through this stage.
-record "$fresh_label" "${lean_env[@]}" leanchecker --fresh "$fresh_target"
+if [[ $prepare_replay == true ]]; then
+    record replay-prepared test -f "$output/lib/CorpusFullReplay.olean"
+else
+    record "$fresh_label" "${lean_env[@]}" leanchecker --fresh "$fresh_target"
+fi
 complete=true
 # EXIT performs the final source, frozen-file, imported-module and gate-input
 # stability checks before it creates READY.md or emits a gate success message.
