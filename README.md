@@ -27,6 +27,10 @@ from nonzero; other destinations use the value in range congruent modulo
 `2^width`, under a recorded GNU policy. These operations share one evaluator and
 structural verification conditions. Independent source contracts use arithmetic
 equations and ranges, with definedness proved on each stated input domain.
+The expression engine also exposes typed effectful lookup. An internal
+[declared-object foundation](docs/source-objects.md) provides initialization,
+lifetime, authority and capacity contracts; connecting it to source statements
+and OS behavior remains work in progress.
 Composition examples discharge overflow from operand ranges and account for
 unsigned wrapping. Guarded quotient programs admit all typed inputs and derive
 definedness from their guards. Public evaluation first checks model coverage of

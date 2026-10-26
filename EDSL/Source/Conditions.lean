@@ -98,7 +98,9 @@ theorem eval_truth_defined {target : Target} {parameters : List IntType} {ty : I
     evalExpr policy inputs operand.truth =
       .defined (IntegerCasts.castValue (.small .boolean) value) := by
   cases policy
-  rw [Expr.truth, evalExpr, execution]
+  change (evalExpr .gnuModulo inputs operand).andThen
+    (fun current => convertValue .gnuModulo target ty (.small .boolean) current) = _
+  rw [execution]
   rfl
 
 theorem eval_logicalResult {target : Target} {parameters : List IntType}
@@ -122,7 +124,9 @@ theorem eval_compare_defined {target : Target} {parameters : List IntType}
     (right_eval : evalExpr policy inputs right = .defined y) :
     evalExpr policy inputs (.compare operation kind left right) =
       .defined (compareValues operation x y) := by
-  rw [evalExpr, left_eval, right_eval]
+  change (evalExpr policy inputs left).andThen (fun first =>
+    (evalExpr policy inputs right).andThen (fun second => .defined (compareValues operation first second))) = _
+  rw [left_eval, right_eval]
   rfl
 
 theorem eval_select_zero {target : Target} {parameters : List IntType} {ty : IntType}
@@ -132,7 +136,9 @@ theorem eval_select_zero {target : Target} {parameters : List IntType} {ty : Int
     (condition_eval : evalExpr policy inputs condition = .defined flag) (zero : flag.toInt = 0) :
     evalExpr policy inputs (.select condition onTrue onFalse) =
       evalExpr policy inputs onFalse := by
-  rw [evalExpr, condition_eval]
+  change (evalExpr policy inputs condition).andThen (fun current =>
+    if current.toInt = 0 then evalExpr policy inputs onFalse else evalExpr policy inputs onTrue) = _
+  rw [condition_eval]
   exact ite_eq_left zero
 
 theorem eval_select_nonzero {target : Target} {parameters : List IntType} {ty : IntType}
@@ -142,7 +148,9 @@ theorem eval_select_nonzero {target : Target} {parameters : List IntType} {ty : 
     (condition_eval : evalExpr policy inputs condition = .defined flag) (nonzero : flag.toInt ≠ 0) :
     evalExpr policy inputs (.select condition onTrue onFalse) =
       evalExpr policy inputs onTrue := by
-  rw [evalExpr, condition_eval]
+  change (evalExpr policy inputs condition).andThen (fun current =>
+    if current.toInt = 0 then evalExpr policy inputs onFalse else evalExpr policy inputs onTrue) = _
+  rw [condition_eval]
   exact ite_eq_right nonzero
 
 theorem eval_promotedCompare {target : Target} {parameters : List IntType}

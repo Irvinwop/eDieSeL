@@ -13,6 +13,21 @@ def Outcome.requires {α : Type} (outcome : Outcome α) (post : α → Prop) : P
   | .undefined _ => False
   | .unsupported _ => False
 
+theorem Outcome.requires_defined {α : Type} (value : α) (post : α → Prop) :
+    (Outcome.defined value).requires post ↔ post value := Iff.rfl
+
+theorem Outcome.requires_undefined {α : Type} (reason : UBReason) (post : α → Prop) :
+    (Outcome.undefined reason : Outcome α).requires post ↔ False := Iff.rfl
+
+theorem Outcome.requires_unsupported {α : Type} (feature : UnsupportedFeature) (post : α → Prop) :
+    (Outcome.unsupported feature : Outcome α).requires post ↔ False := Iff.rfl
+
+theorem Outcome.requires_ite {α : Type} (condition : Prop) [Decidable condition]
+    (yes no : Outcome α) (post : α → Prop) :
+    (if condition then yes else no).requires post ↔
+      if condition then yes.requires post else no.requires post := by
+  split <;> rfl
+
 theorem Outcome.requires_iff {α : Type} (outcome : Outcome α) (post : α → Prop) :
     outcome.requires post ↔ ∃ value, outcome = .defined value ∧ post value := by
   cases outcome <;> simp [requires]
@@ -87,71 +102,11 @@ theorem vcExpr_iff {target : Target} {parameters : List IntType} {ty : IntType}
     (expression : Expr target parameters ty)
     (post : Value target ty → Prop) :
     vcExpr policy inputs expression post ↔ (evalExpr policy inputs expression).requires post := by
-  induction expression with
-  | literal value => rfl
-  | param index => rfl
-  | promote operand operandIH =>
-      simp only [vcExpr, evalExpr]
-      rw [Outcome.requires_andThen]
-      exact operandIH _
-  | convert destination operand operandIH =>
-      simp only [vcExpr, evalExpr, Outcome.requires_andThen]
-      exact operandIH _
-  | uadd left right leftIH rightIH =>
-      simp only [vcExpr, evalExpr, Outcome.requires_andThen]
-      rw [leftIH]
-      simp only [rightIH]
-  | sadd left right leftIH rightIH =>
-      simp only [vcExpr, evalExpr, Outcome.requires_andThen]
-      rw [leftIH]
-      simp only [rightIH]
-  | usub left right leftIH rightIH =>
-      simp only [vcExpr, evalExpr, Outcome.requires_andThen]
-      rw [leftIH]
-      simp only [rightIH]
-  | ssub left right leftIH rightIH =>
-      simp only [vcExpr, evalExpr, Outcome.requires_andThen]
-      rw [leftIH]
-      simp only [rightIH]
-  | umul left right leftIH rightIH =>
-      simp only [vcExpr, evalExpr, Outcome.requires_andThen]
-      rw [leftIH]
-      simp only [rightIH]
-  | smul left right leftIH rightIH =>
-      simp only [vcExpr, evalExpr, Outcome.requires_andThen]
-      rw [leftIH]
-      simp only [rightIH]
-  | udiv left right leftIH rightIH =>
-      simp only [vcExpr, evalExpr, Outcome.requires_andThen]
-      rw [leftIH]
-      simp only [rightIH]
-  | sdiv left right leftIH rightIH =>
-      simp only [vcExpr, evalExpr, Outcome.requires_andThen]
-      rw [leftIH]
-      simp only [rightIH]
-  | urem left right leftIH rightIH =>
-      simp only [vcExpr, evalExpr, Outcome.requires_andThen]
-      rw [leftIH]
-      simp only [rightIH]
-  | srem left right leftIH rightIH =>
-      simp only [vcExpr, evalExpr, Outcome.requires_andThen]
-      rw [leftIH]
-      simp only [rightIH]
-  | compare operation kind left right leftIH rightIH =>
-      simp only [vcExpr, evalExpr, Outcome.requires_andThen]
-      rw [leftIH]
-      simp only [rightIH, Outcome.requires]
-  | select condition onTrue onFalse conditionIH onTrueIH onFalseIH =>
-      simp only [vcExpr, evalExpr, Outcome.requires_andThen]
-      rw [conditionIH]
-      cases evalExpr policy inputs condition with
-      | defined value =>
-          by_cases zero : value.toInt = 0
-          · simpa only [Outcome.requires, zero, ↓reduceIte] using onFalseIH post
-          · simpa only [Outcome.requires, zero, ↓reduceIte] using onTrueIH post
-      | undefined _ => rfl
-      | unsupported _ => rfl
-  | unsupported feature => rfl
+  unfold evalExpr ExpressionCore.evalOutcome
+  induction expression <;>
+    simp_all only [vcExpr, ExpressionCore.evalCore, bind, pure,
+      Outcome.requires_andThen, Outcome.requires_defined,
+      Outcome.requires_unsupported, Outcome.requires_ite]
 
 /-- Each admitted input requires full static model coverage followed by the raw
 expression VC. An empty admission remains vacuous, as for `Verifies`; inhabited

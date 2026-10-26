@@ -14,6 +14,7 @@ chain are under development.
 | Task | Start here |
 | --- | --- |
 | Understand the implemented fragment | [Source semantics](source-semantics.md), [source core API](source-core-api.md) |
+| Understand internal object/resource primitives and their limits | [Declared-object foundation](source-objects.md) |
 | State a safety and correctness claim | [Verification obligations](verification.md) |
 | Check the current examples | [Build and validation](validation.md#source-foundation) |
 | Understand the compiler chain | [Bootstrap dependency plan](bootstrap.md), [roadmap](roadmap.md) |

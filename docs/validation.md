@@ -67,6 +67,14 @@ source fragment and stronger finite-completion meaning of `NoUB` are documented
 in the [source core API](source-core-api.md). This command does not parse or certify
 a C/C++ source file.
 
+The scoped target also checks the internal [object foundation](source-objects.md):
+independent access and lifecycle admissions, actual operations, frames,
+initialization/error distinctions, authority checks and fresh-identity/slot
+accounting. Whole-state pure embedding preserves every scalar outcome and the
+public coverage gate. Effectful lookup probes observe actual demanded query
+traces and selected failures through the generic traversal and standard
+StateT/Except carrier; they assert no assigned fixture values or native order.
+
 Final proofs may use `decide +kernel`. Development oracles belong only in
 ignored scratch; final/audited source excludes `native_decide`, `ofReduceBool`,
 proof holes and project axioms. Authoritative heavy checks and fresh replay

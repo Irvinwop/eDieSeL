@@ -41,6 +41,13 @@ value set; it makes no claim of one-bit storage.
 
 ## Syntax and execution
 
+The scalar operations live in `Source.Operations`; `Source.ExpressionCore`
+provides the one shared traversal. `evalExpr` is its scalar specialization,
+using immutable input lookup and the actual `Outcome` operations.
+`ExpressionCore.evalCore` additionally accepts an explicit effect carrier,
+typed lookup and outcome adapter. This library interface does not let a public
+source certificate replace its program semantics with an arbitrary handler.
+
 `Inputs target parameters` is a heterogeneous list of externally supplied typed
 values. `Param.here` / `.there` select them; `Inputs.get` retrieves a value.
 No input generator, memory load, object initialization or ABI is hidden here.
@@ -318,3 +325,6 @@ modules. Hosted CI performs authoritative fresh replay, source/object rereads
 and final-source policy audits. Memory, lvalues, calls, loops, OS effects,
 schedulers, object representations, and the bootstrap chain remain unimplemented
 in this source grammar.
+The [declared-object foundation](source-objects.md) has separate primitive
+contracts and a checked pure-state embedding; it does not add memory or
+assignment constructors to this `Program`.

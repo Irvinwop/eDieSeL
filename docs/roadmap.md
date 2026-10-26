@@ -18,7 +18,7 @@ typed input. `Certificate` combines
 the execution/contract theorem with an inhabited domain; domain and contract
 independence still need review. See the [API](source-core-api.md) and
 [implementation status](implementation-status.md) for exact limits. There is
-no source-text frontend, memory/effect model or bootstrap stage yet. Structural
+no source-text frontend, mutable source statement execution or bootstrap stage yet. Structural
 verification conditions are proved exact for this grammar. Unsigned division
 has an independent interval contract and a synthetic candidate proved safe
 but functionally incorrect; these reuse the same executable semantics.
@@ -62,6 +62,15 @@ to independently specified inverted value bits. These rules do not model object
 storage, source parsing or overloaded C++ operators.
 
 ## 1. Establish the GNU C23 semantics foundation
+
+The expression implementation now has one traversal with explicit lookup and
+outcome handling. The [declared-object foundation](source-objects.md) supplies
+checked internal state/resource primitives and contracts, with a pure-state
+compatibility theorem. The next connection is finite declarations, assignment,
+branch and return with actual object reads, structural stateful VCs and
+independent program/frame contracts. Primitive contracts alone do not certify
+a mutable source program. Read-order correspondence, storage representation,
+source-connected OS behavior and larger language features remain dependencies.
 
 Start with a small, executable, typed source fragment. Record its language
 profile and implemented rules before extending it. GNU++26 shares the same

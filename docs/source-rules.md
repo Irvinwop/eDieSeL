@@ -27,7 +27,9 @@ compiler options need separate review.
 
 Let `N = target.intBits`. The declarations are in `EDSL.Source`;
 [Syntax.lean](../EDSL/Source/Syntax.lean) defines the value profile and
-[Eval.lean](../EDSL/Source/Eval.lean) defines the operations.
+[Operations.lean](../EDSL/Source/Operations.lean) defines scalar operations;
+[ExpressionCore.lean](../EDSL/Source/ExpressionCore.lean) provides the shared
+traversal and [Eval.lean](../EDSL/Source/Eval.lean) its scalar specialization.
 
 | Feature and current Lean rule | C23 draft reference | C++ draft reference |
 | --- | --- | --- |

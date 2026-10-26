@@ -10,3 +10,4 @@ import EDSL.Source.IntegerArithmetic
 import EDSL.Source.Conditions
 import EDSL.Source.Unary
 import EDSL.Source.ComplementBits
+import EDSL.Source.Objects

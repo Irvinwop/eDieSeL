@@ -11,9 +11,11 @@ import tests.SourceCasts
 import tests.SourceArithmetic
 import tests.SourceConditions
 import tests.SourceUnary
+import tests.SourceExpressionCore
 import EDSL.Source.GuardContracts
 import EDSL.Source.ComparisonContracts
 import EDSL.Source.UnaryContracts
+import EDSL.Source.Objects
 import EDSL.Source.ArithmeticContracts
 import EDSL.Audit.Owners
 
@@ -138,4 +140,24 @@ set_option warningAsError true
 #print axioms EDSL.Source.UnaryContracts.unaryReturn_noUB
 #print axioms EDSL.Source.UnaryContracts.unaryMinus_minimum_undefined
 #print axioms EDSL.Source.UnaryContracts.signedMinus_all_inputs_not_certified
+#print axioms EDSL.Source.ExpressionCore.evalCore_congr_get
+#print axioms EDSL.Source.ExpressionCore.evalCore_map
+#print axioms EDSL.Source.Objects.EffectM.bind_assoc
+#print axioms EDSL.Source.Objects.EffectM.liftScalar_bind
+#print axioms EDSL.Source.Objects.PureEmbedding.run_evalExpr
+#print axioms EDSL.Source.Objects.PureEmbedding.run_evalProgram
+#print axioms EDSL.Source.Objects.PureEmbedding.certificate_has_state
+#print axioms EDSL.Source.Objects.load_success_iff
+#print axioms EDSL.Source.Objects.store_success_iff
+#print axioms EDSL.Source.Objects.store_preserves_wellFormed
+#print axioms EDSL.Source.Objects.load_after_store
+#print axioms EDSL.Source.Objects.load_other_after_store
+#print axioms EDSL.Source.Objects.load_uninitialized_cpp26
+#print axioms EDSL.Source.Objects.store_same_value_unauthorized
+#print axioms EDSL.Source.Objects.LifecycleContracts.reserve_admission_iff
+#print axioms EDSL.Source.Objects.LifecycleContracts.initialize_admission_iff
+#print axioms EDSL.Source.Objects.LifecycleContracts.endLifetime_admission_iff
+#print axioms EDSL.Source.Objects.LifecycleContracts.initialize_cpp_completion_before_begin
+#print axioms EDSL.Source.Objects.LifecycleContracts.declarationCycle_preserves_wellFormed
+#print axioms EDSL.Source.Objects.LifecycleContracts.reserve_after_cycle_no_reuse
 #audit_edsl_owners

@@ -119,6 +119,14 @@ specifies their behavior. C and C++ reuse common rules; language differences,
 implementation choices and compiler flags are explicit. A program supplies
 syntax, a contract, invariants and proofs. It does not install a new evaluator.
 
+`Source.Operations` defines scalar outcomes and primitives;
+`ExpressionCore.evalCore` is the shared expression traversal. `evalExpr`
+specializes it to scalar outcomes and immutable typed inputs. A checked
+carrier-mapping law supports other explicit effect carriers without duplicating
+the expression interpreter. The [object foundation](source-objects.md) includes
+a complete-state pure embedding, while mutable source statements and source OS
+integration remain unimplemented.
+
 Each extension must add actual language rules and checked consequences.
 A parser or elaborator also needs a checked link between source text and the
 embedded program before a theorem concerns a file. An arithmetic AST theorem

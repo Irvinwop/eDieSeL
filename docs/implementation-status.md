@@ -14,12 +14,16 @@ binary seed, and source-proved compiler bootstrap stages.
 | Supported coverage and guards | Public evaluation preflights the complete body, including skipped arms; inhabited certificates derive support and raw execution; all-input unsigned/signed guarded-division contracts and derived NoUB, with universal rejection of an insufficient signed guard |
 | Dialect-sensitive construction | Comparison/logical results are C int or C++ bool; integral prvalue conditionals use C common arithmetic typing and C++ same-type preservation before common typing |
 | Integral unary expressions | Plus/minus/complement after integer promotion, and dialect-typed logical NOT; existing evaluator/VC reused; signed-minimum negation boundary and generic arithmetic-to-value-bit complement bridge |
+| Shared effectful traversal | Scalar evaluator is a specialization of one generic traversal; checked computation/resolver mapping and pure-state embedding; effect-aware lookup regressions |
+| Internal object foundation | Declared full-int records, initialization/lifetime/current authority/quota operations, independent access/frame/lifecycle contracts; not source statement syntax or source-program memory support |
 | Source text and general C/C++ | No source-text parser, preprocessing correspondence or general verifier |
 | Source-connected OS semantics | Existing resource/concurrency components require source-step integration |
 | Single bootstrap seed | Not selected or proved for the source-first chain |
 | Source-proved bootstrap/GCC | Not implemented |
 
 The [source core API](source-core-api.md) lists exact declarations and scope.
+The [object guide](source-objects.md) separates the checked primitive foundation
+from pending source-step, stateful VC and OS connections.
 Small types are limited to bool, plain/signed/unsigned char and signed/unsigned short.
 Wider integer types remain unsupported. Explicit integral casts cover all current
 endpoints, with bool zero/nonzero behavior and the selected GNU range/congruence
