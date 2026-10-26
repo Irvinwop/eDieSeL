@@ -31,7 +31,9 @@ The expression engine also exposes typed effectful lookup. An internal
 [declared-object foundation](docs/source-objects.md) provides initialization,
 lifetime, authority and capacity contracts. A [finite statement API](docs/source-statements.md)
 connects mutable parameters and locals to those operations, with exact structural
-verification conditions and normal-return cleanup. Native source-order and OS
+verification conditions and normal-return cleanup. A checked copy/increment
+client derives its unsigned result, caller/old-object frames, resource restoration
+and absence of failure for every typed input. Native source-order and OS
 correspondence remain open.
 Composition examples discharge overflow from operand ranges and account for
 unsigned wrapping. Guarded quotient programs admit all typed inputs and derive

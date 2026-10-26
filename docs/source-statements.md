@@ -69,6 +69,27 @@ and old-object frames from metadata and capacity. `closeAll_contract` derives
 reverse cleanup, tombstones and slot restoration from independent live/owned
 bindings and uniqueness.
 
+## Checked mutable program
+
+`CopyIncrement.program` copies an unsigned parameter object into a local,
+increments the local, and returns its current value before cleanup. Its useful
+certificate covers every admitted target, dialect and typed input, with arbitrary
+old well-formed objects and two free slots. Admission mentions only metadata and
+capacity. The result contract states an independent bounded-carry equation:
+
+`result + carry × modulus = input + 1`, with `carry ≤ 1`.
+
+The proof also preserves external inputs/environment/actor and old objects,
+advances the fresh identity by two, restores all slots, and retains distinct
+ended parameter/local records. Completion derives rejection of every scalar or
+object UB, erroneous result, resource/authority refusal and unsupported stop.
+It is a finite source-AST theorem; source text and compiler output are outside it.
+
+`ParameterContracts.enterParameters_contract` generalizes the entry portion to
+arbitrary signed/unsigned parameter lists, with typed initial values, fresh
+ordered bindings, read/write authority, old-object frames and capacity deltas.
+New clients can reuse it rather than unfold parameter allocation.
+
 ## Reusable verification conditions
 
 `Protocol.WP` characterizes successful actual operations with their complete
@@ -76,21 +97,31 @@ final state and event trace. `StateVC.vcStmt` recurses over statement syntax;
 `BlockVC.vcDecls` extends this to declarations, and `vcProgram` includes entry,
 reservation, whole-body coverage and normal cleanup. Exactness theorems connect
 these generated conditions to the fixed evaluator. No execution fuel or solver
-answer is trusted.
+answer is trusted. `ObjectWP` supplies exact rewrite rules for independent
+load/store snapshots, reservation freshness/quota, initialization, cleanup and
+scalar outcomes. These rules quantify over the whole state and actual event
+trace, including arbitrary malformed states; global consistency and capacity
+conservation require their own invariants.
 
-Expression obligations currently use the exact WP of the shared expression
-computation. The stateful generator does not yet expose every expression as
-small independent reflective obligations. Primitive contracts discharge object
-access and lifecycle conditions. Program admissions and result contracts must
+Expression obligations use `ExpressionVC`: the same expression traversal runs
+in a predicate-transformer carrier whose connection to actual execution is
+proved once. It exposes demanded `CanLoad` snapshots and scalar arithmetic
+conditions, with no second expression interpreter. Statement RHSs and local
+initializers use this reflected interface. Primitive WP rules expose the
+remaining access and lifecycle obligations. Program admissions and result contracts must
 be independently stated; certificates additionally require an inhabited entry
 domain. Successful execution excludes scalar/object UB, erroneous production,
 resource/authority refusal and unsupported syntax through their separate stop
 constructors. These conclusions must be proved, never assumed at admission.
+Successful-completion WP is false on failure; exact failure diagnostics and
+retained effects are separate raw-execution properties.
 
 The expression specialization preserves the complete state on success and
-failure while retaining demanded-read events. Successful primitive reads
-commute under independent access conditions, with traces related by `List.Perm`.
-These facts do not yet prove arbitrary expression operand-order adequacy. The
+failure and emits only internal ordinary-read events, including retained prefixes
+before failure. Any two successfully verified RHS computations at one frozen
+state commute up to the returned pair and `List.Perm` of their traces; each
+computation retains lazy demand. Failed diagnostics are not reordered. These
+facts do not establish general native C/C++ operand-order adequacy. The
 internal evaluation order supplies diagnostic priority; it is not a native
 C/C++ sequencing or concurrent-interference theorem.
 

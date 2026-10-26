@@ -60,8 +60,10 @@ that restores remaining capacity without reusing an ended identity.
 
 These are primitive/protocol contracts. The finite statement API adds a fixed
 source driver and exact structural statement/declaration VCs. Each mutable source
-program still needs independent input and result contracts, discharged VCs and
-an inhabited entry domain.
+program needs independent input and result contracts, discharged obligations and
+an inhabited entry domain. The checked mutable copy/increment client supplies
+them for the first finite block; generic parameter-entry and primitive WP rules
+provide reusable proof interfaces.
 
 ## One expression engine
 

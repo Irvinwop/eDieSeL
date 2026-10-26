@@ -1,11 +1,38 @@
 /- Copyright 2026 Irvinwop. SPDX-License-Identifier: Apache-2.0 -/
-import EDSL.Source.Objects.BlockEval
+import EDSL.Source.Objects.BlockEquations
 import EDSL.Source.Objects.StateVC
 
 set_option autoImplicit false
 namespace EDSL.Source.Objects.BlockVC
 open StateSyntax Protocol
 variable {target : Target} {stateParameters : List IntType} {Environment : Type}
+
+/-- Optional initialization reflects only an initializer which actually exists.
+The same expression engine supplies all demanded read/scalar obligations. -/
+def vcInitializer (policy : IntegerConversionPolicy) {context : List ArithmeticType}
+    {kind : ArithmeticType} (environment : Env context)
+    (initial : Option (RHS target context kind.asIntType))
+    (post : Post target stateParameters Environment (Option (Value target kind.asIntType)))
+    (state : State target stateParameters Environment) : Prop :=
+  match initial with
+  | none => post state none state []
+  | some expression => ExpressionVC.vcExpr policy environment expression
+      (fun original value final events => post original (some value) final events) state
+
+theorem vcInitializer_iff_wp (dialect : Dialect) (policy : IntegerConversionPolicy)
+    {context : List ArithmeticType} {kind : ArithmeticType} (environment : Env context)
+    (initial : Option (RHS target context kind.asIntType))
+    (post : Post target stateParameters Environment (Option (Value target kind.asIntType)))
+    (state : State target stateParameters Environment) :
+    vcInitializer policy environment initial post state ↔
+      WP (match initial with
+        | none => Op.pure none
+        | some expression => Op.bind (StateEval.evalExpr dialect policy environment expression)
+            (fun value => Op.pure (some value))) post state := by
+  cases initial with
+  | none => rfl
+  | some expression =>
+      simp only [vcInitializer, ExpressionVC.vcExpr_iff_wp dialect, wp_bind, wp_pure, List.append_nil]
 
 /-- Structural declaration VCs use the actual shared expression computation and
 initialization primitive. Binding visibility is exactly the declaration spine;
@@ -20,11 +47,7 @@ def vcDecls (dialect : Dialect) (policy : IntegerConversionPolicy) :
   | _, _, .declare _ initial rest, environment, plan, post =>
     match plan with
     | .cons reference tail =>
-      let initialValue := match initial with
-        | none => Op.pure none
-        | some expression => Op.bind (StateEval.evalExpr dialect policy environment expression)
-            fun value => Op.pure (some value)
-      WP initialValue (fun original value middle initialEvents =>
+      vcInitializer policy environment initial (fun original value middle initialEvents =>
         WP («initialize» dialect reference value)
           (fun _ _ updated initializeEvents =>
             vcDecls dialect policy rest (environment.extend reference) tail
@@ -46,7 +69,7 @@ theorem vcDecls_iff_wp (dialect : Dialect) (policy : IntegerConversionPolicy)
   | declare kind value rest ih =>
       cases plan with
       | cons reference tail =>
-          simp only [vcDecls, BlockEval.evalDecls, wp_bind]
+          simp only [vcDecls, vcInitializer_iff_wp dialect, BlockEval.evalDecls_declare, wp_bind]
           apply wp_congr
           intro original evaluated middle initialEvents
           apply wp_congr

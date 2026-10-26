@@ -16,3 +16,8 @@ import EDSL.Source.Objects.BlockEval
 import EDSL.Source.Objects.BlockVC
 import EDSL.Source.Objects.BlockContracts
 import EDSL.Source.Objects.BlockEquations
+import EDSL.Source.Objects.ObjectWP
+import EDSL.Source.Objects.ParameterContracts
+import EDSL.Source.Objects.ExpressionReadOrder
+import EDSL.Source.Objects.CopyIncrement
+import EDSL.Source.Objects.ExpressionVC

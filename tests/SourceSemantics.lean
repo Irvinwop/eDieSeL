@@ -11,6 +11,8 @@ import tests.SourceCasts
 import tests.SourceArithmetic
 import tests.SourceConditions
 import tests.SourceUnary
+import tests.SourceExpressionVC
+import tests.SourceObjects
 import tests.SourceReadOrder
 import tests.SourceExpressionCore
 import EDSL.Source.GuardContracts
@@ -164,4 +166,24 @@ set_option warningAsError true
 #print axioms EDSL.Source.Objects.StateSyntax.Program.firstUnsupported_eq_none_iff
 #print axioms EDSL.Source.Objects.StateSyntax.Env.get_injective
 #print axioms EDSL.Source.Objects.ReadOrder.load_load_diamond
+#print axioms EDSL.Source.Objects.CopyIncrement.certificate
+#print axioms EDSL.Source.Objects.CopyIncrement.no_failure
+#print axioms EDSL.Source.Objects.ObjectWP.wp_store
+#print axioms EDSL.Source.Objects.ParameterContracts.enterParameters_contract
+#print axioms EDSL.Source.Objects.ExpressionReadOrder.expression_pair_commutes
+#print axioms EDSL.Source.Objects.ExpressionVC.vcExpr_iff_wp
+#print axioms EDSL.Source.Objects.BlockVC.vcInitializer_iff_wp
+#print axioms EDSL.Source.Objects.ExpressionVCChecks.currentObjects
+#print axioms EDSL.Source.Objects.ExpressionVCChecks.currentObjectsActual
+#print axioms EDSL.Source.Objects.ExpressionVCChecks.skippedUnknown
+#print axioms EDSL.Source.Objects.ExpressionVCChecks.demandedUnknown
+#print axioms EDSL.Source.Objects.ExpressionVCChecks.repeatedDemand
+#print axioms EDSL.Source.Objects.ExpressionVCChecks.cUninitialized
+#print axioms EDSL.Source.Objects.ExpressionVCChecks.cppUninitialized
+#print axioms EDSL.Source.Objects.ExpressionVCChecks.rejectUninitialized
+#print axioms EDSL.Source.Objects.ExpressionVCChecks.scalarFailure
+#print axioms EDSL.Source.Objects.ExpressionVCChecks.rejectScalarFailure
+#print axioms EDSL.Source.Objects.ExpressionVCChecks.skipUnsupported
+#print axioms EDSL.Source.Objects.ExpressionVCChecks.rejectUnsupported
+#print axioms EDSL.Source.Objects.ExpressionVCChecks.storeThenLoad
 #audit_edsl_owners

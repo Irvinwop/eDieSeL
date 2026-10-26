@@ -75,7 +75,13 @@ checked internal state/resource primitives and contracts, with a pure-state
 compatibility theorem. Finite declarations, assignment, branch and return now
 use actual object reads, with structural stateful VCs and independent allocation
 and cleanup contracts. Each mutable source program still needs its own
-independently stated functional/frame contract and discharged obligations. Read-order correspondence, storage representation,
+independently stated functional/frame contract and discharged obligations. The
+first mutable copy/increment client now supplies these for all typed inputs,
+with a bounded-carry result, preserved old state, fresh tombstones and restored
+slots. Generic parameter-entry and primitive-WP rules reduce repeated proof work.
+Expression verification now specializes the same traversal to a checked
+predicate-transformer carrier, exposing demanded read snapshots and scalar
+obligations. Statements and declarations compose those conditions. Read-order correspondence, storage representation,
 source-connected OS behavior and larger language features remain dependencies.
 
 Start with a small, executable, typed source fragment. Record its language

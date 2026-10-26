@@ -1,6 +1,7 @@
 /- Copyright 2026 Irvinwop. SPDX-License-Identifier: Apache-2.0 -/
 import EDSL.Source.Objects.Protocol
 import EDSL.Source.Objects.StateEval
+import EDSL.Source.Objects.ExpressionVC
 
 set_option autoImplicit false
 
@@ -20,15 +21,15 @@ variable {target : Target} {stateParameters : List IntType} {Environment : Type}
     {context : List ArithmeticType} {result : IntType}
 
 /-- A structural statement VC generator. Only the selected branch is demanded,
-while the public `vcRun` separately requires whole-statement coverage. An RHS
-condition is currently the exact WP of the shared expression engine; expression
-reflection is a separate extension, without weakening these statement laws. -/
+while the public `vcRun` separately requires whole-statement coverage. RHS conditions
+use the shared expression traversal in its predicate-transformer carrier,
+exposing independent read snapshots and scalar obligations. -/
 def vcStmt (dialect : Dialect) (policy : IntegerConversionPolicy)
     (environment : Env context) : Stmt target context result →
     Post target stateParameters Environment (Value target result) →
     State target stateParameters Environment → Prop
   | .set index value next, post =>
-      WP (StateEval.evalExpr dialect policy environment value)
+      ExpressionVC.vcExpr policy environment value
         (fun original evaluated middle readEvents =>
           WP (store (environment.get index) evaluated)
             (fun _ _ updated writeEvents =>
@@ -37,7 +38,7 @@ def vcStmt (dialect : Dialect) (policy : IntegerConversionPolicy)
                   post original returned final (readEvents ++ (writeEvents ++ suffix))) updated)
             middle)
   | .branch condition yes no, post =>
-      WP (StateEval.evalExpr dialect policy environment condition)
+      ExpressionVC.vcExpr policy environment condition
         (fun original evaluated middle readEvents =>
           if evaluated.toInt = 0 then
             vcStmt dialect policy environment no
@@ -47,7 +48,7 @@ def vcStmt (dialect : Dialect) (policy : IntegerConversionPolicy)
             vcStmt dialect policy environment yes
               (fun _ returned final suffix => post original returned final (readEvents ++ suffix))
               middle)
-  | .ret value, post => WP (StateEval.evalExpr dialect policy environment value) post
+  | .ret value, post => ExpressionVC.vcExpr policy environment value post
   | .unsupported _, _ => fun _ => False
 
 /-- Structural conditions are exact for actual finite statement execution,
@@ -60,10 +61,10 @@ theorem vcStmt_iff_wp (dialect : Dialect) (policy : IntegerConversionPolicy)
       WP (StateEval.evalStmt dialect policy environment statement) post initial := by
   induction statement generalizing post initial with
   | set index value next ih =>
-      simp only [vcStmt, StateEval.evalStmt, wp_bind, ih]
+      simp only [vcStmt, StateEval.evalStmt, ExpressionVC.vcExpr_iff_wp dialect, wp_bind, ih]
   | branch condition yes no yesIH noIH =>
-      simp only [vcStmt, StateEval.evalStmt, wp_bind, wp_ite, yesIH, noIH]
-  | ret value => rfl
+      simp only [vcStmt, StateEval.evalStmt, ExpressionVC.vcExpr_iff_wp dialect, wp_bind, wp_ite, yesIH, noIH]
+  | ret value => exact ExpressionVC.vcExpr_iff_wp dialect policy environment value post initial
   | unsupported feature => rfl
 
 /-- Public whole-statement preflight plus structural execution conditions.
