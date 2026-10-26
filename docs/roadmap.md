@@ -9,7 +9,8 @@ regressions. Their corpus score is not the main progress measure.
 ## Current foundation
 
 The initial `EDSL.Source` implementation is a finite pure expression/return
-fragment with typed `int`/`unsigned int` values, addition/division, and explicit
+fragment with bool, plain char and the signed/unsigned char, short and int
+types, integer promotions, addition/division, explicit integral casts, and
 defined/UB/unsupported outcomes. Its unsigned-addition client proves an
 independent bounded-carry equation for every typed input. `Certificate` combines
 the execution/contract theorem with an inhabited domain; domain and contract
@@ -20,13 +21,15 @@ verification conditions are proved exact for this grammar. Unsigned division
 has an independent interval contract and a synthetic candidate proved safe
 but functionally incorrect; these reuse the same executable semantics.
 
-The fixed GNU conversion policy, same-rank casts and common types, numeric
-round-trip laws, and five conversion/mixed-operation certificates are implemented.
-Bool, ordinary char and short ranks/promotions are implemented, with explicit
-width/signedness profiles and value-preservation proofs. Arithmetic source
-certificates discharge overflow from input ranges; equal-width unsigned-short
-promotion is covered. Wider integers, other small casts, sequencing and objects
-remain dependencies.
+The fixed GNU conversion policy and explicit casts cover every admitted
+bool/char/short/int source and destination. Bool conversion uses zero/nonzero
+semantics; other destinations use their numeric range and congruence modulo
+`2^width`. Casts, promotions and common-type arithmetic share the evaluator
+and structural verification-condition interface. The profile records numeric
+widths and plain-char signedness. Promotions preserve values; arithmetic source
+certificates discharge overflow from input ranges, including the equal-width
+unsigned-short promotion case. Wider integer types, sequencing, objects, memory,
+control flow and source-connected OS effects remain dependencies.
 
 ## 1. Establish the GNU C23 semantics foundation
 

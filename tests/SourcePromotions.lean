@@ -88,12 +88,14 @@ example (dialect : Dialect) :
       Expr.promote (.unsupported (ty := .small .ushort) .memoryAccess)⟩ :
       Program Target.int32 [] .sint) .nil = .unsupported .memoryAccess := rfl
 
-/-- An unsupported small cast remains unsupported after outer promotion. -/
+/-- A small cast composes with promotion through the shared evaluator. -/
 example (dialect : Dialect) :
     eval (⟨dialect, .gnuModulo,
       Expr.promote (.convert (.small .ushort)
         (.literal (ty := .sint) ⟨1, by decide +kernel⟩))⟩ :
-      Program Target.int32 [] .sint) .nil = .unsupported .conversion := rfl
+      Program Target.int32 [] .sint) .nil = .defined ⟨1, by decide +kernel⟩ := by
+  simp only [eval]
+  decide +kernel
 
 /-- Identity promotion of a full int cannot repair UB in its operand. -/
 example (dialect : Dialect) :

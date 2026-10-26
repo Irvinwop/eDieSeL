@@ -8,8 +8,8 @@ binary seed, and source-proved compiler bootstrap stages.
 
 | Component | Current status |
 | --- | --- |
-| Executable source foundation | Finite typed expression/return eDSL: bool/char/short/int value ranges and promotions, addition/division, full-rank conversions, defined/UB/unsupported outcomes |
-| Source definedness/contracts | Shared `Verifies` and completion-style `NoUB`; `Certificate` requires an inhabited input domain; unsigned-addition contract for all typed inputs, division contract for all nonzero denominators; conversion/mixed-operation and promotion clients with inhabited domains and proved NoUB |
+| Executable source foundation | Finite typed expression/return eDSL: bool/char/short/int value ranges and promotions, addition/division, explicit casts between all admitted integral types, defined/UB/unsupported outcomes |
+| Source definedness/contracts | Shared `Verifies` and completion-style `NoUB`; `Certificate` requires an inhabited input domain; unsigned-addition contract for all typed inputs, division contract for all nonzero denominators; conversion/mixed-operation, promotion and cast/composition clients with inhabited domains and proved NoUB |
 | Source proof reuse | Structural verification conditions proved equivalent to actual defined execution plus postcondition for the finite pure grammar |
 | Source text and general C/C++ | No source-text parser, preprocessing correspondence or general verifier |
 | Source-connected OS semantics | Existing resource/concurrency components require source-step integration |
@@ -18,7 +18,9 @@ binary seed, and source-proved compiler bootstrap stages.
 
 The [source core API](source-core-api.md) lists exact declarations and scope.
 Small types are limited to bool, plain/signed/unsigned char and signed/unsigned short.
-Small casts and wider integer types remain unsupported. The arithmetic fragment
+Wider integer types remain unsupported. Explicit integral casts cover all current
+endpoints, with bool zero/nonzero behavior and the selected GNU range/congruence
+policy. The arithmetic fragment
 has no lvalues, pointers, memory, loops,
 calls or effects. Its target records integer value ranges, not an ABI or a
 compiler/hardware correspondence. Boundary examples expose signed overflow,

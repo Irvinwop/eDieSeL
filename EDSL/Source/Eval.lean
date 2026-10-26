@@ -2,7 +2,7 @@
 Copyright 2026 Irvinwop
 SPDX-License-Identifier: Apache-2.0
 -/
-import EDSL.Source.IntegerConversions
+import EDSL.Source.IntegerCasts
 import EDSL.Source.IntegerPromotions
 
 set_option autoImplicit false
@@ -57,20 +57,14 @@ def signedDiv (target : Target) (x y : Value target .sint) :
   if y.val = 0 then .undefined .divisionByZero
   else checkedSigned target .signedDivisionOverflow (x.val.tdiv y.val)
 
-/-- One conversion rule for every expression, selected by the program policy.
-Full-rank identity conversions preserve values; small endpoints remain
-unsupported. Full-rank cross-signedness conversion uses
-proven same-width number maps; it is distinct from checked signed arithmetic. -/
+/-- One total integral conversion rule under the program's explicit GNU policy.
+Boolean destinations test zero/nonzero; other destinations select the congruent
+representative in their range. Arithmetic overflow is checked separately. -/
 def convertValue (policy : IntegerConversionPolicy) (target : Target)
     (source destination : IntType) (value : Value target source) :
     Outcome (Value target destination) :=
-  match policy, source, destination with
-  | .gnuModulo, .uint, .uint => .defined value
-  | .gnuModulo, .sint, .sint => .defined value
-  | .gnuModulo, .sint, .uint => .defined (IntegerConversions.signedToUnsigned value)
-  | .gnuModulo, .uint, .sint => .defined (IntegerConversions.unsignedToSigned value)
-  | .gnuModulo, .small _, _ => .unsupported .conversion
-  | .gnuModulo, _, .small _ => .unsupported .conversion
+  match policy with
+  | .gnuModulo => .defined (IntegerCasts.castValue destination value)
 
 /-- One structurally recursive evaluator for the common fragment. Left-first
 diagnostics do not claim a source-language operand sequencing guarantee: all
@@ -99,6 +93,21 @@ def evalExpr {target : Target} {parameters : List IntType}
       (evalExpr policy inputs left).andThen fun x =>
         (evalExpr policy inputs right).andThen fun y => signedDiv target x y
   | _, .unsupported feature => .unsupported feature
+
+/-- Compose defined operand executions and a proved signed-sum range through
+the shared evaluator. No source-safety premise replaces either operand proof. -/
+theorem eval_sadd_defined {target : Target} {parameters : List IntType}
+    (policy : IntegerConversionPolicy) (inputs : Inputs target parameters)
+    (left right : Expr target parameters .sint)
+    (x y : Value target .sint)
+    (left_eval : evalExpr policy inputs left = .defined x)
+    (right_eval : evalExpr policy inputs right = .defined y)
+    (fits : -target.signedBound ≤ x.val + y.val ∧ x.val + y.val < target.signedBound) :
+    evalExpr policy inputs (.sadd left right) = .defined ⟨x.val + y.val, fits⟩ := by
+  change ((evalExpr policy inputs left).andThen (fun x =>
+    (evalExpr policy inputs right).andThen (fun y => signedAdd target x y))) = _
+  rw [left_eval, right_eval]
+  exact dite_eq_left fits
 
 def eval {target : Target} {parameters : List IntType} {result : IntType}
     (program : Program target parameters result) (inputs : Inputs target parameters) :

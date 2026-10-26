@@ -4,7 +4,18 @@ Tests exercise independently specified behavior, exact-byte rejection and
 current authority/lifetime rules. They complement the universal library proofs;
 native observations do not supply a proof oracle.
 
-For the new-program workflow:
+For the source-first core:
+
+```sh
+lake build EDSL.Source SourceSemanticsTests
+```
+
+The audited `SourceSemantics.lean` root imports conversion, promotion and cast
+checks. These use independent arithmetic results and failure outcomes alongside
+universal source certificates; source-text, objects and effects remain future
+work. See the [source API](../docs/source-core-api.md) for exact scope.
+
+For the retained binary-verification workflow:
 
 ```sh
 lake build VerificationTests

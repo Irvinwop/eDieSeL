@@ -50,7 +50,7 @@ No input generator, memory load, object initialization or ABI is hidden here.
 | `literal value` | An already representable typed value, without token parsing or truncation |
 | `param index` | A supplied parameter |
 | `promote operand` | Value-preserving integer promotion to a full arithmetic type |
-| `convert destination operand` | Explicit conversion; only the full int/unsigned-int pair is implemented |
+| `convert destination operand` | Explicit cast between every admitted integral source and destination |
 | `uadd`, `sadd`, `udiv`, `sdiv` | Existing same-type full-rank arithmetic primitives |
 | `unsupported feature` | Explicit missing coverage, never successful verification |
 
@@ -59,8 +59,9 @@ No input generator, memory load, object initialization or ABI is hidden here.
 `return expression;`, with exactly the body's result type. There is no implicit
 return, assignment or initialization conversion.
 
-Only `IntegerConversionPolicy.gnuModulo` is implemented: same-width full-rank
-conversion chooses the destination-range modulo representative without a signal.
+Only `IntegerConversionPolicy.gnuModulo` is implemented: bool conversion tests
+zero/nonzero; other integral destinations select the destination-range modulo
+representative without a signal.
 For C23 this records a GNU choice, rather than all ISO C implementations. It
 never changes signed arithmetic overflow into wrapping. See the
 [rule references](source-rules.md).
@@ -81,8 +82,28 @@ is not a UB witness or a security defect.
 All evaluation is structural recursion on pure finite expressions. Left-first
 failure diagnostics make no C/C++ operand-sequencing promise. The evaluator
 executes each operand before promotion/conversion; neither operation repairs
-operand UB or unsupported coverage. Explicit casts with **any small endpoint**,
-including small identity casts and conversion to bool, remain unsupported.
+operand UB or unsupported coverage. Casts are total on defined integral operand
+values; this does not make unsupported operands or arithmetic UB defined.
+
+## Integral casts
+
+`IntegerCasts.castValue destination value` implements numeric conversion for
+all admitted type/profile pairs. Bool maps zero to zero and every nonzero integer
+to one. Every other destination selects the representative in its half-open
+range with the same residue modulo `IntType.span = upperBound - lowerBound`.
+`CastSpec` states these rules independently using only mathematical integers,
+bounds and residues. It does not call the cast implementation or evaluator.
+
+`castValue_spec`, `castValue_unique` and `castValue_eq_iff` prove the
+characterization. `castValue_preserves` proves mathematical-value preservation
+when the input fits the destination, and `castValue_self` proves same-type
+identity. Boolean zero/nonzero corollaries are distinct from modular congruence.
+The full int/unsigned-int round trips reuse `IntegerConversions`; arbitrary
+narrowing can lose information and cannot generally be reversed.
+
+These numeric lemmas are used by the existing `Expr.convert`, `convertValue`,
+`evalExpr` and `vcExpr`. They do not add a second source interpreter, implicit
+return conversions, storage semantics, or conversions of pointers/floats.
 
 ## Promotion and usual arithmetic
 
@@ -134,7 +155,9 @@ postconditions by rerunning its evaluator.
 `vcExpr policy inputs expression post` generates structural conditions using
 the shared primitives. `vcExpr_iff` and `vc_iff_verifies` prove exactness for the
 implemented grammar. `certificate_of_vc` packages an inhabited domain and proved
-conditions. Clients reuse numeric lemmas rather than new execution interpreters
+conditions. The shared `eval_sadd_defined` lemma composes defined operand
+executions and proved signed-sum bounds without unfolding the whole program.
+Clients reuse numeric lemmas rather than new execution interpreters
 or soundness proofs. It does not solve arbitrary conditions automatically.
 
 ## Certified clients
@@ -152,6 +175,9 @@ Every listed positive certificate derives NoUB on its stated domain.
 | `PromotionContracts.promoteReturn` | All types/profiles/inputs; exact mathematical-value preservation through the shared VC path |
 | `PromotionContracts.booleanAdd` | All boolean inputs/profiles; exact sum, overflow discharged from 0/1 bounds |
 | `PromotionContracts.unsignedShortAdd` | All typed inputs on int32 or int16 profiles; exact signed sum or unsigned carry equation respectively |
+| `CastContracts.castReturn` | All admitted types/profiles/inputs; `CastResult` states zero/nonzero or bounds and an integer-carry equation |
+| `CastContracts.representableRoundTrip` | Input fits the intermediate type; exact original value, with an inhabited numeric domain |
+| `CastContracts.lowByteAdd` | All unsigned int inputs on int32/char8; exact sum of the two residues modulo 256, bounded by 510 |
 
 The synthetic `Division.wrappedIncrement` candidate is proved NoUB yet incorrect
 for the quotient contract. Zero division, signed boundaries, unsupported coverage,

@@ -59,10 +59,12 @@ The current x86-64 userspace profiles are described in the
 ## 3. GNU C23
 
 The implemented pure [source core](source-core-api.md) covers full-rank `int`
-and `unsigned int` values, addition/division, same-rank conversion/common-type
-rules under an explicitly recorded GNU conversion policy, and a single expression
-return. It additionally models bool/ordinary char/short values and their integer
-promotions. Small explicit casts and wider integer types remain unsupported.
+and `unsigned int` values, addition/division and common-type arithmetic under
+an explicitly recorded GNU conversion policy, and a single expression return.
+It also models bool/ordinary char/short values, their integer promotions and
+explicit casts between every admitted integral type. Bool conversion uses
+zero/nonzero; other destinations use range/congruence. Wider integer types
+remain unsupported.
 It has no objects, pointers, memory, statements, calls, threads or
 source-text importer. The separate retained
 [atomic event-graph fragment](c23-atomic-events.md) provides

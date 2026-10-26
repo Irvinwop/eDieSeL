@@ -6,6 +6,8 @@ import EDSL.Source.ConversionContracts
 import tests.SourceConversions
 import EDSL.Source.PromotionContracts
 import tests.SourcePromotions
+import EDSL.Source.CastContracts
+import tests.SourceCasts
 import EDSL.Audit.Owners
 
 set_option autoImplicit false
@@ -53,4 +55,16 @@ set_option warningAsError true
 #print axioms EDSL.Source.PromotionContracts.unsignedShortAdd16_certificate
 #print axioms EDSL.Source.PromotionContracts.unsignedShortAdd32_noUB
 #print axioms EDSL.Source.PromotionContracts.unsignedShortAdd16_noUB
+#print axioms EDSL.Source.IntegerCasts.castValue_spec
+#print axioms EDSL.Source.IntegerCasts.castValue_unique
+#print axioms EDSL.Source.IntegerCasts.castValue_preserves
+#print axioms EDSL.Source.IntegerCasts.castValue_self
+#print axioms EDSL.Source.eval_sadd_defined
+#print axioms EDSL.Source.CastContracts.castValue_result
+#print axioms EDSL.Source.CastContracts.castReturn_certificate
+#print axioms EDSL.Source.CastContracts.castReturn_noUB
+#print axioms EDSL.Source.CastContracts.representableRoundTrip_certificate
+#print axioms EDSL.Source.CastContracts.representableRoundTrip_noUB
+#print axioms EDSL.Source.CastContracts.lowByteAdd_certificate
+#print axioms EDSL.Source.CastContracts.lowByteAdd_noUB
 #audit_edsl_owners

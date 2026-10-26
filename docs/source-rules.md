@@ -44,7 +44,7 @@ UB reason is a diagnostic representation, not a claim about a native trap.
 
 The primitive arithmetic constructors accept same-type full-rank operands.
 Ordinary small types are promoted before common-type conversion and arithmetic.
-Explicit casts remain limited to the full int pair. There is no source
+Explicit casts cover all admitted integral endpoints. There is no source
 literal-token typing or complete integer-rank engine. Relevant rules are
 [N3096 §6.3.1.8 and §6.5.5 ¶4 / §6.5.6 ¶5](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n3096.pdf)
 and [N5001 `[expr.arith.conv]`](https://github.com/cplusplus/draft/blob/n5001/source/expressions.tex#L1078-L1133).
@@ -69,7 +69,7 @@ claim that every language diagnostic has been modeled. In particular, finite
 [source core API](source-core-api.md) for its precise judgment and existing
 example theorems.
 
-## Same-rank conversion policy
+## Integral-conversion policy
 
 `Program.conversions` records the fixed `gnuModulo` choice explicitly. The
 [versioned GCC 15.2 integer implementation page](https://gcc.gnu.org/onlinedocs/gcc-15.2.0/gcc/Integers-implementation.html)
@@ -77,7 +77,7 @@ documents destination-range modulo conversion without a signal. This is the
 selected GNU C policy, rather than the full set of behaviors allowed by
 [N3096 §6.3.1.3 ¶1–3](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n3096.pdf).
 The C++ arithmetic result is justified separately by
-[N5001 `[conv.integral]` ¶1–4](https://github.com/cplusplus/draft/blob/n5001/source/expressions.tex#L874-L895).
+[N5001 `[conv.integral]` ¶1–4](https://github.com/cplusplus/draft/blob/n5001/source/expressions.tex#L946-L969).
 The same executable conversion code implements this common selected result.
 This does not establish correspondence to a real GCC executable or source file.
 
@@ -85,11 +85,45 @@ The supported `int`/`unsigned int` types have equal rank. `commonType` and the
 addition/division smart constructors implement only that pair's common-type
 rules from N3096 §6.3.1.8 and N5001 `[expr.arith.conv]`: mixed operands convert to
 unsigned before arithmetic; two signed operands keep signed arithmetic and its
-UB checks. The small-type promotion stage is described below; explicit casts
-involving small types, extended integer ranks, bit-fields, floats and pointer
-conversions remain unsupported. Conversion does not imply a wrapping policy for
-signed addition or division. Effective overflow options and their implementation
+UB checks. The small-type promotion stage is described below. Explicit casts
+cover the admitted small types; extended integer ranks, bit-fields, floats and
+pointer conversions remain unsupported. Conversion does not imply a wrapping
+policy for signed addition or division. Effective overflow options and their implementation
 correspondence remain separate future profile obligations.
+
+## Boolean and cross-width casts
+
+The existing `Expr.convert` covers every source/destination pair among the
+admitted bool, plain/signed/unsigned char, signed/unsigned short, and full int
+and unsigned int types. Conversion TO bool follows
+[N3096 §6.3.1.2 ¶1](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n3096.pdf)
+and [N5001 `[conv.bool]` ¶1](https://github.com/cplusplus/draft/blob/n5001/source/expressions.tex#L1154-L1161):
+zero becomes zero, every nonzero integer becomes one. It is not reduction modulo
+two. Bool's existing values 0/1 are representable in all other admitted types.
+
+Other destinations use a value within their half-open numeric range, congruent
+to the input modulo that range's span. Representable values are preserved.
+The span is `2^width` for these non-bool types, including the sign bit for
+signed types. This follows N3096 §6.3.1.3 with the documented GNU signed-result
+choice, and N5001 `[conv.integral]` ¶2–4. Explicit source casts are covered by
+N3096 §6.5.4 ¶6 and N5001 `[expr.static.cast]` within this common value subset.
+Plain char uses the explicit profile choice; the
+[GCC 15.2 character implementation page](https://gcc.gnu.org/onlinedocs/gcc-15.2.0/gcc/Characters-implementation.html)
+records that native defaults depend on the ABI and signed/unsigned-char options.
+No host default is inferred here.
+
+`IntegerCasts.CastSpec` characterizes output integers using zero/nonzero or
+bounds and residue equality; it contains no evaluator or conversion helper.
+Numeric uniqueness and representability-preservation laws feed the shared
+source evaluator and VC. The source cast certificate uses `CastResult`, with
+a separate zero/nonzero relation or an integer-carry equation in its postcondition.
+The round-trip certificate requires the original
+input to fit the intermediate type, a sufficient condition rather than a
+necessary one for every signedness-changing pair. Arbitrary narrowing may lose
+information. Operand UB and unsupported outcomes propagate through casts.
+
+These rules add no implicit assignment, initialization or return conversion,
+source-text frontend, pointer/float cast, storage width, or compiler correspondence.
 
 ## Ordinary small integer promotions
 
@@ -118,7 +152,7 @@ operand representability alone does not establish safe addition/division.
 
 Bit-fields, enums, `_BitInt`, extended/wider types and C++'s distinct Unicode
 character types remain outside this rule. Initialization, assignments, implicit
-returns, conversion to bool and explicit casts with any small endpoint are not
-implemented here. Unsupported casts remain coverage failures, not source UB.
+returns, wider types, floats and pointer conversions are not implemented here.
+Unsupported constructs remain coverage failures, not source UB.
 The model does not infer typedef/token identity, source parsing, ABI/storage
 properties or native compiler conformance from these value-level results.

@@ -18,7 +18,13 @@ boundary probes in both operand orders and conversion failure propagation.
 Promotion clients cover every admitted type/profile, boolean addition and
 unsigned-short sums on distinct int widths. Boundaries check equal-width
 promotion, plain-char signedness, overflow after valid promotion, division at
-the promoted width and failure propagation. The source fragment
+the promoted width and failure propagation. Cast clients cover every admitted
+source/destination/profile pair with an independent result law and derived NoUB.
+A representability-conditioned round trip and a low-byte sum combine casts,
+promotion and checked arithmetic. Independent boundary probes check nonzero
+even bool inputs, signed narrowing boundaries, negative unsigned conversions,
+plain-char signedness, information loss, and propagation of unsafe/unsupported
+children. The source fragment
 and stronger finite-completion meaning of `NoUB` are documented in the
 [source core API](source-core-api.md). This command does not parse or certify
 a C/C++ source file.
