@@ -32,6 +32,9 @@ def vcExpr {target : Target} {parameters : List IntType}
     {ty : IntType} → Expr target parameters ty → (Value target ty → Prop) → Prop
   | _, .literal value, post => post value
   | _, .param index, post => post (inputs.get index)
+  | _, .promote operand, post =>
+      vcExpr policy inputs operand fun value =>
+        post (IntegerPromotions.promoteValue value)
   | _, .convert destination operand, post =>
       vcExpr policy inputs operand fun value =>
         (convertValue policy target _ destination value).requires post
@@ -60,6 +63,10 @@ theorem vcExpr_iff {target : Target} {parameters : List IntType} {ty : IntType}
   induction expression with
   | literal value => rfl
   | param index => rfl
+  | promote operand operandIH =>
+      simp only [vcExpr, evalExpr]
+      rw [Outcome.requires_andThen]
+      exact operandIH _
   | convert destination operand operandIH =>
       simp only [vcExpr, evalExpr, Outcome.requires_andThen]
       exact operandIH _

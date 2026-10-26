@@ -3,6 +3,7 @@ Copyright 2026 Irvinwop
 SPDX-License-Identifier: Apache-2.0
 -/
 import EDSL.Source.IntegerConversions
+import EDSL.Source.IntegerPromotions
 
 set_option autoImplicit false
 
@@ -57,7 +58,8 @@ def signedDiv (target : Target) (x y : Value target .sint) :
   else checkedSigned target .signedDivisionOverflow (x.val.tdiv y.val)
 
 /-- One conversion rule for every expression, selected by the program policy.
-Typed identity conversions preserve values. Cross-signedness conversion uses
+Full-rank identity conversions preserve values; small endpoints remain
+unsupported. Full-rank cross-signedness conversion uses
 proven same-width number maps; it is distinct from checked signed arithmetic. -/
 def convertValue (policy : IntegerConversionPolicy) (target : Target)
     (source destination : IntType) (value : Value target source) :
@@ -67,6 +69,8 @@ def convertValue (policy : IntegerConversionPolicy) (target : Target)
   | .gnuModulo, .sint, .sint => .defined value
   | .gnuModulo, .sint, .uint => .defined (IntegerConversions.signedToUnsigned value)
   | .gnuModulo, .uint, .sint => .defined (IntegerConversions.unsignedToSigned value)
+  | .gnuModulo, .small _, _ => .unsupported .conversion
+  | .gnuModulo, _, .small _ => .unsupported .conversion
 
 /-- One structurally recursive evaluator for the common fragment. Left-first
 diagnostics do not claim a source-language operand sequencing guarantee: all
@@ -76,6 +80,9 @@ def evalExpr {target : Target} {parameters : List IntType}
     {ty : IntType} → Expr target parameters ty → Outcome (Value target ty)
   | _, .literal value => .defined value
   | _, .param index => .defined (inputs.get index)
+  | _, .promote operand =>
+      (evalExpr policy inputs operand).andThen fun value =>
+        .defined (IntegerPromotions.promoteValue value)
   | _, .convert destination operand =>
       (evalExpr policy inputs operand).andThen fun value =>
         convertValue policy target _ destination value

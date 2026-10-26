@@ -4,6 +4,8 @@ import EDSL.Source.VCGen
 import EDSL.Source.Division
 import EDSL.Source.ConversionContracts
 import tests.SourceConversions
+import EDSL.Source.PromotionContracts
+import tests.SourcePromotions
 import EDSL.Audit.Owners
 
 set_option autoImplicit false
@@ -41,4 +43,14 @@ set_option warningAsError true
 #print axioms EDSL.Source.ConversionContracts.roundTrip_noUB
 #print axioms EDSL.Source.ConversionContracts.mixedAdd_noUB
 #print axioms EDSL.Source.ConversionContracts.mixedDiv_noUB
+#print axioms EDSL.Source.IntegerPromotions.small_range_embeddable
+#print axioms EDSL.Source.IntegerPromotions.promoteValue_toInt
+#print axioms EDSL.Source.PromotionContracts.promoteReturn_certificate
+#print axioms EDSL.Source.PromotionContracts.promoteReturn_noUB
+#print axioms EDSL.Source.PromotionContracts.booleanAdd_certificate
+#print axioms EDSL.Source.PromotionContracts.booleanAdd_noUB
+#print axioms EDSL.Source.PromotionContracts.unsignedShortAdd32_certificate
+#print axioms EDSL.Source.PromotionContracts.unsignedShortAdd16_certificate
+#print axioms EDSL.Source.PromotionContracts.unsignedShortAdd32_noUB
+#print axioms EDSL.Source.PromotionContracts.unsignedShortAdd16_noUB
 #audit_edsl_owners

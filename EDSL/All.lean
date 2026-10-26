@@ -6,6 +6,7 @@ import EDSL.Source.Certificates
 import EDSL.Source.VCGen
 import EDSL.Source.Division
 import EDSL.Source.ConversionContracts
+import EDSL.Source.PromotionContracts
 -- Full proof catalogue for project audits and fresh kernel replay.
 -- New verification clients should import EDSL or a specific module instead.
 import EDSL

@@ -17,7 +17,8 @@ including the compiler's semantic-preservation contract. The eventual target is
 a verified chain capable of building GCC and the programs it compiles.
 
 The initial `EDSL.Source` API is a finite expression/return fragment: typed
-`int` and `unsigned int`, addition/division, explicit same-rank conversions and
+bool/char/short/int value ranges and integer promotions, addition/division,
+explicit full-rank conversions and
 a fixed GNU conversion policy, UB/unsupported outcomes, structural verification
 conditions, and independent unsigned-addition
 and division contracts. Definedness is proved on each stated input domain.

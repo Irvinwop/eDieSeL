@@ -22,7 +22,11 @@ but functionally incorrect; these reuse the same executable semantics.
 
 The fixed GNU conversion policy, same-rank casts and common types, numeric
 round-trip laws, and five conversion/mixed-operation certificates are implemented.
-Smaller-type ranks/promotions, sequencing and objects are the next dependencies.
+Bool, ordinary char and short ranks/promotions are implemented, with explicit
+width/signedness profiles and value-preservation proofs. Arithmetic source
+certificates discharge overflow from input ranges; equal-width unsigned-short
+promotion is covered. Wider integers, other small casts, sequencing and objects
+remain dependencies.
 
 ## 1. Establish the GNU C23 semantics foundation
 

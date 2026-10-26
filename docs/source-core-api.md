@@ -1,68 +1,69 @@
 # Source core API
 
-Import `EDSL.Source` for the reusable semantics and certificate interface, or
-`EDSL.Source.Certificates` for its first certified clients. All core declarations
-below are in `EDSL.Source`; example declarations are in `EDSL.Source.Examples`.
+Import `EDSL.Source` for the reusable finite expression/return eDSL. It uses one
+executable semantics and structural verification-condition generator. It does
+not parse native source text or implement complete GNU C23/GNU++26.
 
-This API is a finite, typed source expression/return eDSL. It does not accept
-native C/C++ text and is not a full GNU language implementation.
+## Types and value profiles
 
-## Profile and values
+`Dialect` records `gnuC23` or `gnuCpp26`. The current common pure fragment has
+identical execution under the same target and conversion policy.
 
-| Declaration | Meaning |
+`Target` records mathematical integer ranges:
+
+| Field | Constraint or meaning |
 | --- | --- |
-| `Dialect.gnuC23`, `Dialect.gnuCpp26` | Recorded language selection. |
-| `Target` | Fields `intBits : Nat`, `atLeast16 : 16 ≤ intBits`. |
-| `Target.modulus target` | `2 ^ target.intBits`. |
-| `Target.signedBound target` | Integer `2 ^ (target.intBits - 1)`. |
-| `Target.modulus_pos` | Positivity of the unsigned modulus. |
-| `Target.int32` | Convenience value-range profile with 32 bits. |
-| `IntType.uint`, `IntType.sint` | Only `unsigned int` and `int`, respectively. |
-| `Value target .uint` | `Fin target.modulus`. |
-| `Value target .sint` | Integers in `[-signedBound, signedBound)`. |
-| `valueDecidableEq`, `valueRepr` | Value equality and executable printing instances. |
+| `intBits`, `atLeast16` | Full integer range width, including the signed sign bit; at least 16 |
+| `charBits`, `charAtLeast8` | Ordinary character range width; at least 8 |
+| `shortBits`, `shortAtLeast16` | Short integer range width; at least 16 |
+| `charLeShort`, `shortLeInt` | Non-strict width ordering; equal widths are allowed |
+| `plainCharSigned` | Explicit signedness choice for plain char |
 
-`intBits` counts the sign bit for `int`. These are two's-complement value ranges
-with ordinary source signed-overflow UB. A `Target` is an admitted abstract
-value-range profile, not a description of an available GCC target, object
-representation, ABI, integer storage layout, or compiler flag set. No theorem
-identifies it with the host machine. Both types have full `int` rank; smaller
-types and their promotions are absent.
+`Target.int32` selects int32/char8/short16 and signed plain char. `Target.int16`
+selects int16/char8/short16 and signed plain char. These are value profiles, not
+ABI, object-size, padding, byte-order, compiler-target or hardware descriptions.
+`Target.modulus` is `2^intBits`; `Target.signedBound` is `2^(intBits-1)`.
 
-## Source syntax and external inputs
+`IntType.uint` and `.sint` are full `unsigned int` and `int`.
+`IntType.small` takes one of `SmallType.boolean`, `plainChar`, `schar`, `uchar`,
+`sshort`, or `ushort`. `SmallType.rank` records bool below char below short;
+`IntType.rank` places both full int types above them. Rank does not collapse
+when widths coincide. Long, enums, bit-fields, extended and bit-precise types
+are not implemented.
 
-`Param parameters ty` is a typed parameter reference, using `Param.here` and
-`Param.there`. `Inputs target parameters` is a heterogeneous list of external
-values, constructed with `Inputs.nil` and `Inputs.cons`. `Inputs.get inputs index`
-retrieves a value with the parameter's type.
+`Value target .uint` is `Fin target.modulus`; `.sint` is the bounded signed Int
+subtype. Small values are bounded Int subtypes using `SmallType.lowerBound`
+and the exclusive `upperBound`. Signed ranges use two's complement; unsigned
+ranges are nonnegative. `Value.toInt`, `Value.range`, and
+`Value.toInt_injective` expose their mathematical meaning. Bool has exactly 0
+and 1, as proved by `Value.boolean_values`. Its `rangeBits = 1` describes that
+value set; it makes no claim of one-bit storage.
 
-`Expr target parameters ty` has these constructors:
+## Syntax and execution
 
-| Constructor | Operand/result types |
+`Inputs target parameters` is a heterogeneous list of externally supplied typed
+values. `Param.here` / `.there` select them; `Inputs.get` retrieves a value.
+No input generator, memory load, object initialization or ABI is hidden here.
+
+| Expression constructor | Behavior |
 | --- | --- |
-| `Expr.literal value` | A representable, already typed `Value target ty`. |
-| `Expr.param index` | The type selected by `Param`. |
-| `Expr.convert destination operand` | Either supported integer type to either destination type. |
-| `Expr.uadd left right` | `uint × uint → uint`. |
-| `Expr.sadd left right` | `sint × sint → sint`. |
-| `Expr.udiv left right` | `uint × uint → uint`. |
-| `Expr.sdiv left right` | `sint × sint → sint`. |
-| `Expr.unsupported feature` | A coverage marker at any result type. |
+| `literal value` | An already representable typed value, without token parsing or truncation |
+| `param index` | A supplied parameter |
+| `promote operand` | Value-preserving integer promotion to a full arithmetic type |
+| `convert destination operand` | Explicit conversion; only the full int/unsigned-int pair is implemented |
+| `uadd`, `sadd`, `udiv`, `sdiv` | Existing same-type full-rank arithmetic primitives |
+| `unsupported feature` | Explicit missing coverage, never successful verification |
 
-Explicit same-rank conversion and common-type smart constructors are implemented.
-There are no smaller-type promotions, lvalues, implicit reads, pointer operations,
-or overflow by literal construction. Literal token parsing, suffix selection and unary
-negation syntax are not implemented.
+`Program target parameters result` contains `dialect`, an explicitly supplied
+`conversions : IntegerConversionPolicy`, and `body`. Its only form is
+`return expression;`, with exactly the body's result type. There is no implicit
+return, assignment or initialization conversion.
 
-`Program target parameters result` has fields `dialect : Dialect`,
-`conversions : IntegerConversionPolicy`, and `body : Expr target parameters result`.
-The conversion policy is supplied explicitly once for the whole program.
-Only `IntegerConversionPolicy.gnuModulo` is implemented: signed conversion uses
-the destination-range modulo representative without a signal. For C23 this
-records the documented GNU choice, separately from ordinary signed-overflow UB. Its sole source program form is
-`return expression;`, whose result type equals the expression type.
-
-## Executable evaluation
+Only `IntegerConversionPolicy.gnuModulo` is implemented: same-width full-rank
+conversion chooses the destination-range modulo representative without a signal.
+For C23 this records a GNU choice, rather than all ISO C implementations. It
+never changes signed arithmetic overflow into wrapping. See the
+[rule references](source-rules.md).
 
 ```lean
 evalExpr (policy : IntegerConversionPolicy) (inputs : Inputs target parameters)
@@ -72,171 +73,97 @@ eval (program : Program target parameters result)
   (inputs : Inputs target parameters) : Outcome (Value target result)
 ```
 
-`Outcome.defined value`, `Outcome.undefined reason`, and
-`Outcome.unsupported feature` are disjoint. `UBReason` has
-`signedAdditionOverflow`, `divisionByZero`, and `signedDivisionOverflow`.
-`UnsupportedFeature` has `conversion`, `memoryAccess`, `functionCall`, and
-`dialectExtension`; these markers diagnose missing coverage, not implemented
-operations. The conversion marker can still identify conversion forms outside
-the implemented same-rank integer pair. `Outcome.andThen` propagates either failure outcome.
+The disjoint outcomes are `defined value`, `undefined reason`, and
+`unsupported feature`. UB reasons include signed-add overflow, zero division,
+and signed-division overflow. Division truncates toward zero. Missing coverage
+is not a UB witness or a security defect.
 
-Arithmetic helpers are `unsignedAdd`, `checkedSigned`, `signedAdd`,
-`unsignedDiv`, and `signedDiv`. `convertValue` selects the shared number maps
-under the recorded policy. Unsigned addition reduces modulo `2^intBits`.
-Signed addition checks the mathematical sum's range. Both divisions reject
-zero; signed division uses `Int.tdiv` (toward zero) and rejects an
-unrepresentable quotient.
+All evaluation is structural recursion on pure finite expressions. Left-first
+failure diagnostics make no C/C++ operand-sequencing promise. The evaluator
+executes each operand before promotion/conversion; neither operation repairs
+operand UB or unsupported coverage. Explicit casts with **any small endpoint**,
+including small identity casts and conversion to bool, remain unsupported.
 
-Evaluation is structural recursion on finite expressions, without fuel or a
-divergence outcome. Left-first failure diagnostics are not a C/C++ operand
-sequencing guarantee. All supported operands are pure.
-`eval_dialect_independent` states that changing only `Program.dialect` while
-retaining the same conversion policy leaves this common fragment unchanged. Dialect extensions must extend this model explicitly.
+## Promotion and usual arithmetic
 
-## Verification and generic semantics
+`ArithmeticType.sint` / `.uint` embed into `IntType` through `asIntType`.
+`promotedType target source` depends on the whole source type and profile:
 
-The defining obligation of `Verifies program admitted post` is:
+- Full int types stay unchanged.
+- Bool and signed small types promote to signed int.
+- An unsigned small type promotes to signed int if its width is strictly smaller
+  than `intBits`; otherwise it promotes to unsigned int.
+- Plain char follows its recorded signedness.
 
-```lean
-∀ inputs, admitted inputs →
-  ∃ value, eval program inputs = .defined value ∧ post inputs value
-```
+`IntegerPromotions.small_range_embeddable` proves that every value fits the
+chosen type. `promoteValue` embeds it without truncation or modulo, and
+`promoteValue_toInt` proves exact mathematical preservation at every admitted
+width. Sign and zero corollaries follow. Promotion of a valid value is total;
+a later signed operation can still overflow.
 
-State `post` as an independent mathematical result property. `admitted` records
-external input conditions; callers must prove this equality for every admitted
-typed valuation. There is no supplied `NoUB` or definedness premise. An empty
-admission predicate makes no claim about any concrete input. Such conditional
-judgments remain useful internally but cannot alone constitute a useful
-program certificate.
+`commonType target left right` selects a full arithmetic type **after** these
+promotions. `Expr.usualAdd` and `.usualDiv` insert promotion, common-type
+conversion and the existing primitive. `Expr.promotedAdd` / `.promotedDiv` handle
+already promoted operands. Their evaluation laws bind normalization to the
+same evaluator. These are not a complete rank engine or source frontend.
 
-`NoUB program admitted` means that each admitted input has an actual defined
-evaluation. This deliberately requires successful completion rather than merely
-the absence of an `undefined` outcome; `unsupported` fails it. Theorems
-`Verifies.noUB`, `Verifies.excludesUB`, and `Verifies.excludesUnsupported` derive
-these consequences from the execution proof.
+For example, unsigned short 65535 plus 65535 returns signed 131070 on the int32
+profile, but unsigned 65534 on the int16 profile. With int17/short16 both inputs
+fit signed int, yet 65535 plus 1 causes signed-add overflow. Representable
+promoted operands do not establish safe arithmetic by themselves.
 
-`semantics target parameters result` instantiates the public `EDSL.Semantics`:
+## Verification and reuse
 
-```lean
-behaves program inputs observation := eval program inputs = observation
-```
+`Verifies program admitted post` requires, for every admitted input, an actual
+defined evaluation and the independent result predicate. It accepts no supplied
+NoUB premise. `Verifies.noUB`, `.excludesUB`, `.excludesUnsupported` and
+`.satisfies` export its consequences through the shared `EDSL.Semantics` adapter.
+`hasBehavior` includes failure outcomes and is not a safety certificate.
 
-`hasBehavior` supplies its concrete evaluator outcome unconditionally, including
-failure outcomes. `behavior_unique` proves determinism. `Verifies.satisfies`
-exports the postcondition through `EDSL.Satisfies`, rejecting both failure
-constructors. Generic refinement/satisfaction alone does not certify source
-definedness.
+`NoUB` in this finite fragment means **defined completion**, excluding unsupported
+outcomes too. Before loops/effects, safety, supported coverage, erroneous behavior
+and termination must be separated. This API currently expresses no divergence.
 
-There is no memory, effect trace, OS resource, scheduler or frame component in
-this pure grammar. The judgement makes no claim about them. Adding any such
-operation requires an explicit semantic state/effect model and corresponding
-contract obligations first.
+`Certificate` adds `useful : ∃ inputs, admitted inputs` to `verified : Verifies`.
+Its `.noUB` and `.defined_behavior` derive actual safety/behavior, and
+`no_certificate_for_empty_domain` rejects empty claims. A witness does not
+establish that the chosen domain or result is the intended specification;
+review both independently. Do not define admission by this candidate's NoUB or
+postconditions by rerunning its evaluator.
 
-## Nonvacuous certificates
+`vcExpr policy inputs expression post` generates structural conditions using
+the shared primitives. `vcExpr_iff` and `vc_iff_verifies` prove exactness for the
+implemented grammar. `certificate_of_vc` packages an inhabited domain and proved
+conditions. Clients reuse numeric lemmas rather than new execution interpreters
+or soundness proofs. It does not solve arbitrary conditions automatically.
 
-`Certificate program admitted post` contains two proof fields:
+## Certified clients
 
-| Field | Required evidence |
+Import client modules explicitly; the reusable umbrella excludes synthetic clients.
+Every listed positive certificate derives NoUB on its stated domain.
+
+| Module and client | Domain and independent specification |
 | --- | --- |
-| `useful` | `∃ inputs, admitted inputs` |
-| `verified` | `Verifies program admitted post` |
+| `Examples.add` / `Examples.add_certificate` (module `Source.Certificates`) | All typed unsigned inputs; bounded carry equation for their sum |
+| `Division.quotient` | Every numerator and nonzero unsigned denominator; quotient interval |
+| `ConversionContracts.toUnsigned`, `.toSigned` | All typed inputs; bounded representative equations |
+| `ConversionContracts.roundTrip` | All signed inputs; original mathematical value |
+| `ConversionContracts.mixedAdd`, `.mixedDiv` | All mixed-add inputs or nonzero mixed-division denominators; carry equations or quotient interval |
+| `PromotionContracts.promoteReturn` | All types/profiles/inputs; exact mathematical-value preservation through the shared VC path |
+| `PromotionContracts.booleanAdd` | All boolean inputs/profiles; exact sum, overflow discharged from 0/1 bounds |
+| `PromotionContracts.unsignedShortAdd` | All typed inputs on int32 or int16 profiles; exact signed sum or unsigned carry equation respectively |
 
-`Certificate.noUB` derives finite completion safety, and
-`Certificate.defined_behavior` exhibits an admitted input and its actual defined
-result satisfying the postcondition. `no_certificate_for_empty_domain` rules
-out certification when admission is false for every input. An inhabited
-predicate can still be an inappropriate restriction, and a postcondition can
-still encode the candidate evaluator; independent specification review remains
-necessary. A certificate covers its entire stated domain, not only its witness.
+The synthetic `Division.wrappedIncrement` candidate is proved NoUB yet incorrect
+for the quotient contract. Zero division, signed boundaries, unsupported coverage,
+conversion order and promotion behavior have independent positive/negative checks.
+These are embedded-program theorems, without source-file or native correspondence.
 
-## First clients and extension point
+```sh
+lake build EDSL.Source SourceSemanticsTests
+```
 
-`Examples.add target dialect` returns the unsigned sum of two parameters.
-`Examples.ModularSum target x y result` states the independent equation
-`result + carry * 2^intBits = x + y` for a natural carry at most one; result bounds
-come from `Value`. `Examples.add_verified` proves this contract for all typed
-inputs at every admitted width and for either dialect.
-`Examples.add_noUB` is derived from it. `Examples.add_certificate` additionally
-constructs a useful admitted input without restricting the all-input theorem.
-`divideByZero_not_certified` and `unsupportedReturn_not_certified` show that
-no result predicate can hide these programs' safety/coverage failures on their
-stated domains.
-
-The remaining checked example theorem names are
-`divideByZero_undefined`, `overflowingAdd_undefined`,
-`underflowingAdd_undefined`, `overflowingDiv_undefined`,
-`negativeDiv_defined`, `unsupportedReturn_outcome`, and
-`unsupportedReturn_not_noUB`.
-
-The next type extension is smaller integer types with their real ranks and
-promotions. It remains unsupported. Additional signed-operation contracts can
-use the current API without changing the evaluator.
-
-## Structural verification conditions
-
-`EDSL.Source.VCGen` is imported by `EDSL.Source`. For the present finite pure
-grammar, `vcExpr policy inputs expression post` recursively generates obligations for
-the expression's result. Primitive leaves use the existing shared arithmetic
-operations: they expose representability, nonzero-divisor and result obligations
-through `Outcome.requires`. UB and unsupported outcomes require `False`.
-
-`vcExpr_iff` proves these generated conditions equivalent to a successful
-outcome satisfying the postcondition. `VC program admitted post` quantifies the
-condition over every admitted input; `vc_iff_verifies` proves it equivalent to
-`Verifies`. Given an inhabited domain and a proof of `VC`,
-`certificate_of_vc` constructs the same usable source certificate and derives
-its definedness consequences. A client can discharge arithmetic conditions
-without writing a new evaluator or a bespoke execution-soundness theorem.
-
-This is a proposition generator with a checked exactness theorem. It does not
-parse source text, solve arbitrary conditions, add control-flow invariants or
-cover effects. Extending the expression grammar requires extending this
-exactness proof. Independent review of the chosen input/result specification
-is still required.
-
-## Division contract and safety/correctness separation
-
-Import `EDSL.Source.Division` for these clients, in namespace
-`EDSL.Source.Division`. `quotient` returns the unsigned quotient of two external
-parameters. `NonzeroDenominator` admits every typed numerator and every nonzero
-typed denominator. The independent `QuotientInterval` specification is
-`q*d ≤ n ∧ n < (q+1)*d`; it contains no division or remainder operation.
-`quotient_verified`, `quotient_certificate` and `quotient_noUB` cover that whole
-domain at every admitted width and for either dialect. The inhabited-domain
-witness is numerator zero, denominator one.
-
-The project-owned synthetic `wrappedIncrement` candidate instead computes
-`(n+1u)/d`. `wrappedIncrement_noUB` proves actual defined completion on the same
-domain. `wrappedIncrement_counterexample_defined` shows it returns zero at
-`UINT_MAX, d=1`, and `counterexample_violates_contract` proves this violates the
-quotient interval. `wrappedIncrement_not_verified` and
-`wrappedIncrement_not_certified` rule out the intended result claim despite its
-safety proof. These are embedded syntax theorems, with no native-source-file or
-ABI correspondence implied.
-
-## Integer conversion and mixed-operation clients
-
-`EDSL.Source.IntegerConversions` proves range, congruence, uniqueness, both
-round trips, and signed/unsigned boundary laws for all admitted widths. These
-number functions supply the evaluator's conversion rule; they make no object
-representation or compiler-correspondence claim.
-
-`commonType` and `Expr.usualAdd` / `Expr.usualDiv` cover only the existing pair
-of full-rank types. The common type is signed for two signed operands and unsigned
-for the other pairs. Both operands are converted before the existing arithmetic
-primitive runs. Their evaluation laws bind this normalization to the same evaluator.
-They are not a parser or a general C/C++ promotion engine.
-
-Import `EDSL.Source.ConversionContracts` for five source clients: `toUnsigned`,
-`toSigned`, `roundTrip`, `mixedAdd`, and `mixedDiv`. Each has a nonvacuous
-`*_certificate` and derived `*_noUB`. Conversion, round-trip and mixed-addition
-contracts cover all typed inputs; mixed division covers every numerator and
-nonzero unsigned denominator. Specifications use bounded carry equations on
-the original mathematical inputs, equality for the round trip, or a representative
-equation and quotient interval. They do not rerun the candidate evaluator.
-
-The cast and round-trip certificates demonstrate `certificate_of_vc`: clients
-discharge numeric conditions using shared laws, without another execution-soundness
-proof. Tests exercise both mixed operand orders, unsigned conversion before
-division, the signed boundary, zero divisors, and UB/unsupported propagation.
-An outer cast does not make an already-undefined operand safe.
+The scoped target audits principal theorem dependencies and actual defining
+modules. Hosted CI performs authoritative fresh replay, source/object rereads
+and final-source policy audits. Memory, lvalues, calls, loops, OS effects,
+schedulers, object representations, and the bootstrap chain remain unimplemented
+in this source grammar.

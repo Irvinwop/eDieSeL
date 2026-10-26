@@ -9,12 +9,12 @@ a source-text frontend and the bootstrap chain are not implemented.
 
 `EDSL.Source` is a finite typed expression/return eDSL. It currently has:
 
-- Full-rank `int` and `unsigned int` values under an explicit integer-width
-  profile, with typed externally supplied parameters.
+- Full-rank `int`/`unsigned int` and bool/ordinary char/short values, with explicit
+  width/signedness profiles and typed externally supplied parameters.
 - Unsigned modular addition, checked signed addition, unsigned division and
   signed division toward zero.
-- Explicit integer-conversion policy, same-width conversions and usual arithmetic
-  common-type normalization for the supported `int`/`unsigned int` pair.
+- Value-preserving integer promotions and common-type normalization before
+  arithmetic; full-rank conversions under an explicit GNU policy.
 - Distinct defined, undefined and unsupported outcomes.
 - Shared execution and verification interfaces, independent unsigned-addition
   and division contracts, structural verification conditions, and a certificate
@@ -22,9 +22,9 @@ a source-text frontend and the bootstrap chain are not implemented.
 
 The same evaluator interprets both dialect selections. Its present expressions
 are pure, so the left-first failure diagnostic does not resolve a C/C++
-sequencing question. There are no smaller-type promotions, lvalues, objects, pointers,
-memory operations, calls, loops, OS effects or threads. `Target` records integer
-value ranges, not an ABI, storage representation or compiler/hardware relation.
+sequencing question. Small explicit casts, wider integer types, lvalues, objects,
+pointers, memory operations, calls, loops, OS effects and threads remain
+unsupported. `Target` records integer value ranges, not an ABI, storage representation or compiler/hardware relation.
 The [source core API](source-core-api.md) lists exact declarations and limits.
 The [rule-reference table](source-rules.md) maps current integer rules to
 dated C/C++ draft clauses and records the limits of that review.

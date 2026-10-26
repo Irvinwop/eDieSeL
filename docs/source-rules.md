@@ -42,13 +42,13 @@ UB reason is a diagnostic representation, not a claim about a native trap.
 
 ## Scope of the correspondence
 
-The arithmetic constructors accept two operands of the same full-rank type.
-Same-rank conversions and common-type normalization are implemented for these
-two types only. There is no source literal-token typing, smaller-type promotion
-or general integer-rank engine. The relevant surrounding rules are
+The primitive arithmetic constructors accept same-type full-rank operands.
+Ordinary small types are promoted before common-type conversion and arithmetic.
+Explicit casts remain limited to the full int pair. There is no source
+literal-token typing or complete integer-rank engine. Relevant rules are
 [N3096 §6.3.1.8 and §6.5.5 ¶4 / §6.5.6 ¶5](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n3096.pdf)
 and [N5001 `[expr.arith.conv]`](https://github.com/cplusplus/draft/blob/n5001/source/expressions.tex#L1078-L1133).
-The implemented pair does not cover the full scope of those rules.
+The implemented subset does not cover the full scope of those rules.
 
 `Target` models value ranges. It does not model object storage, padding bits,
 byte order, layout, alignment, ABI or a compiler target. A range restriction
@@ -85,7 +85,40 @@ The supported `int`/`unsigned int` types have equal rank. `commonType` and the
 addition/division smart constructors implement only that pair's common-type
 rules from N3096 §6.3.1.8 and N5001 `[expr.arith.conv]`: mixed operands convert to
 unsigned before arithmetic; two signed operands keep signed arithmetic and its
-UB checks. Smaller types, extended integer ranks, bit-fields, floats and pointer
+UB checks. The small-type promotion stage is described below; explicit casts
+involving small types, extended integer ranks, bit-fields, floats and pointer
 conversions remain unsupported. Conversion does not imply a wrapping policy for
 signed addition or division. Effective overflow options and their implementation
 correspondence remain separate future profile obligations.
+
+## Ordinary small integer promotions
+
+The implementation adds bool, plain char, signed/unsigned char and signed/unsigned
+short as distinct typed value domains. The range profile explicitly records
+`8 ≤ charBits ≤ shortBits ≤ intBits`, `16 ≤ shortBits` and plain-char signedness.
+Rank remains bool below char below short below int even when widths coincide.
+These are mathematical value widths; bool's `rangeBits = 1` describes 0/1,
+not a shared C/C++ object or storage representation.
+
+The primary review used N3096 §5.2.4.2.1, §6.2.5, §6.2.6.2, §6.3.1.1 and
+§6.3.1.8, and N5001 `[basic.fundamental]`, `[conv.rank]`, `[conv.prom]` and
+`[expr.arith.conv]`. The C++ tagged source identity is
+[`6b9b2e9f31aff143334e379e49807488872003e4`](https://github.com/cplusplus/draft/tree/6b9b2e9f31aff143334e379e49807488872003e4).
+These dated primary rules require value-preserving promotion based on the whole
+source type's range, before common-type arithmetic. They do not choose a type
+from the particular operand value.
+
+Signed small types and bool promote to int. An unsigned small w-bit range fits
+signed N-bit int exactly when `w < N`; otherwise, within the admitted profiles,
+it promotes to unsigned int. Thus unsigned short and int both having 16 bits
+does not make their ranks equal or allow signed-int promotion. Proved numeric
+range inclusion and preservation support the executable rule. Separate source
+contracts prove the subsequent arithmetic safe on their stated domains;
+operand representability alone does not establish safe addition/division.
+
+Bit-fields, enums, `_BitInt`, extended/wider types and C++'s distinct Unicode
+character types remain outside this rule. Initialization, assignments, implicit
+returns, conversion to bool and explicit casts with any small endpoint are not
+implemented here. Unsupported casts remain coverage failures, not source UB.
+The model does not infer typedef/token identity, source parsing, ABI/storage
+properties or native compiler conformance from these value-level results.

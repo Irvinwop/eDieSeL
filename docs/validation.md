@@ -14,7 +14,11 @@ imported source closure. It covers the all-input bounded-carry addition
 contract, rejection of signed overflow and zero division, signed division
 toward zero, unsupported expressions and empty admission. It also checks universal
 conversion/round-trip and mixed-operation certificates, with same-rank common-type
-boundary probes in both operand orders and conversion failure propagation. The source fragment
+boundary probes in both operand orders and conversion failure propagation.
+Promotion clients cover every admitted type/profile, boolean addition and
+unsigned-short sums on distinct int widths. Boundaries check equal-width
+promotion, plain-char signedness, overflow after valid promotion, division at
+the promoted width and failure propagation. The source fragment
 and stronger finite-completion meaning of `NoUB` are documented in the
 [source core API](source-core-api.md). This command does not parse or certify
 a C/C++ source file.
