@@ -52,14 +52,25 @@ remains available.
 `Payload target objectType` stores an optional scalar value at each leaf; array
 children are subobjects, not fresh allocation roots. An absent leaf remains
 uninitialized. `ScalarPath` carries the bounds and shape needed to select a
-scalar leaf. Raw path resolution rejects out-of-bounds indices, stopping at an
-array, and continuing past a scalar.
+scalar leaf. `ObjectPath` can also select a whole array or any other subobject.
+`ObjectType.objectAt` checks a raw index path against the object shape; it
+rejects out-of-bounds indices and paths continuing past a scalar. Scalar lookup
+also rejects paths that stop at an array. Neither operation validates a source
+pointer.
 
 The checked laws establish lookup after update, preservation of every other
 leaf, overwrite, restoration and extensional equality. They apply structurally
 also to raw nested arrays. The old optional full-int contents embed exactly,
 including an absent value. These laws establish typed contents behavior; they
 supply no allocation, lifetime, permission or pointer-validity premise.
+
+Subobject projection uses that same payload tree. Its frame laws show that a
+scalar update preserves every disjoint subtree, including absent and
+pointer-valued leaves. Supplied-layout theorems bound subobject offsets and
+extents, establish alignment and separate sibling regions in C bytes. They do
+not select a native layout or expand the admitted source-type profile.
+Independent contracts check rectangular index sets, whole-row selection,
+one-past rejection and the boundary for zero-length and nested arrays.
 
 The existing object registry remains authoritative. Its record/state representation
 is shared through `Objects.Registry`; the current executable specialization still

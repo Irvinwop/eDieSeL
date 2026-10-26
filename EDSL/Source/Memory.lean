@@ -2,3 +2,4 @@
 -- Typed data and payload laws; executable source memory operations remain open.
 import EDSL.Source.Memory.Types
 import EDSL.Source.Memory.Model
+import EDSL.Source.Memory.Subobjects

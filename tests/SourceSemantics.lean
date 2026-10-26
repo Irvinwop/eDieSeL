@@ -25,6 +25,7 @@ import tests.SourceFunctionFailures
 import tests.SourceEntryBoundaries
 import tests.SourceEntryQuota
 import tests.SourceMemory
+import tests.SourceSubobjects
 import tests.SourcePlaceEngine
 import tests.SourcePlaceCoverage
 import tests.SourceReadOrder

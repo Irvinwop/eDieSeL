@@ -90,9 +90,10 @@ same traversal; current-object read and existing program contracts remain checke
 The new memory leaves are abstract computation parameters, not a pointer runtime.
 The next dependency order is:
 
-1. Share the state/error/event carrier and widen the authoritative registry
-   contents in place to typed payloads, preserving exact old primitive behavior
-   for every state and outcome.
+1. Widen the authoritative registry contents in place to typed payloads,
+   preserving exact old primitive behavior for every state and outcome. The
+   shared state/error/event carrier is implemented; typed subobject paths and
+   subtree frame/layout laws use the existing payload tree.
 2. Implement checked address, designation, load/store and pointer-offset
    operations, then their fixed operational/logical expression adapters. Bounds,
    lifetime, authority and value-use conditions remain explicit. Do not
