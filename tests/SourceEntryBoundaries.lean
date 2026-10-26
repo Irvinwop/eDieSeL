@@ -124,7 +124,7 @@ theorem empty_prefix (code : Code target [] .uint)
       DeclarationSpine.localKinds, List.length_nil, Nat.add_zero] using facts.slots
     cases initial
     cases final
-    simp only [State.mk.injEq]
+    simp only [Registry.State.mk.injEq]
     exact ⟨world.1, world.2.1, world.2.2, counter, slots, registry⟩
   simpa only [same, function, entryFor, prepared, reservationEnv, List.length_nil,
     Nat.add_zero, entryEvents, parameterEvents, DeclarationSpine.localKinds,

@@ -19,6 +19,16 @@ reserved/live/ended lifetime, declaration-reached flag, optional initialized
 value, owner and separate read/write permissions. References are typed internal
 identities, without a pointer representation.
 
+The record and registry representations live in `Objects.Registry`. The public
+`Object` and `State` types specialize them to the existing integer contents
+and external inputs. Each state still carries one `objects` function. Metadata,
+empty-state construction and object replacement share that representation; the
+integer access, lifetime and effect rules are unchanged. Constructor and structural
+elimination rules now belong to `Registry.Record` and `Registry.State`; record
+literal syntax remains available for the public specializations. The explicit invariant
+equalities relate the existing predicates to the generic record/registry rules.
+This extraction does not widen executable object types or add pointer operations.
+
 `State.WellFormed` checks finite registration and consistent pending metadata.
 It does not establish readability, authority, initialized contents, source
 validity or program safety. These need their own conditions and proofs.

@@ -1,5 +1,6 @@
 /- Copyright 2026 Irvinwop. SPDX-License-Identifier: Apache-2.0 -/
 import EDSL.Source.Eval
+import EDSL.Source.Objects.Registry
 
 set_option autoImplicit false
 namespace EDSL.Source.Objects
@@ -9,37 +10,18 @@ structure LValue (kind : ArithmeticType) where
   id : Nat
   deriving DecidableEq, Repr
 
-inductive Life where
-  | reserved | live | ended
-  deriving DecidableEq, Repr
-
-structure Permissions where
-  readable : Bool
-  writable : Bool
-  deriving DecidableEq, Repr
-
-/-- Values describe full integral objects without object bytes or layout. -/
-structure Object (target : Target) where
-  kind : ArithmeticType
-  life : Life
-  reached : Bool
-  value : Option (Value target kind.asIntType)
-  owner : Nat
-  permissions : Permissions
+/-- Full-integer specialization of the shared root-record representation. -/
+abbrev Object (target : Target) :=
+  Registry.Record ArithmeticType (fun kind => Option (Value target kind.asIntType))
 
 /-- Pending records contain no initialized value; C++ reservation is pending. -/
 def Object.WellFormed {target : Target} (object : Object target) : Prop :=
   (object.life = .reserved → object.reached = false) ∧
   (object.reached = false → object.value = none)
 
-structure State (target : Target) (parameters : List IntType) (Environment : Type) where
-  inputs : Inputs target parameters
-  environment : Environment
-  actor : Nat
-  next : Nat
-  /-- Remaining capacity in abstract automatic-object slots, not bytes. -/
-  automaticSlots : Nat
-  objects : Nat → Option (Object target)
+/-- Existing integer inputs and records specialize the single registry state. -/
+abbrev State (target : Target) (parameters : List IntType) (Environment : Type) :=
+  Registry.State (Inputs target parameters) Environment (Object target)
 
 /-- The registry is finite below the fresh identity and metadata is consistent.
 Identity is never reused, even when a record's lifetime has ended. -/
@@ -47,15 +29,19 @@ def State.WellFormed {target : Target} {parameters : List IntType} {Environment 
     (state : State target parameters Environment) : Prop :=
   ∀ id object, state.objects id = some object → id < state.next ∧ object.WellFormed
 
+/-- The legacy invariant is exactly the generic root invariant, including
+arbitrary malformed records. This is an equality of predicates, not admission. -/
+theorem Object.wellFormed_eq_registry {target : Target} (object : Object target) :
+    object.WellFormed = Registry.Record.WellFormed (fun _ value => value = none) object := rfl
+
+theorem State.wellFormed_eq_registry {target : Target} {parameters : List IntType}
+    {Environment : Type} (state : State target parameters Environment) :
+    state.WellFormed = Registry.State.WellFormed Object.WellFormed state := rfl
+
 def State.empty {target : Target} {parameters : List IntType} {Environment : Type}
     (inputs : Inputs target parameters) (environment : Environment)
-    (actor capacity : Nat) : State target parameters Environment where
-  inputs := inputs
-  environment := environment
-  actor := actor
-  next := 0
-  automaticSlots := capacity
-  objects := fun _ => none
+    (actor capacity : Nat) : State target parameters Environment :=
+  Registry.State.empty inputs environment actor capacity
 
 theorem State.empty_wellFormed {target : Target} {parameters : List IntType}
     {Environment : Type} (inputs : Inputs target parameters) (environment : Environment)
@@ -66,7 +52,7 @@ theorem State.empty_wellFormed {target : Target} {parameters : List IntType}
 def State.putObject {target : Target} {parameters : List IntType} {Environment : Type}
     (state : State target parameters Environment) (id : Nat) (object : Object target) :
     State target parameters Environment :=
-  { state with objects := fun query => if query = id then some object else state.objects query }
+  Registry.State.putObject state id object
 
 @[simp] theorem State.putObject_same {target : Target} {parameters : List IntType}
     {Environment : Type} (state : State target parameters Environment)

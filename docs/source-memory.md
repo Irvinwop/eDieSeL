@@ -61,8 +61,10 @@ also to raw nested arrays. The old optional full-int contents embed exactly,
 including an absent value. These laws establish typed contents behavior; they
 supply no allocation, lifetime, permission or pointer-validity premise.
 
-The existing object registry remains authoritative. There is no second heap in
-these modules. Connecting the typed payload to that registry, then implementing
+The existing object registry remains authoritative. Its record/state representation
+is shared through `Objects.Registry`; the current executable specialization still
+uses integer records. There is no second heap in these modules. Connecting the
+typed payload to that registry, then implementing
 checked designation, loads, stores and lifetime operations, is the next execution
 dependency. Those operations must feed the shared expression engine and existing
 statement/control machine. Source operand ordering, interference and OS effects
