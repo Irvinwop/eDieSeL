@@ -37,10 +37,10 @@ decoding and native tests are separate evidence.
    checked instruction, frame and current-resource rules. The
    [latest production diagnostic](../corpus/measurements/rex-data32-v1/) accepts
    22/40 GCC and 20/40 Clang read-only CFG windows; these structural results add
-   no behavioral certificates. The [complete Clang search body and resource
-   proof](binary-search.md) reuses shared branch VCs and full-width midpoint
-   rules. Reuse those APIs for GCC and complete exact named-file, useful-call
-   and admission checks for both outputs. [Callable proof transport](call-contract-transport.md)
+   no behavioral certificates. The [complete GCC/Clang search body and resource
+   proofs](binary-search.md) reuse shared branch VCs and full-width midpoint
+   rules. GCC uses an explicit complete-window profile without changing defaults.
+   Complete exact named-file, useful-call and admission checks for both outputs. [Callable proof transport](call-contract-transport.md)
    composes already verified contracts and preserves original resource handles;
    useful target-domain evidence remains explicit. XMM leads the remaining ISA
    queue. Develop the exposed scalar/read-only and mutable-array contracts

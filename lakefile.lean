@@ -387,7 +387,7 @@ lean_lib ChoiceTests where
     `tests.SignumCertificates]
   moreLeanArgs := #["-DautoImplicit=false", "-DmaxHeartbeats=300000", "-DmaxRecDepth=128"]
 
--- Full frozen Clang search body, branch controls and defining-module audit.
+-- Full frozen GCC/Clang search bodies, branch controls and defining-module audit.
 lean_lib BinarySearchTests where
   roots := #[`tests.BinarySearchAudit]
   moreLeanArgs := #["-j1", "-DwarningAsError=true", "-DautoImplicit=false",

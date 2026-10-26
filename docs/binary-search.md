@@ -1,16 +1,19 @@
 # Binary search
 
-The library proves the behavior of the complete frozen Clang binary-search
-function through the shared x86-64 verification-condition generator. The
+The library proves the behavior of both complete frozen GCC and Clang binary-search
+functions through the shared x86-64 verification-condition generator. The
 contract accepts a nondecreasing array of unsigned 32-bit values, including
 duplicates, and returns any matching index or the full 64-bit `SIZE_MAX` value
 if the key is absent.
 
 ```lean
 import EDSL.BinarySearch.Clang.Resources
+import EDSL.BinarySearch.GCC.Resources
 
 #check EDSL.BinarySearch.Clang.semantics
 #check EDSL.BinarySearch.Clang.resources
+#check EDSL.BinarySearch.GCC.semantics
+#check EDSL.BinarySearch.GCC.resources
 ```
 
 The proof covers all admitted input lengths and keys, every independent modeled
@@ -21,7 +24,7 @@ requires the original snapshot and current buffer authority. Empty arrays
 require no DATA loan or readable data address.
 
 This is a machine-body and resource result. Named-ELF custody, installation,
-packet admission and the GCC counterpart remain open. It adds no corpus credit;
+and packet admission remain open. These proofs add no corpus credit;
 conditional corpus coverage remains 20/40 functions and 40/80 artifacts.
 
 ## Independent contract and interval rules
@@ -72,17 +75,27 @@ assumption. Tactics generate ordinary Lean proof terms. A different program
 still needs its own mathematical contract, invariant, termination argument and
 proof of the resulting VCs; it reuses the same machine and resource model.
 
-The checked Clang window contains all 58 bytes and 21 decoded nodes, including
-padding and both return sites. The original default 64-byte/32-node CFG profile
-is unchanged. Controls reject missing padding or the final return, false
+The checked windows retain every original byte and instruction boundary:
+
+| Compiler | Bytes | Nodes | Checked CFG profile |
+| --- | ---: | ---: | --- |
+| Clang | 58 | 21 | Default 64-byte / 32-node profile. |
+| GCC | 67 | 23 | Explicit complete-window 128-byte / 32-node profile. |
+
+The default profile remains unchanged. GCC retains ENDBR64 under the explicit
+CET-off assumption, the skipped padding and the final return. Its loop cut is
+at byte offset 25, before the midpoint computation; no incoming midpoint,
+RAX/R8 value or arithmetic-flag relation is assumed. Both implementations use
+the same independent result, interval mathematics, branch rules and resource API.
+Controls reject missing padding or the final return, false
 absence, out-of-range hits, the truncated sentinel, and data access on empty
 input. Shared branch controls reject noncanonical taken targets, missing
 destinations, exhausted interior fuel and a nondecreasing dynamic rank.
 
 The [contract-refinement bridge](call-contract-transport.md) also derives this
 any-match contract from an existing earliest-u32-match claim on sorted input.
-That proof reuse concerns the same verified bytes; the GCC counterpart still
-requires its own body and artifact evidence.
+That proof reuse concerns the same verified bytes. The GCC body is separately
+proved through the shared VCG; named-file and admission evidence remain separate.
 
 ## Build and scope
 
