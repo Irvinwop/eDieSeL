@@ -15,3 +15,4 @@ import EDSL.Source.Objects.StateVC
 import EDSL.Source.Objects.BlockEval
 import EDSL.Source.Objects.BlockVC
 import EDSL.Source.Objects.BlockContracts
+import EDSL.Source.Objects.BlockEquations

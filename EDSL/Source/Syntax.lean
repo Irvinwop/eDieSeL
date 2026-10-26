@@ -204,7 +204,8 @@ inductive ArithmeticType where
   | uint
   deriving DecidableEq, Repr
 
-def ArithmeticType.asIntType : ArithmeticType → IntType
+/-- Keep object-kind projections visible while elaborating mapped variable contexts. -/
+@[implicit_reducible] def ArithmeticType.asIntType : ArithmeticType → IntType
   | .sint => .sint
   | .uint => .uint
 

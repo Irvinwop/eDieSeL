@@ -32,6 +32,11 @@ Typed source indices cannot refer to their own declaration or a future local.
 uniqueness and lookup laws help establish binding invariants; uniqueness alone
 is not a registry, authority or safety proof.
 
+`BlockEquations` supplies generic constructor equations for parameter entry,
+reservation, declarations and cleanup. Clients can rewrite these fixed APIs
+without unfolding the driver or reconstructing its dependent matches. Object-kind
+projections remain visible to implicit elaboration in mapped variable contexts.
+
 ## Execution and resources
 
 `BlockEval.runProgram` first scans the complete original body for unsupported
