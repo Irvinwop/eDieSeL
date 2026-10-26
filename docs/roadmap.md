@@ -74,6 +74,14 @@ exception, and a width-general bridge connects complement's arithmetic equations
 to independently specified inverted value bits. These rules do not model object
 storage, source parsing or overloaded C++ operators.
 
+The internal function-control driver shares parameter/local primitives and
+normal cleanup, with exact transport of every finite program and source contract.
+The structural control VC generator computes constructor obligations and proves
+actual finite segments from manually supplied loop invariants/ranks. Next extract
+one neutral declaration traversal for both drivers, compose the function-level
+VC layer, and establish checked source loop profiles/progress effects. Full GNU
+semantics, memory/provenance, source OS integration and bootstrap remain open.
+
 ## 1. Establish the GNU C23 semantics foundation
 
 The expression implementation now has one traversal with explicit lookup and

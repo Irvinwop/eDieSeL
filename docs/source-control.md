@@ -8,8 +8,9 @@ They do not supply another interpreter.
 
 This is an internal semantics. It does not yet establish correspondence with
 native C/C++ syntax, source-standard loop definedness, compiler output or OS
-execution. The [finite function API](source-statements.md) remains unchanged;
-its declaration entry and normal cleanup are not yet connected to looping bodies.
+execution. The [finite function API](source-statements.md) remains available. The separate
+[function-control driver](source-functions.md) now connects declarations, actual
+parameter/local entry and normal cleanup to these control bodies.
 
 ## Code and execution
 
@@ -59,6 +60,8 @@ Import the relevant module under `EDSL.Source.Objects.Control`:
 | `Frames` | Caller-world preservation for actual transitions and every finite prefix |
 | `Contracts` | Separate prefix, partial-correctness and value-completion contracts |
 | `Rules` | Sound finite-progress annotations yielding actual value completion |
+| `StructuredVC` | Backward formula generation and checked composition with manual loop invariants/ranks |
+| `FunctionSyntax`, `FunctionEval`, `FunctionCompatibility`, `FunctionContracts` | Declaration entry, observation, cleanup and exact finite-program contract transport |
 | `Division` | Repeated-subtraction client with an independent quotient/remainder and state contract |
 | `Legacy` | Exact transport of the existing finite statement body |
 
@@ -107,7 +110,16 @@ decrease conditional on a body finishing would say nothing about a divergent
 body. The shared strong-induction rule excludes that gap, supports early return
 and retains the original state and complete event history through composition.
 It proves annotation soundness; annotation synthesis and completeness are not
-implemented.
+implemented. The structural `StructuredVC.vc` generator automates constructor
+composition using annotations for each loop; its soundness is proved once.
+Expressions use `ExpressionVC`; assignments expose current registry/write
+obligations. No generated clause calls the operational runner or assumes a
+result. `verifies_of_vc` additionally requires whole-tree support.
+
+The checked division-VC client proves the loop-plus-return contract through
+this generator in 96 lines, reusing local arithmetic/access lemmas. It uses none
+of the earlier division run, progress or completion theorems and does not unfold
+`tick`, `perform` or `run`. Initialization is outside that demonstration.
 
 For prefix safety without termination, use `PrefixCertificate.of_invariant`
 with membership, actual-step preservation and exclusion of stopped states.
@@ -167,8 +179,8 @@ eager preflight and its exact first unsupported diagnostic.
 
 This compatibility theorem is for an already-bound **statement body**. It does
 not transport `Decls`, parameter allocation, local reservation, function entry
-or normal-return cleanup. Those operations remain in the existing finite driver
-until their integration is proved.
+or normal-return cleanup. Their full transport is proved separately in
+`FunctionCompatibility` for the [function driver](source-functions.md).
 
 ## Source progress is a separate obligation
 

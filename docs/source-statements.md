@@ -141,3 +141,8 @@ inputs; it does not acquire mutable statements implicitly.
 
 See the [object model](source-objects.md), [source API](source-core-api.md) and
 [roadmap](roadmap.md) for the dependency order and environmental boundaries.
+
+The [function-control driver](source-functions.md) generalizes the terminal body
+to internal loop control. Existing finite contracts transport through one exact
+whole-program theorem, including entry/body/cleanup failures and complete events.
+Source-standard loop mapping and progress remain separate obligations.

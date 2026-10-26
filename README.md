@@ -43,10 +43,16 @@ the complete body, including skipped arms.
 An [internal control API](docs/source-control.md) adds sequencing, branches,
 loops and early return over already-bound objects. Shared trace and finite-progress
 rules let clients prove completion and independent state/result contracts without
-writing a new evaluator. Its repeated-subtraction division client derives finite
+writing a new evaluator. A structural VC generator reuses the same expression
+transformer and checks annotated loop invariants and ranks. Its division client derives finite
 return, an independent quotient/remainder equation and caller/object frames for
 every admitted uint input and positive denominator. Source loop classification,
-required C++ yield effects and integration with function entry/cleanup remain open.
+required C++ yield effects and native source correspondence remain open.
+
+The [function-control driver](docs/source-functions.md) connects parameters,
+local declarations and normal cleanup to those control bodies. A generic exact
+compatibility theorem transports existing finite program contracts without
+new per-program execution proofs.
 
 The [source-core API guide](docs/source-core-api.md) records its exact scope.
 Inputs are immutable typed values in the expression-only specialization; the

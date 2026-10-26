@@ -16,6 +16,8 @@ import tests.SourceObjects
 import tests.SourceControl
 import tests.SourceControlRules
 import tests.SourceControlDivision
+import tests.SourceControlVC
+import tests.SourceControlDivisionVC
 import tests.SourceReadOrder
 import tests.SourceExpressionCore
 import EDSL.Source.GuardContracts

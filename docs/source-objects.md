@@ -97,8 +97,8 @@ that representation.
 
 The finite statement driver fixes one dialect, allocates matching parameter and
 local bindings, sequences full expressions and computes return values before
-normal cleanup. Connecting those entry/cleanup operations to the looping control
-machine remains separate work. Source-text correspondence is also open. Pending
+normal cleanup. The [function-control driver](source-functions.md) now reuses those entry/cleanup
+operations for control bodies and proves exact finite-program compatibility. Source-text correspondence is also open. Pending
 reservation recovery, lifetime restart, nested blocks and exceptions are not
 implemented.
 
