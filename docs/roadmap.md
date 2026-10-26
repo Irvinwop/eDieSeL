@@ -28,8 +28,8 @@ adds loops, early return and checked finite-progress rules over already-bound
 objects, reusing the same expressions and stores. It preserves exact finite-body
 compatibility. Its repeated-subtraction division client proves finite completion,
 an independent quotient/remainder law and caller/object frames. Source-loop
-classification, required C++ yield effects and full function entry/cleanup
-transport are not implemented. Structural verification conditions are proved
+classification and required C++ yield effects remain open. Full function
+entry/cleanup transport is implemented in the internal function driver. Structural verification conditions are proved
 exact for the finite statement grammar. Scalar unsigned division
 has an independent interval contract and a synthetic candidate proved safe
 but functionally incorrect; these reuse the same executable semantics.
@@ -81,9 +81,24 @@ actual finite segments from manually supplied loop invariants/ranks. Both
 function drivers share one neutral declaration traversal; the function VC layer
 composes entry, control and actual cleanup. A loop-bearing division function
 proves an independent quotient/remainder, caller-frame and resource contract.
-Next establish object memory/provenance and checked source loop profiles/progress
-effects. Full GNU
-semantics, memory/provenance, source OS integration and bootstrap remain open.
+The [typed memory foundation](source-memory.md) now separates numeric values
+from supplied storage layout and proves typed payload/path/update laws. Raw
+pointer descriptors intentionally retain invalid cases. The next dependency
+order is:
+
+1. Extend the existing expression grammar and its single traversal with typed
+   places, keeping the pure integer fragment and complete outcomes compatible.
+2. Generalize the existing object registry contents; implement checked address,
+   designation, load/store and pointer-offset operations with explicit resource
+   and lifetime conditions. Do not introduce a parallel heap.
+3. Extend the current declaration fold and statement/control machine over that
+   same state and expression engine. Prove indexed swap, then buffer-prefix
+   reversal, against independent contents/bounds/frame contracts.
+4. Establish source operand-order and loop-progress correspondence, then
+   interference/OS semantics, scopes/calls and the compiler bootstrap chain.
+
+Full GNU semantics, native memory/provenance correspondence, source OS
+integration and bootstrap remain open.
 
 ## 1. Establish the GNU C23 semantics foundation
 
@@ -104,9 +119,9 @@ source-connected OS behavior and larger language features remain dependencies.
 
 Control proofs use one fixed transition function and shared trace, frame and
 completion rules. Ranks and invariants are proof annotations; bounded observation
-never becomes a source timeout or a successful return. The next control
-dependencies are shared declaration/parameter preparation, return cleanup and
-full finite-function transport, followed by a checked source mapping that retains
+never becomes a source timeout or a successful return. Shared declaration and
+parameter preparation, normal return cleanup and full finite-function transport
+are checked. The next control dependency is a source mapping that retains
 native loop classification and required progress effects. Internal safe divergence
 must not be promoted to a GNU C23/GNU++26 source theorem without these obligations.
 
@@ -162,9 +177,9 @@ and termination arguments. They do not introduce their own interpreter.
 
 The present integer clients include guards with all typed inputs admitted.
 Finite statements have structural VCs; the separate control machine has sound
-finite-progress rules over actual execution segments. Next connect looping bodies
-to function entry/cleanup and a precise source profile, then add small memory
-routines as their representation rules become available. Include independently
+finite-progress rules over actual execution segments. Looping bodies now connect
+to function entry and normal cleanup. Next establish their precise source profile
+and add small memory routines as their representation rules become available. Include independently
 specified counterexamples
 that expose real semantic mistakes, such as signed overflow and invalid memory
 access. Keep partial correctness, termination, deadlock freedom and scheduling

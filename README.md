@@ -71,6 +71,7 @@ scope and assumptions.
 
 ## Start here
 
+- [Typed memory foundation](docs/source-memory.md): types, layout contracts and payload laws; pointer execution remains open.
 - [Source verification](docs/source-semantics.md): the shared semantics,
   definedness obligations and initial scope.
 - [Roadmap](docs/roadmap.md): dependency order and acceptance criteria.
