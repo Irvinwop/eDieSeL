@@ -122,3 +122,6 @@ jobs:
             artifacts/call-memory64/**/source-snapshot.tar.gz
             artifacts/call-memory64/**/public-source.tar
           if-no-files-found: warn
+      - name: Audit final tracked and retained generated Lean sources
+        if: always()
+        run: node scripts/audit-lean-source.cjs --tracked --generated artifacts --generated .cache
