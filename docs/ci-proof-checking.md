@@ -33,6 +33,18 @@ the mandatory corpus shards for fresh replay of that catalogue, avoiding a
 second monolithic replay. Its source-policy job also checks the scanner and
 replay planner against synthetic rejection and coverage fixtures.
 
+## Source foundation gate
+
+The independent `source-foundation` job builds only `EDSL.Source` and
+`SourceSemanticsTests`, reruns the defining-module/dependency audit, and
+fresh-replays `tests.SourceSemantics`. It records and rereads tracked source
+and stored-object identities. The job does not depend on native fixtures or
+legacy corpus preparation; changes to source proofs can be checked without
+building the binary catalogue first. Its separate source-hash/toolchain cache
+always goes through Lake and fresh replay. It has a 360-minute cold-check limit;
+during the initial small core this provides headroom for cold checking. Public
+claims remain limited to the actually implemented core.
+
 ## Cache and resource policy
 
 Toolchain caches are keyed by platform and the pinned `lean-toolchain`. Lake

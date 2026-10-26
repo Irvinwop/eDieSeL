@@ -133,3 +133,6 @@ These examples reuse the library under their stated profiles:
 See [contributing](../CONTRIBUTING.md) for development guidance and the
 [security policy](../SECURITY.md) for reporting vulnerabilities in eDieSeL.
 [Evidence guidance](findings.md) covers results from analyzing other programs.
+
+The [CI proof-checking guide](ci-proof-checking.md) describes source-core checking,
+legacy replay shards, caching and final-proof policy.
