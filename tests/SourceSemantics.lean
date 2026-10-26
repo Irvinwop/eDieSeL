@@ -20,6 +20,8 @@ import tests.SourceControlVC
 import tests.SourceControlDivisionVC
 import tests.SourceFunctionVC
 import tests.SourceFunctionFailures
+import tests.SourceEntryBoundaries
+import tests.SourceEntryQuota
 import tests.SourceReadOrder
 import tests.SourceExpressionCore
 import EDSL.Source.GuardContracts

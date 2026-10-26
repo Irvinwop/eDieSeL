@@ -55,6 +55,8 @@ compatibility theorem transports existing finite program contracts without
 new per-program execution proofs. Its function VC layer composes entry,
 initializers, annotated control and actual cleanup; a loop-bearing division
 client proves its result, caller frames and restored resources through that API.
+Reusable entry contracts handle literal/absent declarations and fresh bindings,
+so each new function can focus on its body invariants and result.
 
 The [source-core API guide](docs/source-core-api.md) records its exact scope.
 Inputs are immutable typed values in the expression-only specialization; the

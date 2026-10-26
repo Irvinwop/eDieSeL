@@ -82,6 +82,35 @@ synthesize valid invariants or prove termination. The formula and entry/cleanup
 factorization laws are checked; the annotated control generator has a soundness
 result, without a completeness or weakestness claim.
 
+## Reusing entry and body frames
+
+For declarations with literal or absent initializers, `EntryContracts` derives
+entry facts from the caller's well-formed registry, typed values and sufficient
+slots. The witness `LiteralInitializers` refers to the actual declaration tree;
+it supplies no replacement evaluator. `vcEntry_of_literals` prepares the exact
+parameter/local plans, their values and permissions, fresh unique/disjoint
+identities, old-object/world frames, quota changes and cleanup admissions.
+The continuation still proves the body and result obligations. Arbitrary
+expression initializers retain the general `vcPrepare`/expression-VC path.
+
+Absent contents remain absent. The read rules still distinguish C23 UB from
+C++ erroneous uninitialized reads; a write can establish initialized contents.
+Whole-function support is checked separately before public entry. A successful
+unchecked preparation theorem alone certifies no body behavior.
+
+`ObjectFrames` proves the current ordinary control fragment preserves existing
+object metadata, the registry outside its bound identities, the external world
+and well-formedness over every finite prefix, including failure. Values may
+change. `ObjectFrame.liveBindings` transports live cleanup admissions, and
+`StructuredVC.Segment.with_objectFrame` enriches a proved body segment without
+repeating these invariants in every loop. These laws are specific to ordinary
+bound-object control, with no allocation, lifetime-ending, calls or interference.
+Future effects require their own preservation rules.
+
+The division client uses these shared entry contracts. Its entry argument is
+94 lines shorter, with the original function, admission, mathematical post and
+full cleanup/resource contract preserved.
+
 ## Checked loop-bearing function
 
 [The division client](../tests/SourceFunctionVC.lean) embeds a typed numerator
@@ -110,3 +139,10 @@ retains its first successful end before a duplicate plan fails. The latter
 exercises a malformed active frame outside successful-entry invariants. Both
 preserve arbitrary earlier history and use compositional laws rather than
 expensive whole-observer normalization.
+
+[Entry boundary checks](../tests/SourceEntryBoundaries.lean) cover mixed types,
+absent initialization, later writes, cleanup, empty prefixes and whole-tree
+preflight. [Quota checks](../tests/SourceEntryQuota.lean) establish actual
+insufficient-capacity failure before local initializers: initialized parameters
+and a pending local survive, with no phantom allocation or rollback. C23 and
+C++ retain their distinct pending-local read failures.

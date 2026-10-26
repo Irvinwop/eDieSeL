@@ -1,9 +1,9 @@
 /- Copyright 2026 Irvinwop. SPDX-License-Identifier: Apache-2.0 -/
-import EDSL.Source.Objects.Control.FunctionVC
+import EDSL.Source.Objects.Control.EntryContracts
 import EDSL.Source.Objects.Control.Division
 
 set_option autoImplicit false
-namespace EDSL.Source.Objects.Control.FunctionVC.DivisionValidation
+namespace EDSL.Source.Objects.Control.FunctionVC.EntryDivisionValidation
 open StateSyntax Protocol StructuredVC LifecycleContracts BlockContracts ParameterContracts
 attribute [local implicit_reducible] Value Target.modulus
 
@@ -235,111 +235,17 @@ theorem entry_obligations (n : Value target .uint) (initial : State target [.uin
         Segment dialect policy entry.bindings entry.code (fun _ _ => False)
           (fun value => vcCleanup entry.localBindings entry.parameterBindings value (FullPost n original))
           middle earlier) initial := by
-  obtain ⟨initialMetadata, capacity, positive⟩ := admitted
-  let d : Value target .uint := initial.inputs.get .here
-  have inputsShape : initial.inputs = .cons d .nil := by
-    have shape : ∀ values : CallInputs target [.uint], values = .cons (values.get .here) .nil := by
-      intro values
-      cases values with
-      | cons value tail => cases tail; rfl
-    exact shape initial.inputs
-  let ps := parametersState (kinds := [.uint]) dialect initial.inputs initial
-  have pMeta : ps.WellFormed := parametersState_wellFormed (kinds := [.uint]) dialect initial.inputs initial initialMetadata
-  have pCap : 1 ≤ initial.automaticSlots := by omega
-  have pSlots := parametersState_slots (kinds := [.uint]) dialect initial.inputs initial pCap
-  have pNext : ps.next = initial.next + 1 := parametersState_next (kinds := [.uint]) dialect initial.inputs initial
-  have pFrozen : Frozen initial ps := parametersState_frozen (kinds := [.uint]) dialect initial.inputs initial
-  let reserved := reservedAllState dialect [.uint, .uint] ps
-  have reserveCap : 2 ≤ ps.automaticSlots := by
-    change ps.automaticSlots + 1 = initial.automaticSlots at pSlots
-    omega
-  have reserveMeta : reserved.WellFormed := reservedAllState_wellFormed dialect [.uint, .uint] ps pMeta
-  have reserveFrozen : Frozen ps reserved := reservedAllState_frozen dialect [.uint, .uint] ps
-  have reserveSlots := reservedAllState_slots dialect [.uint, .uint] ps reserveCap
-  have reserveNext : reserved.next = ps.next + 2 := reservedAllState_next dialect [.uint, .uint] ps
-  let dRef : LValue .uint := ⟨initial.next⟩
-  let r : LValue .uint := ⟨ps.next⟩
-  let q : LValue .uint := ⟨ps.next + 1⟩
-  have qr : q.id ≠ r.id := by change ps.next + 1 ≠ ps.next; omega
-  have dr : dRef.id ≠ r.id := by change initial.next ≠ ps.next; omega
-  have dq : dRef.id ≠ q.id := by change initial.next ≠ ps.next + 1; omega
-  have pending := reservedAllState_pending dialect [.uint, .uint] ps
-  have rPending : reserved.objects r.id = some (pendingObject dialect .uint reserved.actor ⟨true, true⟩) := by
-    simpa only [reserveFrozen.2.2] using pending.1
-  have qPending : reserved.objects q.id = some (pendingObject dialect .uint reserved.actor ⟨true, true⟩) := by
-    simpa only [reserveFrozen.2.2] using pending.2.1
-  let rs := initializedState r ⟨true, true⟩ (some n) reserved
-  have rMeta : rs.WellFormed := initializedState_wellFormed dialect r reserved _ _ reserveMeta rPending
-  have qPendingR : rs.objects q.id = some (pendingObject dialect .uint rs.actor ⟨true, true⟩) :=
-    (State.putObject_other reserved r.id q.id _ qr).trans qPending
-  let bodyState := initializedState q ⟨true, true⟩ (some (Division.zero target)) rs
-  have bodyMeta : bodyState.WellFormed := initializedState_wellFormed dialect q rs _ _ rMeta qPendingR
-  have heldQ : Division.Holds bodyState q (Division.zero target) := State.putObject_same rs q.id _
-  have heldR : Division.Holds bodyState r n :=
-    (State.putObject_other rs q.id r.id _ (Ne.symm qr)).trans (State.putObject_same reserved r.id _)
-  have parameter := parametersState_initialized (kinds := [.uint]) dialect initial.inputs initial
-  rw [inputsShape] at parameter
-  have registeredP : ps.objects dRef.id = some (liveObject .uint ps.actor ⟨true, true⟩ (some d)) := by
-    rw [pFrozen.2.2]
-    change (parametersState (kinds := [.uint]) dialect initial.inputs initial).objects initial.next = _
-    rw [inputsShape]
-    exact parameter.1
-  have registeredReserve : reserved.objects dRef.id =
-      some (liveObject .uint reserved.actor ⟨true, true⟩ (some d)) := by
-    simpa only [reserveFrozen.2.2] using
-      reservedAllState_registered dialect [.uint, .uint] ps pMeta dRef.id _ registeredP
-  have registeredR : rs.objects dRef.id = some (liveObject .uint rs.actor ⟨true, true⟩ (some d)) :=
-    (State.putObject_other reserved r.id dRef.id _ dr).trans registeredReserve
-  have registeredBody : bodyState.objects dRef.id =
-      some (liveObject .uint bodyState.actor ⟨true, true⟩ (some d)) :=
-    (State.putObject_other rs q.id dRef.id _ dq).trans registeredR
-  have readD : CanLoad bodyState dRef d := ⟨⟨true, true⟩, registeredBody, rfl⟩
-  have frozen : Frozen initial bodyState := ⟨reserveFrozen.1.trans pFrozen.1,
-    reserveFrozen.2.1.trans pFrozen.2.1, reserveFrozen.2.2.trans pFrozen.2.2⟩
-  have next : bodyState.next = initial.next + 3 := by
-    change reserved.next = initial.next + 3
-    omega
-  have slots : bodyState.automaticSlots + 3 = initial.automaticSlots := by
-    change reserved.automaticSlots + 3 = initial.automaticSlots
-    change reserved.automaticSlots + 2 = ps.automaticSlots at reserveSlots
-    change ps.automaticSlots + 1 = initial.automaticSlots at pSlots
-    omega
-  have caller : ∀ id object, initial.objects id = some object → bodyState.objects id = some object := by
-    intro id object registered
-    have bound := (initialMetadata id object registered).1
-    have differentR : id ≠ r.id := by change id ≠ ps.next; omega
-    have differentQ : id ≠ q.id := by change id ≠ ps.next + 1; omega
-    exact (State.putObject_other rs q.id id _ differentQ).trans
-      ((State.putObject_other reserved r.id id _ differentR).trans
-        (reservedAllState_registered dialect [.uint, .uint] ps pMeta id _
-          (parametersState_registered (kinds := [.uint]) dialect initial.inputs initial initialMetadata id object registered)))
-  unfold vcEntry
-  apply (wp_iff _ _ _).mpr
-  refine ⟨reservationEnv initial.next [.uint], ps, parameterEvents (kinds := [.uint]) dialect initial.actor initial.next initial.inputs,
-    enterParameters_eq (kinds := [.uint]) dialect initial.inputs initial initialMetadata pCap, ?_⟩
-  apply (wp_iff _ _ _).mpr
-  refine ⟨reservationEnv ps.next [.uint, .uint], reserved,
-    reservationEvents dialect ps.actor ps.next [.uint, .uint],
-    reserveAll_eq dialect [.uint, .uint] ps pMeta reserveCap, ?_⟩
-  simp only [function, reservationEnv]
-  apply Eq.mpr (vcPrepare_declare (target := target) (stateParameters := [.uint]) (Environment := Environment)
-    (result := .uint) dialect policy .uint (some (.literal n))
-    (.declare .uint (some (.literal (Division.zero target))) (.body (functionCode target)))
-    (.cons dRef .nil) r (.cons q .nil) _ reserved)
-  simp only [BlockVC.vcInitializer, ExpressionVC.vcExpr_literal]
-  apply (ObjectWP.wp_initialize dialect r (some n) _ reserved).mpr
-  refine ⟨⟨true, true⟩, rfl, rPending, ?_⟩
-  apply Eq.mpr (vcPrepare_declare (target := target) (stateParameters := [.uint]) (Environment := Environment)
-    (result := .uint) dialect policy .uint (some (.literal (Division.zero target)))
-    (.body (functionCode target)) (.cons r (.cons dRef .nil)) q .nil _ rs)
-  simp only [BlockVC.vcInitializer, ExpressionVC.vcExpr_literal]
-  apply (ObjectWP.wp_initialize dialect q (some (Division.zero target)) _ rs).mpr
-  refine ⟨⟨true, true⟩, rfl, qPendingR, ?_⟩
-  apply Eq.mpr (vcPrepare_body dialect policy (functionCode target)
-    (Division.bindings q r dRef) .nil _ bodyState)
-  exact body_cleanup_segment dialect policy n d initial bodyState q r dRef _
-    (by change ps.next + 1 = initial.next + 2; omega) pNext rfl rfl positive initialMetadata
-    bodyMeta frozen next slots caller heldQ heldR readD
+  obtain ⟨metadata, capacity, positive⟩ := admitted
+  let literal : EntryContracts.LiteralInitializers (function n dialect policy).body :=
+    .declare .uint (some n)
+      (.declare .uint (some (Division.zero target)) (.body (functionCode target)))
+  apply EntryContracts.vcEntry_of_literals (function n dialect policy) literal _ initial metadata capacity
+  intro middle facts
+  have locals := facts.localRecords
+  have parameter := facts.parameter_access (kind := .uint) .here
+  exact body_cleanup_segment dialect policy n (initial.inputs.get .here) initial middle
+    ⟨initial.next + 2⟩ ⟨initial.next + 1⟩ ⟨initial.next⟩ _ rfl rfl rfl rfl positive metadata
+    facts.metadata facts.frozen facts.next facts.slots facts.caller locals.2.1 locals.1 parameter.1
 
 /-- Actual FunctionEval.start/observe return, after real reverse cleanup, for
 arbitrary caller registries, targets, dialects, conversions and positive input
@@ -383,4 +289,4 @@ theorem divisor_one_observation (n : Value target .uint) (environment : Environm
   subst value
   exact ⟨steps, final, events, observed, correct⟩
 
-end EDSL.Source.Objects.Control.FunctionVC.DivisionValidation
+end EDSL.Source.Objects.Control.FunctionVC.EntryDivisionValidation

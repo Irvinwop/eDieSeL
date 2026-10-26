@@ -16,3 +16,5 @@ import EDSL.Source.Objects.Control.FunctionCompatibility
 import EDSL.Source.Objects.Control.FunctionContracts
 import EDSL.Source.Objects.Control.AnnotationRules
 import EDSL.Source.Objects.Control.FunctionVC
+import EDSL.Source.Objects.Control.ObjectFrames
+import EDSL.Source.Objects.Control.EntryContracts

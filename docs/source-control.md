@@ -57,7 +57,7 @@ Import the relevant module under `EDSL.Source.Objects.Control`:
 | --- | --- |
 | `Syntax`, `Machine` | Typed code, coverage, one transition function and finite observation |
 | `Trace` | Run composition/resumption, terminal stability/uniqueness, invariants and event-prefix laws |
-| `Frames` | Caller-world preservation for actual transitions and every finite prefix |
+| `Frames`, `ObjectFrames` | World, existing metadata and outside-binding registry preservation over every finite prefix |
 | `Contracts` | Separate prefix, partial-correctness and value-completion contracts |
 | `Rules` | Sound finite-progress annotations yielding actual value completion |
 | `StructuredVC`, `AnnotationRules` | Backward formulas, loop hints, consequence and checked composition with manual invariants/ranks |
@@ -84,8 +84,9 @@ and independent of the candidate execution.
 
 `Control.WorldFrame` preserves external inputs, environment, actor, fresh identity
 and automatic-object capacity over every prefix. Assignments can change object
-values; unrelated-object frames need their own access/store proofs. This control
-fragment has no allocation, cleanup or environmental/interference transition.
+values. Use `run_objectFrame` for identities outside `Env.ids`; unchanged values
+inside those bindings still need program-specific evidence. This control fragment
+has no allocation, cleanup or environmental/interference transition.
 Accepted state changes and events survive later failure. Event histories are
 append-only, including observations accepted before a failing expression/store.
 
