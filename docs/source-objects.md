@@ -4,7 +4,9 @@ Import `EDSL.Source.Objects` for the internal object model, executable
 operations, contracts and pure-program embedding. These components are checked
 Lean declarations. A separate [finite statement API](source-statements.md) now
 connects typed declarations and mutable variables to these operations. The
-expression-only `Source.Program` stays unchanged; neither API establishes a
+separate [control machine](source-control.md) reuses current loads and stores
+for loops over already-bound objects. The expression-only `Source.Program`
+and finite function API stay unchanged; these APIs do not establish a
 theorem about native source files.
 
 ## State and resources
@@ -65,6 +67,13 @@ an inhabited entry domain. The checked mutable copy/increment client supplies
 them for the first finite block; generic parameter-entry and primitive WP rules
 provide reusable proof interfaces.
 
+The control machine preserves caller inputs, environment, actor, fresh identity
+and remaining capacity over every finite prefix, including failure and divergence.
+Its ordinary assignments can change object contents. It has no allocation,
+cleanup or interference transition; loop-body completion must be proved using
+actual execution segments. These frame laws therefore do not supply a scheduler
+or extend the finite function driver's cleanup theorem to looping bodies.
+
 ## One expression engine
 
 `ExpressionCore.evalCore` is the shared traversal. Its typed lookup and scalar
@@ -86,9 +95,10 @@ that representation.
 
 ## Remaining connections
 
-Source integration must fix one dialect, bind declarations injectively to
-matching registered objects, reserve C declarations at block entry, sequence
-full expressions and compute return values before scope cleanup. Pending
+The finite statement driver fixes one dialect, allocates matching parameter and
+local bindings, sequences full expressions and computes return values before
+normal cleanup. Connecting those entry/cleanup operations to the looping control
+machine remains separate work. Source-text correspondence is also open. Pending
 reservation recovery, lifetime restart, nested blocks and exceptions are not
 implemented.
 

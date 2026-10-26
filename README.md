@@ -40,10 +40,18 @@ unsigned wrapping. Guarded quotient programs admit all typed inputs and derive
 definedness from their guards. Public evaluation first checks model coverage of
 the complete body, including skipped arms.
 
-Its [API guide](docs/source-core-api.md) records the exact scope. Inputs are
-immutable typed values in the expression-only specialization; the finite statement
-API allocates mutable object bindings. Neither has a source-text parser or
-source-connected OS effects.
+An [internal control API](docs/source-control.md) adds sequencing, branches,
+loops and early return over already-bound objects. Shared trace and finite-progress
+rules let clients prove completion and independent state/result contracts without
+writing a new evaluator. Its repeated-subtraction division client derives finite
+return, an independent quotient/remainder equation and caller/object frames for
+every admitted uint input and positive denominator. Source loop classification,
+required C++ yield effects and integration with function entry/cleanup remain open.
+
+The [source-core API guide](docs/source-core-api.md) records its exact scope.
+Inputs are immutable typed values in the expression-only specialization; the
+finite statement API allocates mutable object bindings. These interfaces have
+no source-text parser or source-connected OS effects.
 
 This source-language foundation is under development. Complete GNU semantics,
 source parsing, a verified bootstrap compiler and source-verified kernels are

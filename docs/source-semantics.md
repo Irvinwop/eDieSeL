@@ -35,7 +35,11 @@ a source-text frontend and the bootstrap chain are not implemented.
 The same evaluator interprets both dialect selections. Its present expressions
 are pure, so the left-first failure diagnostic does not resolve a C/C++
 sequencing question. Wider integer types, lvalues, objects, pointers, memory
-operations, calls, loops, OS effects and threads remain unsupported. `Target`
+operations, calls, loops, OS effects and threads are outside this expression-only
+API. The [finite statement API](source-statements.md) binds mutable objects;
+the [internal control machine](source-control.md) adds loops over existing
+bindings, with separate prefix-safety and completion judgments. Neither
+establishes source-text correspondence or general C/C++ loop definedness. `Target`
 records integer value ranges, not an ABI, storage representation or
 compiler/hardware relation.
 The [source core API](source-core-api.md) lists exact declarations and limits.
@@ -84,8 +88,8 @@ respective arms. When the condition succeeds, raw expression execution
 evaluates exactly one arm. Condition failure and a selected arm's failure
 propagate.
 
-All inputs are immutable typed mathematical values. Reusing a parameter after
-a guard observes that same value. These proofs do not concern volatile
+In the expression-only API, inputs are immutable typed mathematical values.
+Reusing a parameter after a guard observes that same value. These proofs do not concern volatile
 accesses or reads of shared/mutable objects, where a denominator might change
 between the check and division. The dialect-specific helpers construct the
 source result types; changing program metadata alone does not elaborate source
@@ -124,8 +128,9 @@ syntax, a contract, invariants and proofs. It does not install a new evaluator.
 specializes it to scalar outcomes and immutable typed inputs. A checked
 carrier-mapping law supports other explicit effect carriers without duplicating
 the expression interpreter. The [object foundation](source-objects.md) includes
-a complete-state pure embedding, while mutable source statements and source OS
-integration remain unimplemented.
+a complete-state pure embedding. The finite statement driver and internal
+control machine reuse this traversal for actual object reads and stores;
+source-connected OS integration remains unimplemented.
 
 Each extension must add actual language rules and checked consequences.
 A parser or elaborator also needs a checked link between source text and the
@@ -145,8 +150,12 @@ there is an actual defined evaluation whose result satisfies post.
 `NoUB` is derived from that execution proof. In this fragment it deliberately
 means **defined completion**, excluding unsupported outcomes as well as UB.
 It is stronger than a general UB-freedom judgment for a language with loops.
-Before admitting loops or effects, coverage, safety, erroneous behavior,
-termination and scheduling progress need separate obligations.
+The internal control API keeps modeled UB exclusion, exclusion of all stops,
+partial correctness and finite value completion separate. Its finite-progress
+rule proves completion from actual finite execution segments and a decreasing
+rank, with annotations outside executable syntax. Source-standard progress,
+coverage of permitted native behaviors and scheduling effects remain separate
+obligations; safe finite prefixes alone do not discharge them.
 
 Conditional judgments can hold for an empty domain. `Certificate` therefore
 also requires an admitted-input witness, and its theorem covers every admitted

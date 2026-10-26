@@ -1,6 +1,6 @@
 /- Copyright 2026 Irvinwop. SPDX-License-Identifier: Apache-2.0 -/
--- Internal declared-object foundation. Source Program memory syntax, statement
--- execution, source-connected OS/scheduler and representation remain separate work.
+-- Declared objects, finite programs and internal control share the expression
+-- engine. Source mapping, memory representation and OS refinement remain open.
 import EDSL.Source.Objects.Model
 import EDSL.Source.Objects.Effects
 import EDSL.Source.Objects.Access
@@ -21,3 +21,4 @@ import EDSL.Source.Objects.ParameterContracts
 import EDSL.Source.Objects.ExpressionReadOrder
 import EDSL.Source.Objects.CopyIncrement
 import EDSL.Source.Objects.ExpressionVC
+import EDSL.Source.Objects.Control

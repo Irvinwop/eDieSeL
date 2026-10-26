@@ -9,6 +9,11 @@ This is an executable internal source fragment with checked operational and
 verification-condition laws. It does not establish a correspondence with parsed
 C/C++ files or all behavior permitted by the language standards.
 
+The separate [control API](source-control.md) adds loops over already-bound
+objects and transports this finite statement body's exact results, failures,
+state and events. It does not extend `StateSyntax.Program` with loops or yet
+transport full declaration, function-entry and cleanup behavior.
+
 ## Constructing a program
 
 `StateSyntax.Program target parameters result` fixes the dialect and integer
@@ -127,10 +132,10 @@ C/C++ sequencing or concurrent-interference theorem.
 
 ## Limits
 
-There are no nested scopes, loops, self/forward initialization, assignment
-expressions, qualifiers, pointers, object bytes/layout/provenance, atomics or
-source-connected OS/scheduler effects in this fragment. There is no source-text
-frontend, compiler preservation or bootstrap-stage proof. The existing
+This finite grammar has no loops or nested scopes. Self/forward initialization,
+assignment expressions, qualifiers, pointers, object bytes/layout/provenance,
+atomics and source-connected OS/scheduler effects are also absent. There is no
+source-text frontend, compiler preservation or bootstrap-stage proof. The existing
 expression-only `Source.Program` remains a separate specialization with immutable
 inputs; it does not acquire mutable statements implicitly.
 

@@ -15,6 +15,8 @@ chain are under development.
 | --- | --- |
 | Understand the implemented fragment | [Source semantics](source-semantics.md), [source core API](source-core-api.md) |
 | Understand internal object/resource primitives and their limits | [Declared-object foundation](source-objects.md) |
+| Verify mutable declarations and finite functions | [Finite statement API](source-statements.md) |
+| Prove internal loop completion and state contracts | [Control machine and reusable proof rules](source-control.md) |
 | State a safety and correctness claim | [Verification obligations](verification.md) |
 | Check the current examples | [Build and validation](validation.md#source-foundation) |
 | Understand the compiler chain | [Bootstrap dependency plan](bootstrap.md), [roadmap](roadmap.md) |

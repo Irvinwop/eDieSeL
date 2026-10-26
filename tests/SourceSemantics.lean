@@ -13,6 +13,9 @@ import tests.SourceConditions
 import tests.SourceUnary
 import tests.SourceExpressionVC
 import tests.SourceObjects
+import tests.SourceControl
+import tests.SourceControlRules
+import tests.SourceControlDivision
 import tests.SourceReadOrder
 import tests.SourceExpressionCore
 import EDSL.Source.GuardContracts

@@ -23,8 +23,14 @@ statement driver now executes declarations, assignment, branches and return
 through the shared expression engine, with mutable parameters, complete local
 reservation, normal cleanup and exact structural VCs. This is an internal
 fragment; native operand-order and memory correspondence remain open. See the
-[statement API](source-statements.md). Structural
-verification conditions are proved exact for this grammar. Unsigned division
+[statement API](source-statements.md). A separate [internal control machine](source-control.md)
+adds loops, early return and checked finite-progress rules over already-bound
+objects, reusing the same expressions and stores. It preserves exact finite-body
+compatibility. Its repeated-subtraction division client proves finite completion,
+an independent quotient/remainder law and caller/object frames. Source-loop
+classification, required C++ yield effects and full function entry/cleanup
+transport are not implemented. Structural verification conditions are proved
+exact for the finite statement grammar. Scalar unsigned division
 has an independent interval contract and a synthetic candidate proved safe
 but functionally incorrect; these reuse the same executable semantics.
 A shared construction now normalizes all five arithmetic operations through
@@ -46,7 +52,8 @@ bool. Conditional helpers cover unqualified integral prvalue arms: C uses the ar
 first preserves matching arm types. No source lvalues or general C++ value
 categories are implemented. The finite statement slice sequences full
 expressions and object effects; wider integer types, representation-level
-memory, loops and source-connected OS effects remain dependencies.
+memory, source-connected loop semantics and source-connected OS effects remain
+dependencies.
 
 Public program evaluation checks coverage of the whole expression before
 execution, including skipped arms. Inhabited certificates derive this structural
@@ -79,10 +86,18 @@ independently stated functional/frame contract and discharged obligations. The
 first mutable copy/increment client now supplies these for all typed inputs,
 with a bounded-carry result, preserved old state, fresh tombstones and restored
 slots. Generic parameter-entry and primitive-WP rules reduce repeated proof work.
-Expression verification now specializes the same traversal to a checked
+Expression verification specializes the same traversal to a checked
 predicate-transformer carrier, exposing demanded read snapshots and scalar
 obligations. Statements and declarations compose those conditions. Read-order correspondence, storage representation,
 source-connected OS behavior and larger language features remain dependencies.
+
+Control proofs use one fixed transition function and shared trace, frame and
+completion rules. Ranks and invariants are proof annotations; bounded observation
+never becomes a source timeout or a successful return. The next control
+dependencies are shared declaration/parameter preparation, return cleanup and
+full finite-function transport, followed by a checked source mapping that retains
+native loop classification and required progress effects. Internal safe divergence
+must not be promoted to a GNU C23/GNU++26 source theorem without these obligations.
 
 Start with a small, executable, typed source fragment. Record its language
 profile and implemented rules before extending it. GNU++26 shares the same
@@ -135,14 +150,16 @@ soundness theorem checked once. Clients provide their mathematics, invariants
 and termination arguments. They do not introduce their own interpreter.
 
 The present integer clients include guards with all typed inputs admitted.
-Next establish statement/state semantics, then loops and small memory routines
-as their execution and memory rules become available. Include independently
+Finite statements have structural VCs; the separate control machine has sound
+finite-progress rules over actual execution segments. Next connect looping bodies
+to function entry/cleanup and a precise source profile, then add small memory
+routines as their representation rules become available. Include independently
 specified counterexamples
 that expose real semantic mistakes, such as signed overflow and invalid memory
 access. Keep partial correctness, termination, deadlock freedom and scheduling
-progress distinct. The current finite `NoUB` requires defined completion;
-separate general UB freedom, coverage and erroneous behavior before extending
-the syntax with loops or effects.
+progress distinct. The expression-only `NoUB` requires defined completion;
+the control API's separate prefix and completion judgments do not replace
+source-standard progress or effect obligations.
 
 Acceptance: each supported source example has an actual definedness theorem,
 contract theorem, nonvacuous inputs and audited kernel-checked dependencies.

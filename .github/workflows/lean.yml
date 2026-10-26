@@ -59,7 +59,7 @@ jobs:
         id: source-cache
         with:
           path: .lake/build
-          key: source-foundation-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain', 'lakefile.lean', 'lake-manifest.json') }}-${{ hashFiles('EDSL/Source.lean', 'EDSL/Source/**/*.lean', 'EDSL/Semantics.lean', 'EDSL/Audit.lean', 'EDSL/Audit/Owners.lean', 'tests/SourceSemantics.lean', 'tests/SourceConversions.lean', 'tests/SourcePromotions.lean', 'tests/SourceCasts.lean', 'tests/SourceArithmetic.lean', 'tests/SourceConditions.lean', 'tests/SourceUnary.lean', 'tests/SourceExpressionCore.lean', 'tests/SourceReadOrder.lean', 'tests/SourceObjects.lean', 'tests/SourceExpressionVC.lean') }}
+          key: source-foundation-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain', 'lakefile.lean', 'lake-manifest.json') }}-${{ hashFiles('EDSL/Source.lean', 'EDSL/Source/**/*.lean', 'EDSL/Semantics.lean', 'EDSL/Audit.lean', 'EDSL/Audit/Owners.lean', 'tests/SourceSemantics.lean', 'tests/SourceConversions.lean', 'tests/SourcePromotions.lean', 'tests/SourceCasts.lean', 'tests/SourceArithmetic.lean', 'tests/SourceConditions.lean', 'tests/SourceUnary.lean', 'tests/SourceExpressionCore.lean', 'tests/SourceReadOrder.lean', 'tests/SourceObjects.lean', 'tests/SourceExpressionVC.lean', 'tests/SourceControl.lean', 'tests/SourceControlRules.lean', 'tests/SourceControlDivision.lean') }}
           restore-keys: |
             source-foundation-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain', 'lakefile.lean', 'lake-manifest.json') }}-
       - name: Build, audit and fresh-replay the shared source semantics

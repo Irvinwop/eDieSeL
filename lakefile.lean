@@ -401,5 +401,5 @@ lean_lib CallContractTransportTests where
 
 -- Shared source semantics, proved definedness/contracts and full owner audit.
 lean_lib SourceSemanticsTests where
-  roots := #[`tests.SourceSemantics, `tests.SourceConversions, `tests.SourcePromotions, `tests.SourceCasts, `tests.SourceArithmetic, `tests.SourceConditions, `tests.SourceUnary, `tests.SourceExpressionCore, `tests.SourceReadOrder, `tests.SourceObjects, `tests.SourceExpressionVC]
+  roots := #[`tests.SourceSemantics, `tests.SourceConversions, `tests.SourcePromotions, `tests.SourceCasts, `tests.SourceArithmetic, `tests.SourceConditions, `tests.SourceUnary, `tests.SourceExpressionCore, `tests.SourceReadOrder, `tests.SourceObjects, `tests.SourceExpressionVC, `tests.SourceControl, `tests.SourceControlRules, `tests.SourceControlDivision]
   moreLeanArgs := #["-j1", "-DwarningAsError=true", "-DautoImplicit=false"]
