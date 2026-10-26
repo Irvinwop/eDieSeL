@@ -165,3 +165,25 @@ The next syntax feature is explicit same-rank `int`/`unsigned int` conversion
 and its usual arithmetic conversion rules, with numeric correctness lemmas.
 It remains unsupported here. Additional signed-operation contracts can use the
 current API without changing the evaluator.
+
+## Structural verification conditions
+
+`EDSL.Source.VCGen` is imported by `EDSL.Source`. For the present finite pure
+grammar, `vcExpr inputs expression post` recursively generates obligations for
+the expression's result. Primitive leaves use the existing shared arithmetic
+operations: they expose representability, nonzero-divisor and result obligations
+through `Outcome.requires`. UB and unsupported outcomes require `False`.
+
+`vcExpr_iff` proves these generated conditions equivalent to a successful
+outcome satisfying the postcondition. `VC program admitted post` quantifies the
+condition over every admitted input; `vc_iff_verifies` proves it equivalent to
+`Verifies`. Given an inhabited domain and a proof of `VC`,
+`certificate_of_vc` constructs the same usable source certificate and derives
+its definedness consequences. A client can discharge arithmetic conditions
+without writing a new evaluator or a bespoke execution-soundness theorem.
+
+This is a proposition generator with a checked exactness theorem. It does not
+parse source text, solve arbitrary conditions, add control-flow invariants or
+cover effects. Extending the expression grammar requires extending this
+exactness proof. Independent review of the chosen input/result specification
+is still required.
