@@ -52,7 +52,9 @@ required C++ yield effects and native source correspondence remain open.
 The [function-control driver](docs/source-functions.md) connects parameters,
 local declarations and normal cleanup to those control bodies. A generic exact
 compatibility theorem transports existing finite program contracts without
-new per-program execution proofs.
+new per-program execution proofs. Its function VC layer composes entry,
+initializers, annotated control and actual cleanup; a loop-bearing division
+client proves its result, caller frames and restored resources through that API.
 
 The [source-core API guide](docs/source-core-api.md) records its exact scope.
 Inputs are immutable typed values in the expression-only specialization; the

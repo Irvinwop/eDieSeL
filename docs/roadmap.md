@@ -77,9 +77,12 @@ storage, source parsing or overloaded C++ operators.
 The internal function-control driver shares parameter/local primitives and
 normal cleanup, with exact transport of every finite program and source contract.
 The structural control VC generator computes constructor obligations and proves
-actual finite segments from manually supplied loop invariants/ranks. Next extract
-one neutral declaration traversal for both drivers, compose the function-level
-VC layer, and establish checked source loop profiles/progress effects. Full GNU
+actual finite segments from manually supplied loop invariants/ranks. Both
+function drivers share one neutral declaration traversal; the function VC layer
+composes entry, control and actual cleanup. A loop-bearing division function
+proves an independent quotient/remainder, caller-frame and resource contract.
+Next establish object memory/provenance and checked source loop profiles/progress
+effects. Full GNU
 semantics, memory/provenance, source OS integration and bootstrap remain open.
 
 ## 1. Establish the GNU C23 semantics foundation

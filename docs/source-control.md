@@ -60,8 +60,8 @@ Import the relevant module under `EDSL.Source.Objects.Control`:
 | `Frames` | Caller-world preservation for actual transitions and every finite prefix |
 | `Contracts` | Separate prefix, partial-correctness and value-completion contracts |
 | `Rules` | Sound finite-progress annotations yielding actual value completion |
-| `StructuredVC` | Backward formula generation and checked composition with manual loop invariants/ranks |
-| `FunctionSyntax`, `FunctionEval`, `FunctionCompatibility`, `FunctionContracts` | Declaration entry, observation, cleanup and exact finite-program contract transport |
+| `StructuredVC`, `AnnotationRules` | Backward formulas, loop hints, consequence and checked composition with manual invariants/ranks |
+| `FunctionSyntax`, `FunctionEval`, `FunctionCompatibility`, `FunctionContracts`, `FunctionVC` | Shared declarations, entry/cleanup conditions, observation and exact finite-program contract transport |
 | `Division` | Repeated-subtraction client with an independent quotient/remainder and state contract |
 | `Legacy` | Exact transport of the existing finite statement body |
 

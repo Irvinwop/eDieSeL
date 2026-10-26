@@ -1,5 +1,6 @@
 /- Copyright 2026 Irvinwop. SPDX-License-Identifier: Apache-2.0 -/
 import EDSL.Source.Objects.Control.FunctionSyntax
+import EDSL.Source.Objects.DeclarationEval
 import EDSL.Source.Objects.Control.Legacy
 import EDSL.Source.Objects.BlockEval
 
@@ -9,8 +10,8 @@ open StateSyntax
 
 /-! Internal function entry and normal-return cleanup for control bodies.
 Reservation, initialization, expression evaluation and lifetime ending are the
-existing object operations. The generic declaration fold also specializes
-exactly to the accepted finite driver. Step bounds below are observations, not
+existing object operations. The neutral declaration fold is also the finite
+driver's initializer traversal. Step bounds below are observations, not
 execution fuel, source errors or a termination assumption.
 
 No exception unwinding or failed-entry reclamation is invented. Fallthrough is
@@ -18,36 +19,7 @@ an explicit internal endpoint. Prefix safety here does not establish source
 C/C++ forward progress, scheduler fairness, native behavior or source mapping. -/
 
 namespace DeclarationSpine
-variable {target : Target} {Body : List ArithmeticType → IntType → Type}
-variable {parameters : List IntType} {Environment α : Type}
-
-/-- A generic initializer traversal for a terminal body language/interpreter.
-Its plan contains the complete already reserved declaration prefix; the active
-bindings grow only after actual initialization of the next object. -/
-def fold (dialect : Dialect) (policy : IntegerConversionPolicy) {result : IntType}
-    (onBody : ∀ {context}, Body context result → Env context →
-      Op target parameters Environment α) :
-    {context : List ArithmeticType} →
-    (declarations : DeclarationSpine target Body context result) → Env context →
-    Env declarations.localKinds → Op target parameters Environment α
-  | _, .body code, bindings, _ => onBody code bindings
-  | _, .declare _ initial rest, bindings, plan =>
-    match plan with
-    | .cons reference tail =>
-      let initialValue := match initial with
-        | none => Op.pure none
-        | some expression => Op.bind (StateEval.evalExpr dialect policy bindings expression)
-            fun value => Op.pure (some value)
-      Op.bind initialValue fun value =>
-      Op.bind («initialize» dialect reference value) fun _ =>
-        fold dialect policy onBody rest (bindings.extend reference) tail
-
-private theorem cast_cons {first second : List ArithmeticType} {kind : ArithmeticType}
-    (same : first = second) (reference : LValue kind) (tail : Env first) :
-    cast (congrArg Env (congrArg (List.cons kind) same)) (.cons reference tail) =
-      .cons reference (cast (congrArg Env same) tail) := by
-  cases same
-  rfl
+variable {target : Target} {parameters : List IntType} {Environment : Type}
 
 /-- Exact specialization, on every state and even on failure: the generic
 traversal agrees with the existing finite declaration evaluator. -/
@@ -61,25 +33,9 @@ theorem fold_ofDecls_eq (dialect : Dialect) (policy : IntegerConversionPolicy)
         Op target parameters Environment (Value target result)) =
     BlockEval.evalDecls dialect policy declarations bindings
       (cast (congrArg Env (ofDecls_localKinds (fun statement => statement) declarations)) plan) := by
-  induction declarations with
-  | body statement => rfl
-  | declare kind initial rest ih =>
-      cases plan with
-      | cons reference tail =>
-          have converted :
-              cast (congrArg Env (ofDecls_localKinds (fun statement => statement)
-                (Decls.declare kind initial rest))) (.cons reference tail) =
-              .cons reference (cast (congrArg Env
-                (ofDecls_localKinds (fun statement => statement) rest)) tail) :=
-            cast_cons (ofDecls_localKinds (fun statement => statement) rest) reference tail
-          rw [converted]
-          cases initial <;> simp only [ofDecls, fold, BlockEval.evalDecls]
-          all_goals
-            congr 1
-            funext value
-            congr 1
-            funext ignored
-            exact ih (bindings.extend reference) tail
+  unfold BlockEval.evalDecls
+  rw [planOfDecls_eq_cast]
+  simp only [cast_cast, cast_eq]
 
 end DeclarationSpine
 

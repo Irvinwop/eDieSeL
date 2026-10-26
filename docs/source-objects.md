@@ -97,7 +97,8 @@ that representation.
 
 The finite statement driver fixes one dialect, allocates matching parameter and
 local bindings, sequences full expressions and computes return values before
-normal cleanup. The [function-control driver](source-functions.md) now reuses those entry/cleanup
+normal cleanup. A neutral declaration spine and initializer fold are shared
+by both finite and control-function drivers. The [function-control driver](source-functions.md) now reuses those entry/cleanup
 operations for control bodies and proves exact finite-program compatibility. Source-text correspondence is also open. Pending
 reservation recovery, lifetime restart, nested blocks and exceptions are not
 implemented.

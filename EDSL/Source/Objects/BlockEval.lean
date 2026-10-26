@@ -1,5 +1,5 @@
 /- Copyright 2026 Irvinwop. SPDX-License-Identifier: Apache-2.0 -/
-import EDSL.Source.Objects.StateEval
+import EDSL.Source.Objects.DeclarationEval
 import EDSL.Source.Objects.LifecycleContracts
 
 set_option autoImplicit false
@@ -39,24 +39,16 @@ def closeAll : {kinds : List ArithmeticType} → Env kinds →
   | _ :: _, .cons reference tail =>
       Op.bind (closeAll tail) fun _ => endLifetime reference
 
-/-- Execute a declaration spine against a previously reserved complete plan.
-The active source environment grows while the state input type remains fixed. -/
-def evalDecls (dialect : Dialect) (policy : IntegerConversionPolicy) :
-    {context : List ArithmeticType} → {result : IntType} →
-    (declarations : Decls target context result) → Env context →
-    ReservationPlan declarations → Op target stateParameters Environment (Value target result)
-  | _, _, .body statement, environment, _ =>
-      StateEval.evalStmt dialect policy environment statement
-  | _, _, .declare _ initial rest, environment, plan =>
-    match plan with
-    | .cons reference tail =>
-      let initialValue := match initial with
-        | none => Op.pure none
-        | some expression => Op.bind (StateEval.evalExpr dialect policy environment expression)
-            fun value => Op.pure (some value)
-      Op.bind initialValue fun value =>
-      Op.bind («initialize» dialect reference value) fun _ =>
-        evalDecls dialect policy rest (environment.extend reference) tail
+/-- Specialize the shared initializer fold to finite statements and an already
+reserved complete plan. Only the terminal body interpreter is finite-specific. -/
+def evalDecls (dialect : Dialect) (policy : IntegerConversionPolicy)
+    {context : List ArithmeticType} {result : IntType}
+    (declarations : Decls target context result) (environment : Env context)
+    (plan : ReservationPlan declarations) : Op target stateParameters Environment (Value target result) :=
+  Control.DeclarationSpine.fold dialect policy
+    (fun statement bindings => StateEval.evalStmt dialect policy bindings statement)
+    (Control.DeclarationSpine.ofDecls (fun statement => statement) declarations) environment
+    (Control.DeclarationSpine.planOfDecls (fun statement => statement) declarations plan)
 
 /-- Execute entry, block, and successful normal-return cleanup. This internal
 operation has no coverage gate; runProgram supplies it before any allocation. -/

@@ -14,3 +14,5 @@ import EDSL.Source.Objects.Control.FunctionSyntax
 import EDSL.Source.Objects.Control.FunctionEval
 import EDSL.Source.Objects.Control.FunctionCompatibility
 import EDSL.Source.Objects.Control.FunctionContracts
+import EDSL.Source.Objects.Control.AnnotationRules
+import EDSL.Source.Objects.Control.FunctionVC
