@@ -23,8 +23,10 @@ callee-saved registers, and all nonarithmetic flag bits. Every actual data read
 requires the original snapshot and current buffer authority. Empty arrays
 require no DATA loan or readable data address.
 
-This is a machine-body and resource result. Named-ELF custody, installation,
-and packet admission remain open. These proofs add no corpus credit;
+The Clang proof also has a complete named-ELF certificate with a useful
+modeled loaded call and current resource authority. GCC named-ELF integration
+and both trusted task registration and packet admission remain open. These
+proofs add no corpus credit;
 conditional corpus coverage remains 20/40 functions and 40/80 artifacts.
 
 ## Independent contract and interval rules
@@ -95,7 +97,36 @@ destinations, exhausted interior fuel and a nondecreasing dynamic rank.
 The [contract-refinement bridge](call-contract-transport.md) also derives this
 any-match contract from an existing earliest-u32-match claim on sorted input.
 That proof reuse concerns the same verified bytes. The GCC body is separately
-proved through the shared VCG; named-file and admission evidence remain separate.
+proved through the shared VCG; its named-file integration and both admission
+gates remain separate.
+
+## Callable Clang ELF certificate
+
+```lean
+import EDSL.BinarySearch.Clang.CallableProperties
+
+#check EDSL.BinarySearch.Clang.Callable.certificate
+#check EDSL.BinarySearch.Clang.Callable.execution
+```
+
+The certificate authenticates the complete 44,240-byte frozen Clang file and
+selects all 58 bytes of `c_binary_search_u32` at virtual address `0x401a70`
+(file offset 6,768). The default 64-byte selection bound is unchanged. Controls
+reject every proper code prefix, displaced entry and an authentic different
+function name.
+
+A useful sorted singleton receives an actual four-byte read loan in the existing
+managed image. The production code-attachment operation then adopts and borrows
+the selected function in that same manager. A checked equality of the complete
+address space changes its computational view while retaining every memory cell
+and permission. The original caller slot, old loans and allocations, and the new
+input loan all survive. `ELFCertificate.ofRetargetInstalledWith` composes these
+current resources and exact named bytes with the universal body theorem. No
+successful future execution is assumed.
+
+This is a modeled callable certificate. Trusted registration, packet export and
+admission, and correspondence to a native loader, CPU or operating system remain
+separate obligations.
 
 ## Build and scope
 

@@ -1,5 +1,7 @@
 /- Copyright 2026 Irvinwop. SPDX-License-Identifier: Apache-2.0 -/
 import EDSL.BinarySearch.Receipt
+import EDSL.BinarySearch.Clang.CallableProperties
+import EDSL.BinarySearch.Clang.NamedELFControls
 import EDSL.BinarySearch.GCC.Resources
 import EDSL.BinarySearch.GCC.Controls
 import EDSL.X86.VCGen.BranchControls

@@ -10,6 +10,7 @@ import EDSL.ELF.PackedMetadata
 import EDSL.X86.Memory128
 import EDSL.WordMath.BinarySearch
 import EDSL.BinarySearch.Clang.Resources
+import EDSL.BinarySearch.Clang.CallableProperties
 import EDSL.BinarySearch.GCC.Resources
 import EDSL.BinarySearch.LinearRefinement
 import EDSL.BufferCall.ELFRefinement

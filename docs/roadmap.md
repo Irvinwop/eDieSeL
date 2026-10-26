@@ -40,7 +40,9 @@ decoding and native tests are separate evidence.
    no behavioral certificates. The [complete GCC/Clang search body and resource
    proofs](binary-search.md) reuse shared branch VCs and full-width midpoint
    rules. GCC uses an explicit complete-window profile without changing defaults.
-   Complete exact named-file, useful-call and admission checks for both outputs. [Callable proof transport](call-contract-transport.md)
+   Clang also has an exact named-file certificate and useful same-manager call.
+   Complete GCC artifact integration and both registration/admission gates.
+   [Callable proof transport](call-contract-transport.md)
    composes already verified contracts and preserves original resource handles;
    useful target-domain evidence remains explicit. XMM leads the remaining ISA
    queue. Develop the exposed scalar/read-only and mutable-array contracts
