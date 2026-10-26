@@ -15,7 +15,7 @@ def ModularSum (target : Target) (x y result : Value target .uint) : Prop :=
   ∃ carry : Nat, carry ≤ 1 ∧ result.val + carry * target.modulus = x.val + y.val
 
 def add (target : Target) (dialect : Dialect) : Program target [.uint, .uint] .uint :=
-  ⟨dialect, .uadd (.param .here) (.param (.there .here))⟩
+  ⟨dialect, .gnuModulo, .uadd (.param .here) (.param (.there .here))⟩
 
 /-- All externally supplied parameter values, all admitted widths, both dialects.
 There is no caller UB-freedom premise or input range restriction beyond typing. -/
@@ -42,14 +42,14 @@ theorem add_noUB (target : Target) (dialect : Dialect) :
 
 /-- A zero divisor is UB for every numerator, rather than Lean's total quotient. -/
 def divideByZero (target : Target) (dialect : Dialect) : Program target [.uint] .uint :=
-  ⟨dialect, .udiv (.param .here) (.literal ⟨0, target.modulus_pos⟩)⟩
+  ⟨dialect, .gnuModulo, .udiv (.param .here) (.literal ⟨0, target.modulus_pos⟩)⟩
 
 theorem divideByZero_undefined (target : Target) (dialect : Dialect)
     (inputs : Inputs target [.uint]) :
     eval (divideByZero target dialect) inputs = .undefined .divisionByZero := rfl
 
 def overflowingAdd (dialect : Dialect) : Program Target.int32 [] .sint :=
-  ⟨dialect, .sadd
+  ⟨dialect, .gnuModulo, .sadd
     (.literal ⟨2147483647, by decide +kernel⟩)
     (.literal ⟨1, by decide +kernel⟩)⟩
 
@@ -60,7 +60,7 @@ theorem overflowingAdd_undefined (dialect : Dialect) :
   decide +kernel
 
 def underflowingAdd (dialect : Dialect) : Program Target.int32 [] .sint :=
-  ⟨dialect, .sadd
+  ⟨dialect, .gnuModulo, .sadd
     (.literal ⟨-2147483648, by decide +kernel⟩)
     (.literal ⟨-1, by decide +kernel⟩)⟩
 
@@ -70,7 +70,7 @@ theorem underflowingAdd_undefined (dialect : Dialect) :
   decide +kernel
 
 def overflowingDiv (dialect : Dialect) : Program Target.int32 [] .sint :=
-  ⟨dialect, .sdiv
+  ⟨dialect, .gnuModulo, .sdiv
     (.literal ⟨-2147483648, by decide +kernel⟩)
     (.literal ⟨-1, by decide +kernel⟩)⟩
 
@@ -81,7 +81,7 @@ theorem overflowingDiv_undefined (dialect : Dialect) :
   decide +kernel
 
 def negativeDiv (dialect : Dialect) : Program Target.int32 [] .sint :=
-  ⟨dialect, .sdiv
+  ⟨dialect, .gnuModulo, .sdiv
     (.literal ⟨-7, by decide +kernel⟩)
     (.literal ⟨3, by decide +kernel⟩)⟩
 
@@ -94,7 +94,7 @@ theorem negativeDiv_defined (dialect : Dialect) :
 
 /-- An unsupported subexpression cannot disappear behind a supported addition. -/
 def unsupportedReturn (target : Target) (dialect : Dialect) : Program target [] .uint :=
-  ⟨dialect, .uadd (.literal ⟨0, target.modulus_pos⟩) (.unsupported .memoryAccess)⟩
+  ⟨dialect, .gnuModulo, .uadd (.literal ⟨0, target.modulus_pos⟩) (.unsupported .memoryAccess)⟩
 
 theorem unsupportedReturn_outcome (target : Target) (dialect : Dialect) :
     eval (unsupportedReturn target dialect) .nil = .unsupported .memoryAccess := rfl

@@ -42,25 +42,30 @@ retrieves a value with the parameter's type.
 | --- | --- |
 | `Expr.literal value` | A representable, already typed `Value target ty`. |
 | `Expr.param index` | The type selected by `Param`. |
+| `Expr.convert destination operand` | Either supported integer type to either destination type. |
 | `Expr.uadd left right` | `uint × uint → uint`. |
 | `Expr.sadd left right` | `sint × sint → sint`. |
 | `Expr.udiv left right` | `uint × uint → uint`. |
 | `Expr.sdiv left right` | `sint × sint → sint`. |
 | `Expr.unsupported feature` | A coverage marker at any result type. |
 
-There are no implicit conversions, usual arithmetic conversions, smaller
-integer promotions, lvalues, implicit reads, pointer operations, or overflow
-by literal construction. Literal token parsing, suffix selection and unary
+Explicit same-rank conversion and common-type smart constructors are implemented.
+There are no smaller-type promotions, lvalues, implicit reads, pointer operations,
+or overflow by literal construction. Literal token parsing, suffix selection and unary
 negation syntax are not implemented.
 
-`Program target parameters result` has fields `dialect : Dialect` and
-`body : Expr target parameters result`. Its sole source program form is
+`Program target parameters result` has fields `dialect : Dialect`,
+`conversions : IntegerConversionPolicy`, and `body : Expr target parameters result`.
+The conversion policy is supplied explicitly once for the whole program.
+Only `IntegerConversionPolicy.gnuModulo` is implemented: signed conversion uses
+the destination-range modulo representative without a signal. For C23 this
+records the documented GNU choice, separately from ordinary signed-overflow UB. Its sole source program form is
 `return expression;`, whose result type equals the expression type.
 
 ## Executable evaluation
 
 ```lean
-evalExpr (inputs : Inputs target parameters)
+evalExpr (policy : IntegerConversionPolicy) (inputs : Inputs target parameters)
   (body : Expr target parameters ty) : Outcome (Value target ty)
 
 eval (program : Program target parameters result)
@@ -71,11 +76,13 @@ eval (program : Program target parameters result)
 `Outcome.unsupported feature` are disjoint. `UBReason` has
 `signedAdditionOverflow`, `divisionByZero`, and `signedDivisionOverflow`.
 `UnsupportedFeature` has `conversion`, `memoryAccess`, `functionCall`, and
-`dialectExtension`; these names diagnose missing coverage, not implemented
-operations. `Outcome.andThen` propagates either failure outcome.
+`dialectExtension`; these markers diagnose missing coverage, not implemented
+operations. The conversion marker can still identify conversion forms outside
+the implemented same-rank integer pair. `Outcome.andThen` propagates either failure outcome.
 
 Arithmetic helpers are `unsignedAdd`, `checkedSigned`, `signedAdd`,
-`unsignedDiv`, and `signedDiv`. Unsigned addition reduces modulo `2^intBits`.
+`unsignedDiv`, and `signedDiv`. `convertValue` selects the shared number maps
+under the recorded policy. Unsigned addition reduces modulo `2^intBits`.
 Signed addition checks the mathematical sum's range. Both divisions reject
 zero; signed division uses `Int.tdiv` (toward zero) and rejects an
 unrepresentable quotient.
@@ -83,8 +90,8 @@ unrepresentable quotient.
 Evaluation is structural recursion on finite expressions, without fuel or a
 divergence outcome. Left-first failure diagnostics are not a C/C++ operand
 sequencing guarantee. All supported operands are pure.
-`eval_dialect_independent` states that changing only `Program.dialect` leaves
-the result unchanged. Dialect extensions must extend this model explicitly.
+`eval_dialect_independent` states that changing only `Program.dialect` while
+retaining the same conversion policy leaves this common fragment unchanged. Dialect extensions must extend this model explicitly.
 
 ## Verification and generic semantics
 
@@ -161,15 +168,14 @@ The remaining checked example theorem names are
 `negativeDiv_defined`, `unsupportedReturn_outcome`, and
 `unsupportedReturn_not_noUB`.
 
-The next syntax feature is explicit same-rank `int`/`unsigned int` conversion
-and its usual arithmetic conversion rules, with numeric correctness lemmas.
-It remains unsupported here. Additional signed-operation contracts can use the
-current API without changing the evaluator.
+The next type extension is smaller integer types with their real ranks and
+promotions. It remains unsupported. Additional signed-operation contracts can
+use the current API without changing the evaluator.
 
 ## Structural verification conditions
 
 `EDSL.Source.VCGen` is imported by `EDSL.Source`. For the present finite pure
-grammar, `vcExpr inputs expression post` recursively generates obligations for
+grammar, `vcExpr policy inputs expression post` recursively generates obligations for
 the expression's result. Primitive leaves use the existing shared arithmetic
 operations: they expose representability, nonzero-divisor and result obligations
 through `Outcome.requires`. UB and unsupported outcomes require `False`.
@@ -207,3 +213,30 @@ quotient interval. `wrappedIncrement_not_verified` and
 `wrappedIncrement_not_certified` rule out the intended result claim despite its
 safety proof. These are embedded syntax theorems, with no native-source-file or
 ABI correspondence implied.
+
+## Integer conversion and mixed-operation clients
+
+`EDSL.Source.IntegerConversions` proves range, congruence, uniqueness, both
+round trips, and signed/unsigned boundary laws for all admitted widths. These
+number functions supply the evaluator's conversion rule; they make no object
+representation or compiler-correspondence claim.
+
+`commonType` and `Expr.usualAdd` / `Expr.usualDiv` cover only the existing pair
+of full-rank types. The common type is signed for two signed operands and unsigned
+for the other pairs. Both operands are converted before the existing arithmetic
+primitive runs. Their evaluation laws bind this normalization to the same evaluator.
+They are not a parser or a general C/C++ promotion engine.
+
+Import `EDSL.Source.ConversionContracts` for five source clients: `toUnsigned`,
+`toSigned`, `roundTrip`, `mixedAdd`, and `mixedDiv`. Each has a nonvacuous
+`*_certificate` and derived `*_noUB`. Conversion, round-trip and mixed-addition
+contracts cover all typed inputs; mixed division covers every numerator and
+nonzero unsigned denominator. Specifications use bounded carry equations on
+the original mathematical inputs, equality for the round trip, or a representative
+equation and quotient interval. They do not rerun the candidate evaluator.
+
+The cast and round-trip certificates demonstrate `certificate_of_vc`: clients
+discharge numeric conditions using shared laws, without another execution-soundness
+proof. Tests exercise both mixed operand orders, unsigned conversion before
+division, the signed boundary, zero divisors, and UB/unsupported propagation.
+An outer cast does not make an already-undefined operand safe.

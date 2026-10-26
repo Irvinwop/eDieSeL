@@ -43,11 +43,12 @@ UB reason is a diagnostic representation, not a claim about a native trap.
 ## Scope of the correspondence
 
 The arithmetic constructors accept two operands of the same full-rank type.
-There is no source literal-token typing, promotion, implicit conversion or
-usual-arithmetic-conversion engine yet. The relevant surrounding rules are
+Same-rank conversions and common-type normalization are implemented for these
+two types only. There is no source literal-token typing, smaller-type promotion
+or general integer-rank engine. The relevant surrounding rules are
 [N3096 §6.3.1.8 and §6.5.5 ¶4 / §6.5.6 ¶5](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n3096.pdf)
 and [N5001 `[expr.arith.conv]`](https://github.com/cplusplus/draft/blob/n5001/source/expressions.tex#L1078-L1133).
-Their presence in the references does not implement their full scope.
+The implemented pair does not cover the full scope of those rules.
 
 `Target` models value ranges. It does not model object storage, padding bits,
 byte order, layout, alignment, ABI or a compiler target. A range restriction
@@ -67,3 +68,24 @@ claim that every language diagnostic has been modeled. In particular, finite
 `NoUB` means defined completion and excludes unsupported outcomes. See the
 [source core API](source-core-api.md) for its precise judgment and existing
 example theorems.
+
+## Same-rank conversion policy
+
+`Program.conversions` records the fixed `gnuModulo` choice explicitly. The
+[versioned GCC 15.2 integer implementation page](https://gcc.gnu.org/onlinedocs/gcc-15.2.0/gcc/Integers-implementation.html)
+documents destination-range modulo conversion without a signal. This is the
+selected GNU C policy, rather than the full set of behaviors allowed by
+[N3096 §6.3.1.3 ¶1–3](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n3096.pdf).
+The C++ arithmetic result is justified separately by
+[N5001 `[conv.integral]` ¶1–4](https://github.com/cplusplus/draft/blob/n5001/source/expressions.tex#L874-L895).
+The same executable conversion code implements this common selected result.
+This does not establish correspondence to a real GCC executable or source file.
+
+The supported `int`/`unsigned int` types have equal rank. `commonType` and the
+addition/division smart constructors implement only that pair's common-type
+rules from N3096 §6.3.1.8 and N5001 `[expr.arith.conv]`: mixed operands convert to
+unsigned before arithmetic; two signed operands keep signed arithmetic and its
+UB checks. Smaller types, extended integer ranks, bit-fields, floats and pointer
+conversions remain unsupported. Conversion does not imply a wrapping policy for
+signed addition or division. Effective overflow options and their implementation
+correspondence remain separate future profile obligations.

@@ -18,7 +18,7 @@ def NonzeroDenominator {target : Target} (inputs : Inputs target [.uint, .uint])
 
 /-- `return numerator / denominator;` in the shared pure fragment. -/
 def quotient (target : Target) (dialect : Dialect) : Program target [.uint, .uint] .uint :=
-  ⟨dialect, .udiv (.param .here) (.param (.there .here))⟩
+  ⟨dialect, .gnuModulo, .udiv (.param .here) (.param (.there .here))⟩
 
 theorem quotient_verified (target : Target) (dialect : Dialect) :
     Verifies (quotient target dialect) NonzeroDenominator
@@ -63,7 +63,7 @@ theorem quotient_certificate (target : Target) (dialect : Dialect) :
 wraps before division. It uses only defined source operations on the same domain. -/
 def wrappedIncrement (target : Target) (dialect : Dialect) :
     Program target [.uint, .uint] .uint :=
-  ⟨dialect, .udiv (.uadd (.param .here) (.literal (one target)))
+  ⟨dialect, .gnuModulo, .udiv (.uadd (.param .here) (.literal (one target)))
     (.param (.there .here))⟩
 
 /-- Functional incorrectness does not prevent defined completion. -/

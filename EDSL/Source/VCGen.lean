@@ -28,21 +28,24 @@ Arithmetic leaves use the shared evaluator's primitive operations, rather than
 an alternate language semantics. Kernel reduction exposes their range and
 nonzero-divisor obligations. There is no execution-fuel or solver premise. -/
 def vcExpr {target : Target} {parameters : List IntType}
-    (inputs : Inputs target parameters) :
+    (policy : IntegerConversionPolicy) (inputs : Inputs target parameters) :
     {ty : IntType} → Expr target parameters ty → (Value target ty → Prop) → Prop
   | _, .literal value, post => post value
   | _, .param index, post => post (inputs.get index)
+  | _, .convert destination operand, post =>
+      vcExpr policy inputs operand fun value =>
+        (convertValue policy target _ destination value).requires post
   | _, .uadd left right, post =>
-      vcExpr inputs left fun x => vcExpr inputs right fun y =>
+      vcExpr policy inputs left fun x => vcExpr policy inputs right fun y =>
         (unsignedAdd target x y).requires post
   | _, .sadd left right, post =>
-      vcExpr inputs left fun x => vcExpr inputs right fun y =>
+      vcExpr policy inputs left fun x => vcExpr policy inputs right fun y =>
         (signedAdd target x y).requires post
   | _, .udiv left right, post =>
-      vcExpr inputs left fun x => vcExpr inputs right fun y =>
+      vcExpr policy inputs left fun x => vcExpr policy inputs right fun y =>
         (unsignedDiv target x y).requires post
   | _, .sdiv left right, post =>
-      vcExpr inputs left fun x => vcExpr inputs right fun y =>
+      vcExpr policy inputs left fun x => vcExpr policy inputs right fun y =>
         (signedDiv target x y).requires post
   | _, .unsupported _, _ => False
 
@@ -50,12 +53,16 @@ def vcExpr {target : Target} {parameters : List IntType}
 includes actual defined execution; it cannot merely exclude an error by
 omitting the corresponding behavior. -/
 theorem vcExpr_iff {target : Target} {parameters : List IntType} {ty : IntType}
-    (inputs : Inputs target parameters) (expression : Expr target parameters ty)
+    (policy : IntegerConversionPolicy) (inputs : Inputs target parameters)
+    (expression : Expr target parameters ty)
     (post : Value target ty → Prop) :
-    vcExpr inputs expression post ↔ (evalExpr inputs expression).requires post := by
+    vcExpr policy inputs expression post ↔ (evalExpr policy inputs expression).requires post := by
   induction expression with
   | literal value => rfl
   | param index => rfl
+  | convert destination operand operandIH =>
+      simp only [vcExpr, evalExpr, Outcome.requires_andThen]
+      exact operandIH _
   | uadd left right leftIH rightIH =>
       simp only [vcExpr, evalExpr, Outcome.requires_andThen]
       rw [leftIH]
@@ -78,7 +85,7 @@ def VC {target : Target} {parameters : List IntType} {result : IntType}
     (program : Program target parameters result)
     (admitted : Inputs target parameters → Prop)
     (post : Inputs target parameters → Value target result → Prop) : Prop :=
-  ∀ inputs, admitted inputs → vcExpr inputs program.body (post inputs)
+  ∀ inputs, admitted inputs → vcExpr program.conversions inputs program.body (post inputs)
 
 theorem vc_iff_verifies {target : Target} {parameters : List IntType} {result : IntType}
     (program : Program target parameters result)

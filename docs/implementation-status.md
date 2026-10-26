@@ -8,8 +8,8 @@ binary seed, and source-proved compiler bootstrap stages.
 
 | Component | Current status |
 | --- | --- |
-| Executable source foundation | Finite typed expression/return eDSL: `int`/`unsigned int`, addition and division, explicit defined/UB/unsupported outcomes |
-| Source definedness/contracts | Shared `Verifies` and completion-style `NoUB`; `Certificate` requires an inhabited input domain; unsigned-addition contract for all typed inputs, division contract for all nonzero denominators |
+| Executable source foundation | Finite typed expression/return eDSL: `int`/`unsigned int`, addition/division, explicit conversion policy and same-rank conversions/common types, defined/UB/unsupported outcomes |
+| Source definedness/contracts | Shared `Verifies` and completion-style `NoUB`; `Certificate` requires an inhabited input domain; unsigned-addition contract for all typed inputs, division contract for all nonzero denominators; five conversion/mixed-operation clients with inhabited domains and proved NoUB |
 | Source proof reuse | Structural verification conditions proved equivalent to actual defined execution plus postcondition for the finite pure grammar |
 | Source text and general C/C++ | No source-text parser, preprocessing correspondence or general verifier |
 | Source-connected OS semantics | Existing resource/concurrency components require source-step integration |
@@ -17,7 +17,7 @@ binary seed, and source-proved compiler bootstrap stages.
 | Source-proved bootstrap/GCC | Not implemented |
 
 The [source core API](source-core-api.md) lists exact declarations and scope.
-The arithmetic fragment has no conversions, lvalues, pointers, memory, loops,
+The arithmetic fragment has no smaller-type promotions, lvalues, pointers, memory, loops,
 calls or effects. Its target records integer value ranges, not an ABI or a
 compiler/hardware correspondence. Boundary examples expose signed overflow,
 zero division, truncating signed division and unsupported nested expressions.

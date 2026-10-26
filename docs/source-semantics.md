@@ -13,6 +13,8 @@ a source-text frontend and the bootstrap chain are not implemented.
   profile, with typed externally supplied parameters.
 - Unsigned modular addition, checked signed addition, unsigned division and
   signed division toward zero.
+- Explicit integer-conversion policy, same-width conversions and usual arithmetic
+  common-type normalization for the supported `int`/`unsigned int` pair.
 - Distinct defined, undefined and unsupported outcomes.
 - Shared execution and verification interfaces, independent unsigned-addition
   and division contracts, structural verification conditions, and a certificate
@@ -20,12 +22,19 @@ a source-text frontend and the bootstrap chain are not implemented.
 
 The same evaluator interprets both dialect selections. Its present expressions
 are pure, so the left-first failure diagnostic does not resolve a C/C++
-sequencing question. There are no conversions, lvalues, objects, pointers,
+sequencing question. There are no smaller-type promotions, lvalues, objects, pointers,
 memory operations, calls, loops, OS effects or threads. `Target` records integer
 value ranges, not an ABI, storage representation or compiler/hardware relation.
 The [source core API](source-core-api.md) lists exact declarations and limits.
 The [rule-reference table](source-rules.md) maps current integer rules to
 dated C/C++ draft clauses and records the limits of that review.
+
+The `gnuModulo` conversion policy is recorded once per program. For C23 this
+is a GNU implementation choice: ISO C23 allows implementation-defined results
+or signals for some conversions to signed, whereas the reviewed C++ rule uses
+a modulo result. The shared rule follows the documented GNU choice and keeps
+signed arithmetic overflow as UB. It does not claim all ISO C implementations
+choose the same conversion behavior.
 
 ## One semantic implementation
 

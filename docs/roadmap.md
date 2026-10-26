@@ -20,6 +20,10 @@ verification conditions are proved exact for this grammar. Unsigned division
 has an independent interval contract and a synthetic candidate proved safe
 but functionally incorrect; these reuse the same executable semantics.
 
+The fixed GNU conversion policy, same-rank casts and common types, numeric
+round-trip laws, and five conversion/mixed-operation certificates are implemented.
+Smaller-type ranks/promotions, sequencing and objects are the next dependencies.
+
 ## 1. Establish the GNU C23 semantics foundation
 
 Start with a small, executable, typed source fragment. Record its language

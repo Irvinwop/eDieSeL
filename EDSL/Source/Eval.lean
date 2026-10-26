@@ -2,7 +2,7 @@
 Copyright 2026 Irvinwop
 SPDX-License-Identifier: Apache-2.0
 -/
-import EDSL.Source.Syntax
+import EDSL.Source.IntegerConversions
 
 set_option autoImplicit false
 
@@ -56,36 +56,52 @@ def signedDiv (target : Target) (x y : Value target .sint) :
   if y.val = 0 then .undefined .divisionByZero
   else checkedSigned target .signedDivisionOverflow (x.val.tdiv y.val)
 
+/-- One conversion rule for every expression, selected by the program policy.
+Typed identity conversions preserve values. Cross-signedness conversion uses
+proven same-width number maps; it is distinct from checked signed arithmetic. -/
+def convertValue (policy : IntegerConversionPolicy) (target : Target)
+    (source destination : IntType) (value : Value target source) :
+    Outcome (Value target destination) :=
+  match policy, source, destination with
+  | .gnuModulo, .uint, .uint => .defined value
+  | .gnuModulo, .sint, .sint => .defined value
+  | .gnuModulo, .sint, .uint => .defined (IntegerConversions.signedToUnsigned value)
+  | .gnuModulo, .uint, .sint => .defined (IntegerConversions.unsignedToSigned value)
+
 /-- One structurally recursive evaluator for the common fragment. Left-first
 diagnostics do not claim a source-language operand sequencing guarantee: all
 supported expressions are pure. There is no fuel, scheduler, or hidden state. -/
 def evalExpr {target : Target} {parameters : List IntType}
-    (inputs : Inputs target parameters) :
+    (policy : IntegerConversionPolicy) (inputs : Inputs target parameters) :
     {ty : IntType} → Expr target parameters ty → Outcome (Value target ty)
   | _, .literal value => .defined value
   | _, .param index => .defined (inputs.get index)
+  | _, .convert destination operand =>
+      (evalExpr policy inputs operand).andThen fun value =>
+        convertValue policy target _ destination value
   | _, .uadd left right =>
-      (evalExpr inputs left).andThen fun x =>
-        (evalExpr inputs right).andThen fun y => unsignedAdd target x y
+      (evalExpr policy inputs left).andThen fun x =>
+        (evalExpr policy inputs right).andThen fun y => unsignedAdd target x y
   | _, .sadd left right =>
-      (evalExpr inputs left).andThen fun x =>
-        (evalExpr inputs right).andThen fun y => signedAdd target x y
+      (evalExpr policy inputs left).andThen fun x =>
+        (evalExpr policy inputs right).andThen fun y => signedAdd target x y
   | _, .udiv left right =>
-      (evalExpr inputs left).andThen fun x =>
-        (evalExpr inputs right).andThen fun y => unsignedDiv target x y
+      (evalExpr policy inputs left).andThen fun x =>
+        (evalExpr policy inputs right).andThen fun y => unsignedDiv target x y
   | _, .sdiv left right =>
-      (evalExpr inputs left).andThen fun x =>
-        (evalExpr inputs right).andThen fun y => signedDiv target x y
+      (evalExpr policy inputs left).andThen fun x =>
+        (evalExpr policy inputs right).andThen fun y => signedDiv target x y
   | _, .unsupported feature => .unsupported feature
 
 def eval {target : Target} {parameters : List IntType} {result : IntType}
     (program : Program target parameters result) (inputs : Inputs target parameters) :
     Outcome (Value target result) :=
-  evalExpr inputs program.body
+  evalExpr program.conversions inputs program.body
 
 theorem eval_dialect_independent {target : Target} {parameters : List IntType}
     {result : IntType} (body : Expr target parameters result)
-    (first second : Dialect) (inputs : Inputs target parameters) :
-    eval ⟨first, body⟩ inputs = eval ⟨second, body⟩ inputs := rfl
+    (first second : Dialect) (policy : IntegerConversionPolicy)
+    (inputs : Inputs target parameters) :
+    eval ⟨first, policy, body⟩ inputs = eval ⟨second, policy, body⟩ inputs := rfl
 
 end EDSL.Source

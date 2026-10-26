@@ -34,8 +34,8 @@ def int32 : Target := ⟨32, by decide +kernel⟩
 
 end Target
 
-/-- These are the two full-rank source types in this fragment. No smaller types,
-promotions, mixed signedness, extended integers, or implicit conversions exist. -/
+/-- The two full-rank source types. Smaller types, promotions, extended integers
+and a general rank hierarchy remain unsupported. -/
 inductive IntType where
   | uint
   | sint
@@ -78,12 +78,15 @@ inductive UnsupportedFeature where
   | dialectExtension
   deriving DecidableEq, Repr
 
-/-- Finite typed source expressions. Operands have the same full-rank source
-type. Literals are already typed values, not parsed literal tokens. An unsupported
+/-- Finite typed source expressions. Arithmetic primitives take operands of the
+same full-rank type; explicit conversion changes type. Literals are already
+typed values, not parsed literal tokens. An unsupported
 marker explicitly records a hole in coverage and cannot execute successfully. -/
 inductive Expr (target : Target) (parameters : List IntType) : IntType → Type where
   | literal {ty : IntType} : Value target ty → Expr target parameters ty
   | param {ty : IntType} : Param parameters ty → Expr target parameters ty
+  | convert (destination : IntType) {source : IntType} :
+      Expr target parameters source → Expr target parameters destination
   | uadd : Expr target parameters .uint → Expr target parameters .uint →
       Expr target parameters .uint
   | sadd : Expr target parameters .sint → Expr target parameters .sint →
@@ -94,10 +97,20 @@ inductive Expr (target : Target) (parameters : List IntType) : IntType → Type 
       Expr target parameters .sint
   | unsupported {ty : IntType} : UnsupportedFeature → Expr target parameters ty
 
+/-- The fixed GNU integer-conversion policy. Out-of-range conversion to signed
+uses the destination-range modulo representative, with no conversion signal.
+This records a GNU implementation choice for C23, not a universal ISO C23 rule.
+Conversion policy does not change signed arithmetic overflow into wrapping. -/
+inductive IntegerConversionPolicy where
+  | gnuModulo
+  deriving DecidableEq, Repr
+
 /-- The entire program form is `return expression;`, with exactly the expression's
-type as its result type. This is neither a parser nor a general function body. -/
+type as its result type. This is neither a parser nor a general function body. The conversion policy
+is fixed once for the whole program and must be provided explicitly. -/
 structure Program (target : Target) (parameters : List IntType) (result : IntType) where
   dialect : Dialect
+  conversions : IntegerConversionPolicy
   body : Expr target parameters result
 
 end EDSL.Source
