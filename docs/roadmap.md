@@ -54,6 +54,13 @@ exceptional paths and a mathematical quotient law otherwise, with NoUB derived
 from execution. A universal negative theorem rejects the signed candidate whose
 guard checks only for a nonzero divisor.
 
+Integral unary plus, minus, complement and logical NOT reuse the shared core.
+The arithmetic operators apply integer promotions; NOT returns the dialect's
+predicate type. Generic numeric laws identify signed minimum as negation's
+exception, and a width-general bridge connects complement's arithmetic equations
+to independently specified inverted value bits. These rules do not model object
+storage, source parsing or overloaded C++ operators.
+
 ## 1. Establish the GNU C23 semantics foundation
 
 Start with a small, executable, typed source fragment. Record its language

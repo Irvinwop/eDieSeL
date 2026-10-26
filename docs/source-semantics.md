@@ -22,6 +22,9 @@ a source-text frontend and the bootstrap chain are not implemented.
   other destinations select the congruent value within their numeric range.
 - Six integral comparisons after promotion/common-type conversion, built-in
   logical AND/OR, and lazy conditional expressions with explicit dialect types.
+- Integral unary plus, minus, complement and logical NOT. Arithmetic unary
+  operators act at the promoted type; logical NOT has the dialect's predicate
+  type. Complement includes a generic value-bit correspondence proof.
 - Distinct defined, undefined and unsupported outcomes, with complete-body
   model-coverage checking before public evaluation.
 - Shared execution and verification interfaces, independent arithmetic

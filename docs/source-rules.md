@@ -81,6 +81,34 @@ signed guard is universally rejected using actual minimum/-1 UB. These are
 embedded-model proofs: no source parsing, volatile/effectful access, compiler
 preservation, native correspondence or complete GNU support follows.
 
+## Integral unary expressions
+
+The helpers cover built-in admitted integral values (prvalues in C++).
+Unary plus, minus and complement apply integer promotion and return that type.
+Logical NOT tests zero/nonzero and returns C int or C++ bool. The reviewed
+references are [N3096 §6.5.3.3 ¶1–5 and §6.5 ¶5](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n3096.pdf)
+and [N5001 `[expr.unary.op]` ¶7–10](https://github.com/cplusplus/draft/blob/6b9b2e9f31aff143334e379e49807488872003e4/source/expressions.tex#L4792-L4838),
+at the dated identities above. Unrepresentable signed negation follows the
+ordinary arithmetic UB rule, rather than wrapping through an unsigned cast.
+
+The pure helper uses promotion for plus, typed zero subtraction for minus,
+and signed -1 or unsigned-maximum subtraction for complement. The subtraction
+encodes a total complement even at signed endpoints; decomposing it as
+negation followed by subtraction would introduce intermediate overflow.
+Logical NOT uses truth conversion and selection. Operands occur once.
+The inherited minus failure reason is `signedSubtractionOverflow`, an explicit
+diagnostic choice, without a native-trap claim.
+
+The `ComplementBits` bridge proves that the unsigned sum-to-all-ones equation,
+and the signed sum-to-minus-one equation under the admitted ranges, are
+equivalent to flipping every retained value bit. The per-bit specification
+does not invoke the subtraction helper or evaluator. These are numeric value
+bits, not an object-layout theorem. The current profile's reviewed two's-complement
+choice and plain-char policy are described in the
+[GCC 15.2 integer implementation](https://gcc.gnu.org/onlinedocs/gcc-15.2.0/gcc/Integers-implementation.html)
+and [character implementation](https://gcc.gnu.org/onlinedocs/gcc-15.2.0/gcc/Characters-implementation.html)
+documentation. Full GNU and final-C++26 conformance remain outside this review.
+
 ## Arithmetic construction and proof scope
 
 `ArithmeticOp` selects the five admitted integer arithmetic operations.

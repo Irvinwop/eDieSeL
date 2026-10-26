@@ -18,6 +18,8 @@ target is a verified chain capable of building GCC and the programs it compiles.
 The `EDSL.Source` API is a finite expression/return fragment with bool, plain
 char and the signed/unsigned char, short and int types, integer promotions,
 addition, subtraction, multiplication, division, remainder and comparisons.
+Integral unary plus, minus, complement and logical NOT reuse the same core;
+complement has a generic proof that every value bit is inverted.
 Conditional expressions and built-in logical AND/OR evaluate only the selected
 arm or needed operand; comparison/logical results are int in C and bool in C++.
 Explicit casts connect every admitted integral type: bool conversion distinguishes zero

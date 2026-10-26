@@ -50,10 +50,19 @@ nonzero-only guard for every admitted target and dialect, under any postconditio
 Certificates also derive whole-body support and raw execution, so an unselected
 unsupported marker cannot be hidden by a successful lazy branch.
 
-The scoped check for this comparison/conditional milestone completed 33 build
-jobs. Its defining-module audit covered 1,451 declarations in 24 project modules,
-including private and generated declarations. This records scoped build/audit
-evidence; authoritative hosted fresh replay remains a separate check. The
+Unary checks exercise promotion before arithmetic, signed-negation versus
+complement at endpoints, unsigned modular negation, zero/nonzero NOT and
+failure propagation. Generic certificates cover all admitted source types,
+profiles and dialects, with only the numeric minimum excluded for signed
+negation. The complement post requires each retained value bit to flip; generic
+bridge and uniqueness proofs connect it to the arithmetic implementation.
+An actual minimum-negation execution rejects an all-input signed certificate
+under any result postcondition.
+
+The defining-module audit covers the imported project declarations, including
+private and generated declarations. A scoped build/audit and authoritative
+hosted fresh kernel replay are distinct checks. Hosted CI records source and
+object hashes, audit output and replay evidence. The
 source fragment and stronger finite-completion meaning of `NoUB` are documented
 in the [source core API](source-core-api.md). This command does not parse or certify
 a C/C++ source file.

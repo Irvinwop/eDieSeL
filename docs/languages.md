@@ -69,6 +69,10 @@ remain unsupported. Built-in integral comparisons and logical AND/OR return
 int values 0/1 in C. Truth uses zero/nonzero, including negative and nonzero even
 values. Integral prvalue conditional arms undergo common arithmetic conversion;
 both arm types determine the result, with only one arm evaluated.
+Integral unary plus, minus and complement apply integer promotions. Logical NOT
+uses zero/nonzero truth and returns int. The shared complement proof connects
+the arithmetic implementation to every retained value bit; it is not an
+object-representation theorem. Signed minimum negation remains undefined.
 It has no objects, pointers, memory, statements, calls, threads or
 source-text importer. The separate retained
 [atomic event-graph fragment](c23-atomic-events.md) provides
@@ -100,8 +104,9 @@ control flow. No C text importer is implemented.
 ## 4. GNU C++26
 
 The same source core records `Dialect.gnuCpp26`. Source comparison and logical
-helpers produce bool rather than C int. For unqualified integral prvalue
-conditional arms, C++ preserves a matching arm type, otherwise using common
+helpers produce bool rather than C int. Built-in integral unary
+plus/minus/complement promote their prvalue operands; logical NOT returns bool.
+For unqualified integral prvalue conditional arms, C++ preserves a matching arm type, otherwise using common
 arithmetic typing. Thus two unsigned-char prvalue arms retain unsigned char in
 C++, while C promotes them before selecting the common type. Conditional
 glvalues, references, cv rules, classes, pointers and overloaded operators remain

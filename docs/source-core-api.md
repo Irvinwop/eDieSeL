@@ -182,6 +182,39 @@ These operations read immutable typed parameters. A guarded denominator cannot
 change between the test and division in this model. A proof here does not
 justify volatile/shared reads, overloaded operators, or effectful sequencing.
 
+## Integral unary operators
+
+`UnaryOp` selects `plus`, `minus`, `complement` or `logicalNot`.
+`Expr.unary dialect operation operand` builds the corresponding expression.
+The individual helpers are `Expr.unaryPlus`, `.unaryMinus`, `.unaryComplement`
+and `.logicalNot`. The first three return the integer-promoted operand type;
+logical NOT returns C int or C++ bool. `unaryType` records this result index.
+
+These are constructions over the existing evaluator and exact VC generator.
+Plus promotes the operand. Minus subtracts it from a correctly typed zero;
+unsigned results wrap, while signed minimum negation is UB. Complement
+subtracts from signed -1 or unsigned maximum after promotion; it is defined
+even at signed minimum and maximum. NOT evaluates truth once and inverts it.
+Each construction contains one occurrence of its operand. Its failure and
+unsupported markers remain observable through raw execution and public coverage.
+
+`IntegerUnary` proves the arithmetic laws and the exact minimum exception.
+`ComplementBits.NatBits` and `.IntBits` independently require every value bit
+below the width to flip. `nat_sum_iff_bits` and `int_sum_iff_bits` connect these
+predicates to the arithmetic equations, including signed-range uniqueness.
+They concern mathematical width-bounded residues, without object-storage,
+padding or ABI claims.
+
+The inherited signed-minus diagnostic is `signedSubtractionOverflow` because
+the helper uses the existing checked subtraction. This is a tool diagnostic,
+not a native exception. Arithmetic negation and complement remain different:
+the former rejects signed minimum, while the latter is total on typed values.
+For example, complementing uchar255 on the int32/char8 profile returns int-256.
+It complements the promoted int value, not an eight-bit object.
+
+The helpers cover admitted integral values and built-in C++ prvalues. They
+do not add pointer, floating, enum, overloaded, lvalue or source-text rules.
+
 ## Verification and reuse
 
 `Verifies program admitted post` requires, for every admitted input, an actual
@@ -260,6 +293,7 @@ Every listed positive certificate derives NoUB on its stated domain.
 | `ComparisonContracts.compareReturn` | All six comparisons, admitted integral type pairs, profiles and typed inputs; independent normalized representatives and mathematical relations |
 | `GuardContracts.guardedUnsigned` | All typed numerator/denominator inputs; return zero for zero denominator, otherwise satisfy an independent quotient interval |
 | `GuardContracts.guardedSigned` | All typed inputs; return zero for zero denominator or minimum/-1, otherwise satisfy truncating reconstruction with bounded, correctly signed remainder |
+| `UnaryContracts.unaryReturn` | All four unary operations, types/profiles/dialects; plus/complement/NOT admit all typed inputs; minus excludes numeric minimum only when the promoted type is signed. Independent value, carry, per-bit and zero/nonzero contracts |
 
 The synthetic `Division.wrappedIncrement` candidate is proved NoUB yet incorrect
 for the quotient contract. Zero division, signed boundaries, unsupported coverage,
@@ -270,6 +304,9 @@ that excludes only zero divisors, for every target and result postcondition.
 whose internal guard checks only nonzero: minimum/-1 actually executes UB.
 The positive guarded clients have admission `True`; their guards establish the
 division preconditions locally instead of requiring them of callers.
+`UnaryContracts.signedMinus_all_inputs_not_certified` rejects an all-input
+signed-negation certificate for every postcondition. The generic minimum
+counterexample also covers signed small types that promote at equal widths.
 These are embedded-program theorems, without source-file or native correspondence.
 
 ```sh

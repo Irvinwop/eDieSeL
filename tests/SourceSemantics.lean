@@ -10,8 +10,10 @@ import EDSL.Source.CastContracts
 import tests.SourceCasts
 import tests.SourceArithmetic
 import tests.SourceConditions
+import tests.SourceUnary
 import EDSL.Source.GuardContracts
 import EDSL.Source.ComparisonContracts
+import EDSL.Source.UnaryContracts
 import EDSL.Source.ArithmeticContracts
 import EDSL.Audit.Owners
 
@@ -119,4 +121,21 @@ set_option warningAsError true
 #print axioms EDSL.Source.conditionalType_cpp_distinct
 #print axioms EDSL.Source.ComparisonContracts.compareReturn_certificate
 #print axioms EDSL.Source.ComparisonContracts.compareReturn_noUB
+#print axioms EDSL.Source.IntegerUnary.signedNegate_defined_iff
+#print axioms EDSL.Source.IntegerUnary.signedNegate_overflow_iff
+#print axioms EDSL.Source.IntegerUnary.unsignedComplement_eq_defined_iff
+#print axioms EDSL.Source.IntegerUnary.signedComplement_eq_defined_iff
+#print axioms EDSL.Source.ComplementBits.nat_sum_iff_bits
+#print axioms EDSL.Source.ComplementBits.nat_bits_unique
+#print axioms EDSL.Source.ComplementBits.int_sum_iff_bits
+#print axioms EDSL.Source.ComplementBits.int_bits_unique
+#print axioms EDSL.Source.Expr.firstUnsupported_unary
+#print axioms EDSL.Source.eval_unaryMinus
+#print axioms EDSL.Source.eval_unaryComplement
+#print axioms EDSL.Source.eval_logicalNot_defined
+#print axioms EDSL.Source.UnaryContracts.promotedComplement_spec
+#print axioms EDSL.Source.UnaryContracts.unaryReturn_certificate
+#print axioms EDSL.Source.UnaryContracts.unaryReturn_noUB
+#print axioms EDSL.Source.UnaryContracts.unaryMinus_minimum_undefined
+#print axioms EDSL.Source.UnaryContracts.signedMinus_all_inputs_not_certified
 #audit_edsl_owners

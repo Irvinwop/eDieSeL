@@ -8,3 +8,5 @@ import EDSL.Source.IntegerPromotions
 import EDSL.Source.IntegerCasts
 import EDSL.Source.IntegerArithmetic
 import EDSL.Source.Conditions
+import EDSL.Source.Unary
+import EDSL.Source.ComplementBits
